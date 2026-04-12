@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <title>DARK013TATTOO · Gestão Profissional com Nuvem</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    /* ===== ESTILOS (mesmos do original, adicionado indicador de nuvem) ===== */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg-primary: #f0f2f5; --bg-card: #ffffff; --bg-header: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
@@ -171,7 +171,6 @@
 </nav>
 
 <main class="container">
-  <!-- Loading inicial -->
   <div id="loadingScreen" class="loading">
     <i class="fas fa-spinner spinner fa-2x"></i>
     <p>Sincronizando dados com a nuvem...</p>
@@ -341,7 +340,7 @@
   <p>© 2026 - Sincronizado com Supabase ☁️</p>
 </footer>
 
-<!-- MODAIS (mantidos do original) -->
+<!-- MODAIS -->
 <div class="modal-overlay" id="modalCaixa"><div class="modal"><h3><i class="fas fa-plus-circle"></i> Novo Lançamento</h3><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="caixaData"></div><div class="form-group"><label>Saldo Inicial</label><input type="number" id="caixaSaldoInicial" step="0.01" value="0"></div></div><div class="form-row"><div class="form-group"><label>Entradas</label><input type="number" id="caixaEntradas" step="0.01" value="0"></div><div class="form-group"><label>Saídas</label><input type="number" id="caixaSaidas" step="0.01" value="0"></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalCaixa')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-primary" onclick="addCaixa()"><i class="fas fa-save"></i> Salvar</button></div></div></div>
 
 <div class="modal-overlay" id="modalServico"><div class="modal"><h3><i class="fas fa-plus-circle"></i> Novo Serviço</h3><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="servicoData"></div><div class="form-group"><label>Cliente</label><input type="text" id="servicoCliente" placeholder="Nome do cliente"></div></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="servicoTatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div><div class="form-group"><label>Tipo</label><select id="servicoTipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div></div><div class="form-group"><label>Descrição</label><textarea id="servicoDescricao" rows="2" placeholder="Detalhes do serviço"></textarea></div><div class="form-row"><div class="form-group"><label>Valor (R$)</label><input type="number" id="servicoValor" step="0.01"></div><div class="form-group"><label>Pagamento</label><select id="servicoPagamento"><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartão">Cartão</option></select></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalServico')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-primary" onclick="addServico()"><i class="fas fa-save"></i> Salvar</button></div></div></div>
@@ -368,68 +367,65 @@
 
 <script>
   // ==================== CONFIGURAÇÃO SUPABASE ====================
-  // ⚠️ SUBSTITUA PELAS SUAS CREDENCIAIS DO SUPABASE ⚠️
-  const SUPABASE_URL = 'https://supsogyyekhtnvdojjzm.supabase.co';  // COLE SUA URL AQUI
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1cHNvZ3l5ZWtodG52ZG9qanptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDk1NTYsImV4cCI6MjA5MTU4NTU1Nn0.YfV1pvCpC43HfPKJdnIUnCAvyxd3m18PTAZ-Npk2HzM';           // COLE SUA ANON KEY AQUI
+  const SUPABASE_URL = 'https://supsogyyekhtnvdojjzm.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1cHNvZ3l5ZWtodG52ZG9qanptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDk1NTYsImV4cCI6MjA5MTU4NTU1Nn0.YfV1pvCpC43HfPKJdnIUnCAvyxd3m18PTAZ-Npk2HzM';
   
-  // Inicializa Supabase
   let supabase = null;
   let isSupabaseConnected = false;
-  
-  // Estado dos dados
   let dados = { caixa: [], servicos: [], piercings: [], materiais: [], agenda: [] };
   let currentDate = new Date();
   let monthlyChart, typeChart;
-  let isLoading = true;
 
   // ==================== FUNÇÕES SUPABASE ====================
   async function initSupabase() {
-    if (!SUPABASE_URL.includes('SEU_PROJETO') && !SUPABASE_ANON_KEY.includes('SUA_ANON_KEY')) {
-      try {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        await testConnection();
-      } catch (error) {
-        console.error('Erro ao conectar Supabase:', error);
-        updateCloudStatus(false);
-      }
-    } else {
-      console.warn('Configure as credenciais do Supabase no código!');
-      updateCloudStatus(false, 'Configure Supabase');
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      await testConnection();
+    } catch (error) {
+      console.error('Erro ao conectar Supabase:', error);
+      updateCloudStatus(false, 'Erro de conexão');
+      loadDataFromLocalStorage();
+      finishLoading();
     }
   }
   
   async function testConnection() {
     try {
       const { error } = await supabase.from('caixa').select('count', { count: 'exact', head: true });
-      if (error) throw error;
+      if (error && error.code !== '42P01') throw error;
       isSupabaseConnected = true;
-      updateCloudStatus(true);
+      updateCloudStatus(true, 'Nuvem sincronizada ☁️');
       await loadAllDataFromSupabase();
     } catch (error) {
-      console.error('Falha na conexão com Supabase:', error);
+      console.error('Falha na conexão:', error);
       isSupabaseConnected = false;
-      updateCloudStatus(false);
+      updateCloudStatus(false, 'Modo offline ⚠️');
       loadDataFromLocalStorage();
     }
+    finishLoading();
   }
   
-  function updateCloudStatus(online, customMessage = null) {
+  function updateCloudStatus(online, message = null) {
     const statusDiv = document.getElementById('cloudStatus');
     const statusText = document.getElementById('cloudStatusText');
     if (online) {
       statusDiv.className = 'cloud-status online';
-      statusText.textContent = customMessage || 'Nuvem sincronizada ☁️';
+      statusText.textContent = message || 'Nuvem sincronizada ☁️';
     } else {
       statusDiv.className = 'cloud-status offline';
-      statusText.textContent = customMessage || 'Modo offline ⚠️';
+      statusText.textContent = message || 'Modo offline ⚠️';
     }
+  }
+  
+  function finishLoading() {
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('currentDate').innerHTML = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
   }
   
   async function loadAllDataFromSupabase() {
     if (!isSupabaseConnected) return;
     try {
-      showToast('Sincronizando dados da nuvem...', 'success');
-      
       const [caixaRes, servicosRes, piercingsRes, materiaisRes, agendaRes] = await Promise.all([
         supabase.from('caixa').select('*').order('data', { ascending: true }),
         supabase.from('servicos').select('*').order('data', { ascending: false }),
@@ -438,23 +434,17 @@
         supabase.from('agenda').select('*').order('data', { ascending: true })
       ]);
       
-      if (caixaRes.error) throw caixaRes.error;
-      if (servicosRes.error) throw servicosRes.error;
-      if (piercingsRes.error) throw piercingsRes.error;
-      if (materiaisRes.error) throw materiaisRes.error;
-      if (agendaRes.error) throw agendaRes.error;
-      
-      dados.caixa = caixaRes.data || [];
-      dados.servicos = servicosRes.data || [];
-      dados.piercings = piercingsRes.data || [];
-      dados.materiais = materiaisRes.data || [];
-      dados.agenda = agendaRes.data || [];
+      if (caixaRes.data) dados.caixa = caixaRes.data;
+      if (servicosRes.data) dados.servicos = servicosRes.data;
+      if (piercingsRes.data) dados.piercings = piercingsRes.data;
+      if (materiaisRes.data) dados.materiais = materiaisRes.data;
+      if (agendaRes.data) dados.agenda = agendaRes.data;
       
       saveToLocalStorage();
       renderAll();
       showToast('Dados sincronizados da nuvem!', 'success');
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('Erro ao carregar dados da nuvem:', error);
       loadDataFromLocalStorage();
     }
   }
@@ -466,21 +456,19 @@
       if (error) throw error;
     } catch (error) {
       console.error(`Erro ao sincronizar ${table}:`, error);
-      updateCloudStatus(false);
     }
   }
   
   async function deleteFromSupabase(table, id) {
     if (!isSupabaseConnected) return;
     try {
-      const { error } = await supabase.from(table).delete().eq('id', id);
-      if (error) throw error;
+      await supabase.from(table).delete().eq('id', id);
     } catch (error) {
       console.error(`Erro ao deletar de ${table}:`, error);
     }
   }
   
-  // ==================== PERSISTÊNCIA LOCAL (fallback) ====================
+  // ==================== PERSISTÊNCIA LOCAL ====================
   function saveToLocalStorage() {
     localStorage.setItem('dark013tattoo_data', JSON.stringify(dados));
   }
@@ -493,50 +481,11 @@
         dados = { ...dados, ...parsed };
         showToast('Dados carregados do cache local', 'success');
       } catch(e) { console.error('Erro ao carregar dados locais'); }
-    } else {
-      loadSampleData();
     }
     renderAll();
   }
   
-  function loadSampleData() {
-    if(dados.servicos.length === 0) {
-      dados.servicos = [
-        { id: Date.now() + 1, data: new Date().toISOString().split('T')[0], cliente: "João Silva", tatuador: "Fernando Dark", tipo: "Tatuagem", descricao: "Tatuagem braço direito", valor: 500, pagamento: "PIX", estudio: 500, repasse: 0 },
-        { id: Date.now() + 2, data: new Date().toISOString().split('T')[0], cliente: "Maria Santos", tatuador: "Thalia", tipo: "Piercing", descricao: "Piercing septo", valor: 150, pagamento: "Dinheiro", estudio: 45, repasse: 105 }
-      ];
-      dados.piercings = [
-        { id: Date.now() + 3, modelo: "Argola Ouro", estoqueInicial: 10, entrada: 5, saida: 3, estoqueAtual: 12, custo: 15, venda: 45, lucroUnit: 30, vendidoTotal: 135 }
-      ];
-      dados.materiais = [
-        { id: Date.now() + 4, nome: "Agulhas 7RL", estoqueInicial: 50, entrada: 20, consumo: 15, estoqueAtual: 55, custo: 2.5, valorTotal: 137.5 }
-      ];
-      saveToLocalStorage();
-    }
-  }
-  
-  function renderAll() {
-    renderCaixa();
-    renderServicos();
-    renderPiercings();
-    renderMateriais();
-    updateFilterTatuadores();
-    updateDashboard();
-    renderCalendar();
-    updateCharts();
-    updateRelatorios();
-  }
-  
-  async function syncAllData() {
-    showToast('Sincronizando com a nuvem...', 'success');
-    if (isSupabaseConnected) {
-      await loadAllDataFromSupabase();
-    } else {
-      await initSupabase();
-    }
-  }
-  
-  // ==================== BACKUP LOCAL ====================
+  // ==================== BACKUP ====================
   function exportBackup() {
     const dataStr = JSON.stringify(dados, null, 2);
     const blob = new Blob([dataStr], {type: 'application/json'});
@@ -586,6 +535,15 @@
     reader.readAsText(file);
   }
   
+  async function syncAllData() {
+    showToast('Sincronizando com a nuvem...', 'success');
+    if (isSupabaseConnected) {
+      await loadAllDataFromSupabase();
+    } else {
+      await initSupabase();
+    }
+  }
+  
   // ==================== UTILITÁRIOS ====================
   function formatCurrency(v) { 
     const num = parseFloat(v) || 0;
@@ -606,14 +564,14 @@
   function openModal(id) { 
     document.getElementById(id).classList.add('show'); 
     const today = new Date().toISOString().split('T')[0]; 
-    document.getElementById(id).querySelectorAll('input[type="date"]').forEach(i => { if (!i.value) i.value = today; }); 
+    const dateInputs = document.getElementById(id).querySelectorAll('input[type="date"]');
+    dateInputs.forEach(i => { if (!i.value) i.value = today; });
   }
   
   function closeModal(id) { document.getElementById(id).classList.remove('show'); }
   
   document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); }));
   
-  // Navegação
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -777,7 +735,7 @@
     sel.innerHTML = '<option value="">Todos</option>' + tats.map(t=>`<option value="${t}">${t}</option>`).join(''); 
   }
   
-  // ==================== PIERCINGS (simplificado) ====================
+  // ==================== PIERCINGS ====================
   function openPiercingModal() { 
     document.getElementById('editPiercingId').value = ''; 
     document.getElementById('piercingModelo').value = ''; 
@@ -1218,19 +1176,20 @@
     typeChart = new Chart(ctx2, { type: 'pie', data: { labels: ['Serviços', 'Piercings'], datasets: [{ data: [totalServicos, totalPiercings], backgroundColor: ['#dc2f02', '#2b9348'] }] }, options: { responsive: true } });
   }
   
-  // ==================== INICIALIZAÇÃO ====================
-  async function init() { 
-    document.getElementById('loadingScreen').style.display = 'block';
-    document.getElementById('mainContent').style.display = 'none';
-    
-    await initSupabase();
-    
-    document.getElementById('loadingScreen').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
-    
-    document.getElementById('currentDate').innerHTML = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }); 
+  function renderAll() {
+    renderCaixa();
+    renderServicos();
+    renderPiercings();
+    renderMateriais();
+    updateFilterTatuadores();
+    updateDashboard();
+    renderCalendar();
+    updateCharts();
+    updateRelatorios();
   }
-  init();
+  
+  // ==================== INICIALIZAÇÃO ====================
+  initSupabase();
 </script>
 </body>
 </html>
