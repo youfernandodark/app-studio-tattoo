@@ -2,333 +2,135 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>DARK013TATTOO · Gestão Profissional com Nuvem</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DARK013TATTOO · Gestão Profissional</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg-primary: #f0f2f5; --bg-card: #ffffff; --bg-header: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-      --text-primary: #1a1a2e; --text-secondary: #6c757d; --text-muted: #adb5bd;
-      --accent: #dc2f02; --accent-hover: #9d0208; --accent-green: #2b9348; --accent-blue: #0077b6;
-      --accent-purple: #7b2cbf; --accent-orange: #e85d04; --accent-yellow: #ffb703;
-      --border: #dee2e6; --border-light: #e9ecef;
-      --shadow-sm: 0 2px 4px rgba(0,0,0,0.04); --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
-      --transition: all 0.2s ease;
-    }
-    body { font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); line-height: 1.5; }
-    .header { background: var(--bg-header); color: #fff; padding: 1.5rem 2rem; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-md); }
-    .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
-    .logo h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
-    .logo h1 i { color: var(--accent); margin-right: 8px; }
-    .logo p { font-size: 0.75rem; opacity: 0.8; margin-top: 4px; }
-    .date-info { background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: var(--radius-sm); font-size: 0.85rem; display: flex; align-items: center; gap: 12px; }
-    .cloud-status { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; }
-    .cloud-status.online { color: #2b9348; }
-    .cloud-status.offline { color: #e85d04; }
-    .nav-tabs { display: flex; gap: 4px; padding: 12px 20px; background: var(--bg-card); border-bottom: 1px solid var(--border); overflow-x: auto; position: sticky; top: 84px; z-index: 99; box-shadow: var(--shadow-sm); scrollbar-width: thin; }
-    .nav-tab { padding: 10px 20px; border: none; background: transparent; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); transition: var(--transition); white-space: nowrap; display: flex; align-items: center; gap: 8px; }
-    .nav-tab:hover { background: var(--bg-primary); color: var(--text-primary); }
-    .nav-tab.active { background: var(--accent); color: #fff; }
-    .container { max-width: 1400px; margin: 0 auto; padding: 24px 20px 60px; }
-    .section { display: none; animation: fadeIn 0.3s ease; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; }
+    .header { background: linear-gradient(135deg, #0f0c29, #302b63); color: #fff; padding: 20px; text-align: center; }
+    .logo h1 { font-size: 1.5rem; }
+    .logo h1 i { color: #dc2f02; margin-right: 8px; }
+    .date-info { margin-top: 8px; font-size: 0.8rem; opacity: 0.8; }
+    .cloud-status { display: inline-block; margin-left: 10px; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; }
+    .cloud-status.online { background: #2b9348; }
+    .cloud-status.offline { background: #e85d04; }
+    .nav-tabs { display: flex; gap: 4px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #ddd; overflow-x: auto; }
+    .nav-tab { padding: 10px 20px; border: none; background: transparent; cursor: pointer; border-radius: 8px; }
+    .nav-tab.active { background: #dc2f02; color: #fff; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .section { display: none; }
     .section.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .card { background: var(--bg-card); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); margin-bottom: 24px; overflow: hidden; border: 1px solid var(--border-light); }
-    .card-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; background: #fafbfc; border-bottom: 1px solid var(--border-light); flex-wrap: wrap; gap: 12px; }
-    .card-header h2 { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .card-header h2 i { color: var(--accent); font-size: 1.2rem; }
-    .card-body { padding: 20px 24px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 28px; }
-    .summary-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); transition: var(--transition); position: relative; overflow: hidden; }
-    .summary-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); }
-    .summary-card.green::before { background: var(--accent-green); }
-    .summary-card.blue::before { background: var(--accent-blue); }
-    .summary-card.purple::before { background: var(--accent-purple); }
-    .summary-card.orange::before { background: var(--accent-orange); }
-    .summary-card.yellow::before { background: var(--accent-yellow); }
-    .summary-card .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-    .summary-card .value { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); }
-    .trend { font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; }
-    .table-wrapper { overflow-x: auto; border-radius: var(--radius-sm); }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    thead th { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; padding: 12px 16px; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
-    tbody td { padding: 12px 16px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
-    tbody tr:hover { background: #f8f9fa; }
-    tfoot td { padding: 12px 16px; font-weight: 700; background: #f8f9fa; border-top: 2px solid var(--border); }
-    input, select, textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem; font-family: inherit; transition: var(--transition); }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(220,47,2,0.1); }
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: var(--transition); }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
-    .btn-danger { background: var(--accent-orange); color: #fff; }
-    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text-secondary); }
-    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .card { background: #fff; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .card-body { padding: 20px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+    .summary-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid #dc2f02; }
+    .summary-card .label { font-size: 0.7rem; text-transform: uppercase; color: #666; }
+    .summary-card .value { font-size: 1.8rem; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #1a1a2e; color: #fff; }
+    .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-primary { background: #dc2f02; color: #fff; }
+    .btn-primary:hover { background: #9d0208; }
+    .btn-danger { background: #e85d04; color: #fff; }
     .btn-sm { padding: 6px 12px; font-size: 0.7rem; }
-    .btn-icon { background: none; border: none; cursor: pointer; padding: 6px; border-radius: var(--radius-sm); transition: var(--transition); }
-    .btn-icon:hover { background: var(--bg-primary); }
-    .btn-edit { color: var(--accent-blue); }
-    .btn-delete { color: var(--accent-orange); }
-    .btn-move { color: var(--accent-purple); }
-    .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
-    .badge-pix { background: #d4edda; color: #155724; }
-    .badge-dinheiro { background: #fff3cd; color: #856404; }
-    .badge-cartao { background: #cce5ff; color: #004085; }
-    .badge-agendado { background: #e2e3e5; color: #383d41; }
-    .badge-confirmado { background: #d1ecf1; color: #0c5460; }
-    .badge-concluido { background: #d4edda; color: #155724; }
-    .badge-cancelado { background: #f8d7da; color: #721c24; }
-    .filter-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-end; }
-    .filter-group { flex: 1; min-width: 150px; }
-    .filter-group label { display: block; font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; }
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(4px); }
+    .btn-icon { background: none; border: none; cursor: pointer; padding: 6px; }
+    .btn-edit { color: #0077b6; }
+    .btn-delete { color: #e85d04; }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
     .modal-overlay.show { display: flex; }
-    .modal { background: var(--bg-card); border-radius: var(--radius-lg); padding: 28px; max-width: 550px; width: 100%; max-height: 90vh; overflow-y: auto; }
-    .modal h3 { margin-bottom: 20px; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; }
+    .modal { background: #fff; border-radius: 16px; padding: 24px; max-width: 500px; width: 90%; }
     .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 0.8rem; font-weight: bold; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
-    .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
-    .report-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); }
-    .report-card h3 { font-size: 0.85rem; margin-bottom: 16px; color: var(--text-secondary); text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
-    .report-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-light); }
-    .report-item:last-child { border-bottom: none; }
-    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 20px; }
-    .calendar-day-header { text-align: center; font-weight: 700; padding: 10px; background: var(--bg-primary); border-radius: var(--radius-sm); font-size: 0.75rem; }
-    .calendar-day { min-height: 100px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 8px; cursor: pointer; transition: var(--transition); }
-    .calendar-day.empty { background: var(--bg-primary); cursor: default; }
-    .calendar-day:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); }
-    .calendar-day-number { font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; }
-    .calendar-events { display: flex; flex-direction: column; gap: 2px; }
-    .calendar-event { font-size: 0.65rem; padding: 2px 6px; margin-bottom: 2px; border-radius: 4px; background: var(--accent); color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-    .calendar-event.Fernando { background: var(--accent-blue); }
-    .calendar-event.Thalia { background: var(--accent-purple); }
-    .chart-container { background: var(--bg-card); border-radius: var(--radius-md); padding: 20px; margin-bottom: 24px; border: 1px solid var(--border-light); }
-    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
-    .toast { background: #1a1a2e; color: #fff; padding: 12px 20px; border-radius: var(--radius-sm); animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s forwards; display: flex; align-items: center; gap: 10px; }
-    .toast.success { border-left: 4px solid var(--accent-green); }
-    .toast.error { border-left: 4px solid var(--accent-orange); }
-    @keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
-    @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(40px); } }
-    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
-    .empty-state i { font-size: 3rem; margin-bottom: 12px; opacity: 0.5; }
-    .stock-alert { color: var(--accent-orange); font-weight: bold; }
-    .commission-row { background: #fff8e7; }
-    .footer { text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.75rem; border-top: 1px solid var(--border); margin-top: 40px; }
-    .total-positive { color: var(--accent-green); font-weight: 600; }
-    .total-negative { color: var(--accent-orange); font-weight: 600; }
-    .amount { font-weight: 600; }
-    .name { font-weight: 600; }
-    .profit-bar-container { margin-top: 16px; }
-    .profit-bar { height: 8px; background: var(--border); border-radius: 10px; overflow: hidden; }
-    .profit-bar-fill { height: 100%; border-radius: 10px; }
-    .agenda-list { margin-top: 24px; }
-    .agenda-list h4 { margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    .loading { text-align: center; padding: 40px; color: var(--text-muted); }
-    .spinner { animation: spin 1s linear infinite; margin-right: 8px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1100; }
+    .toast { background: #1a1a2e; color: #fff; padding: 12px 20px; border-radius: 8px; margin-top: 8px; animation: slideIn 0.3s ease; }
+    .toast.success { border-left: 4px solid #2b9348; }
+    .toast.error { border-left: 4px solid #e85d04; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+    .loading { text-align: center; padding: 60px; color: #666; }
+    .spinner { animation: spin 1s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @media (max-width: 768px) { 
-      .summary-grid { grid-template-columns: repeat(2, 1fr); } 
-      .form-row { grid-template-columns: 1fr; } 
-      .calendar-day { min-height: 70px; } 
-      .card-header, .card-body { padding: 16px; } 
-      .nav-tab { padding: 8px 14px; font-size: 0.75rem; } 
-      .header-content { flex-direction: column; text-align: center; }
-    }
+    .footer { text-align: center; padding: 20px; color: #666; font-size: 0.7rem; border-top: 1px solid #ddd; margin-top: 40px; }
+    .total-positive { color: #2b9348; font-weight: bold; }
+    .total-negative { color: #e85d04; font-weight: bold; }
+    @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } .summary-grid { grid-template-columns: repeat(2, 1fr); } }
   </style>
 </head>
 <body>
 
 <header class="header">
-  <div class="header-content">
-    <div class="logo">
-      <h1><i class="fas fa-skull"></i> DARK013TATTOO</h1>
-      <p>Gestão profissional com sincronização na nuvem ☁️</p>
-    </div>
-    <div class="date-info">
-      <i class="fas fa-calendar-alt"></i> <span id="currentDate"></span>
-      <div class="cloud-status" id="cloudStatus">
-        <i class="fas fa-cloud-upload-alt"></i> <span id="cloudStatusText">Conectando...</span>
-      </div>
-    </div>
+  <div class="logo">
+    <h1><i class="fas fa-skull"></i> DARK013TATTOO</h1>
+    <p>Gestão profissional com sincronização na nuvem ☁️</p>
+  </div>
+  <div class="date-info">
+    <i class="fas fa-calendar-alt"></i> <span id="currentDate"></span>
+    <span class="cloud-status" id="cloudStatus">Conectando...</span>
   </div>
 </header>
 
 <nav class="nav-tabs" id="navTabs">
   <button class="nav-tab active" data-section="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
-  <button class="nav-tab" data-section="caixa"><i class="fas fa-coins"></i> Caixa</button>
   <button class="nav-tab" data-section="servicos"><i class="fas fa-paint-brush"></i> Serviços</button>
-  <button class="nav-tab" data-section="piercings"><i class="fas fa-gem"></i> Piercings</button>
-  <button class="nav-tab" data-section="materiais"><i class="fas fa-boxes"></i> Materiais</button>
-  <button class="nav-tab" data-section="agenda"><i class="fas fa-calendar-week"></i> Agenda</button>
-  <button class="nav-tab" data-section="relatorios"><i class="fas fa-chart-pie"></i> Relatórios</button>
   <button class="nav-tab" data-section="config"><i class="fas fa-cloud-upload-alt"></i> Backup</button>
 </nav>
 
 <main class="container">
   <div id="loadingScreen" class="loading">
     <i class="fas fa-spinner spinner fa-2x"></i>
-    <p>Sincronizando dados com a nuvem...</p>
+    <p>Carregando sistema...</p>
   </div>
 
   <div id="mainContent" style="display: none;">
     <!-- DASHBOARD -->
     <div class="section active" id="sec-dashboard">
       <div class="summary-grid">
-        <div class="summary-card blue"><div class="label"><i class="fas fa-wallet"></i> Saldo Atual</div><div class="value" id="dashSaldo">R$ 0,00</div><div class="trend"><i class="fas fa-cloud"></i> Sincronizado na nuvem</div></div>
-        <div class="summary-card green"><div class="label"><i class="fas fa-arrow-down"></i> Total Entradas</div><div class="value" id="dashEntradas">R$ 0,00</div></div>
-        <div class="summary-card orange"><div class="label"><i class="fas fa-arrow-up"></i> Total Saídas</div><div class="value" id="dashSaidas">R$ 0,00</div></div>
-        <div class="summary-card purple"><div class="label"><i class="fas fa-briefcase"></i> Serviços Realizados</div><div class="value" id="dashServicos">0</div></div>
-        <div class="summary-card yellow"><div class="label"><i class="fas fa-hand-holding-usd"></i> Repasse Thalia (70%)</div><div class="value" id="dashRepasse">R$ 0,00</div></div>
+        <div class="summary-card"><div class="label"><i class="fas fa-wallet"></i> Total Serviços</div><div class="value" id="totalServicos">R$ 0,00</div></div>
+        <div class="summary-card"><div class="label"><i class="fas fa-chart-line"></i> Quantidade</div><div class="value" id="quantidadeServicos">0</div></div>
       </div>
-      <div class="chart-container"><h3><i class="fas fa-chart-bar"></i> Faturamento Mensal</h3><canvas id="monthlyChart"></canvas></div>
-      <div class="chart-container"><h3><i class="fas fa-chart-pie"></i> Distribuição por Tipo</h3><canvas id="typeChart"></canvas></div>
-      <div class="report-grid">
-        <div class="report-card"><h3><i class="fas fa-clock"></i> Serviços Recentes</h3><div id="recentServices"></div></div>
-        <div class="report-card"><h3><i class="fas fa-exclamation-triangle"></i> Estoque Baixo</h3><div id="lowStock"></div></div>
-        <div class="report-card"><h3><i class="fas fa-calendar-check"></i> Próximos Agendamentos</h3><div id="upcomingAppointments"></div></div>
-      </div>
-    </div>
-
-    <!-- CAIXA -->
-    <div class="section" id="sec-caixa">
       <div class="card">
-        <div class="card-header"><h2><i class="fas fa-coins"></i> Fluxo de Caixa</h2><button class="btn btn-primary btn-sm" onclick="openModal('modalCaixa')"><i class="fas fa-plus"></i> Novo Lançamento</button></div>
-        <div class="card-body">
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo Final</th><th>Ações</th></tr></thead>
-              <tbody id="tbodyCaixa"></tbody>
-              <tfoot><tr><td><strong>TOTAIS</strong></td><td id="tfootCaixaInicial">R$ 0,00</td><td id="tfootCaixaEntradas">R$ 0,00</td><td id="tfootCaixaSaidas">R$ 0,00</td><td id="tfootCaixaFinal"><strong>R$ 0,00</strong></td><td></td></tr></tfoot>
-            </table>
-          </div>
-          <div class="empty-state" id="emptyCaixa" style="display:none"><i class="fas fa-inbox"></i><br>Nenhum lançamento no caixa</div>
-        </div>
+        <div class="card-header"><h2>Serviços Recentes</h2></div>
+        <div class="card-body"><div id="recentServices"></div></div>
       </div>
     </div>
 
     <!-- SERVIÇOS -->
     <div class="section" id="sec-servicos">
       <div class="card">
-        <div class="card-header"><h2><i class="fas fa-paint-brush"></i> Serviços Realizados</h2><button class="btn btn-primary btn-sm" onclick="openModal('modalServico')"><i class="fas fa-plus"></i> Novo Serviço</button></div>
+        <div class="card-header">
+          <h2><i class="fas fa-paint-brush"></i> Serviços Realizados</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalServico')"><i class="fas fa-plus"></i> Novo Serviço</button>
+        </div>
         <div class="card-body">
-          <div class="filter-bar">
-            <div class="filter-group"><label>Tatuador</label><select id="filterTatuador" onchange="renderServicos()"><option value="">Todos</option></select></div>
-            <div class="filter-group"><label>Tipo</label><select id="filterTipoServico" onchange="renderServicos()"><option value="">Todos</option><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
-            <div class="filter-group"><label>Pagamento</label><select id="filterPagamento" onchange="renderServicos()"><option value="">Todas</option><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartão">Cartão</option></select></div>
-          </div>
           <div class="table-wrapper">
             <table>
-              <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30%)</th><th>Repasse (70%)</th><th>Pagamento</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Pagamento</th><th>Ações</th></tr></thead>
               <tbody id="tbodyServicos"></tbody>
-              <tfoot><tr><td colspan="4"><strong>TOTAIS</strong></td><td></td><td id="tfootValorServicos">R$ 0,00</td><td id="tfootEstudioServicos">R$ 0,00</td><td id="tfootRepasseServicos">R$ 0,00</td><td></td><td></td></tr></tfoot>
+              <tfoot><tr><td colspan="4"><strong>TOTAL</strong></td><td id="totalServicosTable">R$ 0,00</td><td></td><td></td></tr></tfoot>
             </table>
           </div>
-          <div class="empty-state" id="emptyServicos" style="display:none"><i class="fas fa-inbox"></i><br>Nenhum serviço registrado</div>
+          <div class="empty-state" id="emptyServicos" style="display:none; text-align:center; padding:40px;">Nenhum serviço registrado</div>
         </div>
       </div>
     </div>
 
-    <!-- PIERCINGS -->
-    <div class="section" id="sec-piercings">
-      <div class="card">
-        <div class="card-header"><h2><i class="fas fa-gem"></i> Piercings - Revenda</h2><button class="btn btn-primary btn-sm" onclick="openPiercingModal()"><i class="fas fa-plus"></i> Novo Piercing</button></div>
-        <div class="card-body">
-          <div class="filter-bar">
-            <div class="filter-group"><label>Filtrar por</label><select id="filterPiercingTipo" onchange="renderPiercings()"><option value="">Todos os Piercings</option><option value="emEstoque">Em Estoque</option><option value="semEstoque">Sem Estoque</option></select></div>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Modelo/Local</th><th>Estoque Atual</th><th>Comprado</th><th>Vendido</th><th>Custo Unit.</th><th>Preço Venda</th><th>Lucro Unit.</th><th>Lucro Total</th><th>Ações</th></tr></thead>
-              <tbody id="tbodyPiercings"></tbody>
-              <tfoot><tr><td><strong>TOTAIS</strong></td><td id="tfootEstoquePiercings">0</td><td id="tfootCompradoPiercings">0</td><td id="tfootVendidoPiercings">0</td><td id="tfootTotalCustoPiercings">R$ 0,00</td><td id="tfootTotalVendaPiercings">R$ 0,00</td><td></td><td id="tfootTotalLucroPiercings"><strong>R$ 0,00</strong></td><td></td></tr></tfoot>
-            </table>
-          </div>
-          <div class="empty-state" id="emptyPiercings" style="display:none"><i class="fas fa-inbox"></i><br>Nenhum piercing cadastrado</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MATERIAIS -->
-    <div class="section" id="sec-materiais">
-      <div class="card">
-        <div class="card-header"><h2><i class="fas fa-boxes"></i> Materiais de Consumo</h2><button class="btn btn-primary btn-sm" onclick="openModal('modalMaterial')"><i class="fas fa-plus"></i> Novo Material</button></div>
-        <div class="card-body">
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Material</th><th>Estoque Atual</th><th>Comprado</th><th>Consumido</th><th>Custo Unit.</th><th>Valor em Estoque</th><th>Ações</th></tr></thead>
-              <tbody id="tbodyMateriais"></tbody>
-              <tfoot><tr><td><strong>TOTAIS</strong></td><td id="tfootEstoqueMateriais">0</td><td id="tfootEntradaMateriais">0</td><td id="tfootConsumoMateriais">0</td><td></td><td id="tfootValorMateriais">R$ 0,00</td><td></td></tr></tfoot>
-            </table>
-          </div>
-          <div class="empty-state" id="emptyMateriais" style="display:none"><i class="fas fa-inbox"></i><br>Nenhum material cadastrado</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- AGENDA -->
-    <div class="section" id="sec-agenda">
-      <div class="card">
-        <div class="card-header"><h2><i class="fas fa-calendar-week"></i> Agenda de Atendimentos</h2><button class="btn btn-primary btn-sm" onclick="openModal('modalAgenda')"><i class="fas fa-plus"></i> Novo Agendamento</button></div>
-        <div class="card-body">
-          <div class="filter-bar">
-            <div class="filter-group"><label>Tatuador</label><select id="filterAgendaTatuador" onchange="renderCalendar()"><option value="">Todos</option><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div>
-            <div class="filter-group"><label>Status</label><select id="filterAgendaStatus" onchange="renderCalendar()"><option value="">Todos</option><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluído">Concluído</option><option value="Cancelado">Cancelado</option></select></div>
-          </div>
-          <div class="calendar-header"><div><button class="btn btn-outline btn-sm" onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i></button><button class="btn btn-outline btn-sm" onclick="goToToday()"><i class="fas fa-calendar-day"></i> Hoje</button><button class="btn btn-outline btn-sm" onclick="changeMonth(1)"><i class="fas fa-chevron-right"></i></button></div><h3 id="currentMonthYear"></h3></div>
-          <div class="calendar-grid" id="calendarGrid"></div>
-          <div class="agenda-list"><h4><i class="fas fa-list"></i> Agendamentos do dia</h4><div id="dayAppointments"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RELATÓRIOS -->
-    <div class="section" id="sec-relatorios">
-      <div class="report-grid">
-        <div class="report-card"><h3><i class="fas fa-users"></i> Faturamento por Tatuador</h3><div id="reportTatuadores"></div></div>
-        <div class="report-card"><h3><i class="fas fa-hand-holding-usd"></i> Repasses (Thalia - 70%)</h3><div id="reportRepasses"></div></div>
-        <div class="report-card"><h3><i class="fas fa-gem"></i> Lucro com Piercings</h3><div id="reportPiercings"></div></div>
-        <div class="report-card"><h3><i class="fas fa-boxes"></i> Gastos com Materiais</h3><div id="reportMateriais"></div></div>
-        <div class="report-card"><h3><i class="fas fa-chart-line"></i> Lucro Líquido</h3><div id="reportLucro"></div></div>
-      </div>
-    </div>
-
-    <!-- CONFIG / BACKUP -->
+    <!-- CONFIG -->
     <div class="section" id="sec-config">
       <div class="card">
-        <div class="card-header"><h2><i class="fas fa-cloud-upload-alt"></i> Backup e Sincronização</h2></div>
+        <div class="card-header"><h2><i class="fas fa-cloud-upload-alt"></i> Backup</h2></div>
         <div class="card-body">
-          <div style="display: grid; gap: 20px;">
-            <div class="report-card" style="margin:0">
-              <h3><i class="fas fa-database"></i> Status da Nuvem</h3>
-              <p style="margin-bottom: 16px; font-size: 0.85rem;">Seus dados estão sincronizados automaticamente com o Supabase. Todas as alterações são salvas instantaneamente na nuvem.</p>
-              <div class="report-item">
-                <span><i class="fas fa-check-circle" style="color: var(--accent-green);"></i> Sincronização automática</span>
-                <button class="btn btn-outline btn-sm" onclick="syncAllData()"><i class="fas fa-sync-alt"></i> Sincronizar agora</button>
-              </div>
-            </div>
-            <div class="report-card" style="margin:0">
-              <h3><i class="fas fa-download"></i> Exportar Backup Local</h3>
-              <p style="margin-bottom: 16px; font-size: 0.85rem;">Baixe um arquivo de backup com todos os dados do sistema.</p>
-              <button class="btn btn-primary" onclick="exportBackup()"><i class="fas fa-download"></i> Exportar Backup (.json)</button>
-            </div>
-            <div class="report-card" style="margin:0">
-              <h3><i class="fas fa-upload"></i> Importar Backup Local</h3>
-              <p style="margin-bottom: 16px; font-size: 0.85rem;">Restaure um backup salvo anteriormente.</p>
-              <input type="file" id="backupFileInput" accept=".json" style="margin-bottom: 12px;">
-              <button class="btn btn-outline" onclick="importBackup()"><i class="fas fa-upload"></i> Importar Backup</button>
-            </div>
-            <div class="report-card" style="margin:0">
-              <h3><i class="fab fa-supabase"></i> Sobre a Sincronização</h3>
-              <p style="font-size: 0.85rem;"><strong>DARK013TATTOO Cloud</strong> - Dados sincronizados com Supabase</p>
-              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">✅ Sincronização em tempo real<br>✅ Backup automático na nuvem<br>✅ Acesso de qualquer dispositivo</p>
-            </div>
-          </div>
+          <button class="btn btn-primary" onclick="exportBackup()"><i class="fas fa-download"></i> Exportar Backup</button>
+          <input type="file" id="backupFileInput" accept=".json" style="margin: 16px 0; display: block;">
+          <button class="btn btn-outline" onclick="importBackup()"><i class="fas fa-upload"></i> Importar Backup</button>
+          <hr style="margin: 20px 0;">
+          <button class="btn btn-danger" onclick="clearAllData()"><i class="fas fa-trash"></i> Limpar Todos os Dados</button>
         </div>
       </div>
     </div>
@@ -336,860 +138,371 @@
 </main>
 
 <footer class="footer">
-  <p><i class="fas fa-skull"></i> DARK013TATTOO · Sistema de Gestão com Nuvem</p>
-  <p>© 2026 - Sincronizado com Supabase ☁️</p>
+  <p>DARK013TATTOO · Sistema de Gestão</p>
+  <p>© 2026</p>
 </footer>
 
 <!-- MODAIS -->
-<div class="modal-overlay" id="modalCaixa"><div class="modal"><h3><i class="fas fa-plus-circle"></i> Novo Lançamento</h3><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="caixaData"></div><div class="form-group"><label>Saldo Inicial</label><input type="number" id="caixaSaldoInicial" step="0.01" value="0"></div></div><div class="form-row"><div class="form-group"><label>Entradas</label><input type="number" id="caixaEntradas" step="0.01" value="0"></div><div class="form-group"><label>Saídas</label><input type="number" id="caixaSaidas" step="0.01" value="0"></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalCaixa')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-primary" onclick="addCaixa()"><i class="fas fa-save"></i> Salvar</button></div></div></div>
+<div class="modal-overlay" id="modalServico">
+  <div class="modal">
+    <h3>Novo Serviço</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Data</label><input type="date" id="servicoData"></div>
+      <div class="form-group"><label>Cliente</label><input type="text" id="servicoCliente" placeholder="Nome do cliente"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Tatuador</label><select id="servicoTatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div>
+      <div class="form-group"><label>Tipo</label><select id="servicoTipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Valor (R$)</label><input type="number" id="servicoValor" step="0.01"></div>
+      <div class="form-group"><label>Pagamento</label><select id="servicoPagamento"><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartão">Cartão</option></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modalServico')">Cancelar</button>
+      <button class="btn btn-primary" onclick="addServico()">Salvar</button>
+    </div>
+  </div>
+</div>
 
-<div class="modal-overlay" id="modalServico"><div class="modal"><h3><i class="fas fa-plus-circle"></i> Novo Serviço</h3><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="servicoData"></div><div class="form-group"><label>Cliente</label><input type="text" id="servicoCliente" placeholder="Nome do cliente"></div></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="servicoTatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div><div class="form-group"><label>Tipo</label><select id="servicoTipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div></div><div class="form-group"><label>Descrição</label><textarea id="servicoDescricao" rows="2" placeholder="Detalhes do serviço"></textarea></div><div class="form-row"><div class="form-group"><label>Valor (R$)</label><input type="number" id="servicoValor" step="0.01"></div><div class="form-group"><label>Pagamento</label><select id="servicoPagamento"><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartão">Cartão</option></select></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalServico')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-primary" onclick="addServico()"><i class="fas fa-save"></i> Salvar</button></div></div></div>
-
-<div class="modal-overlay" id="modalEditarServico"><div class="modal"><h3><i class="fas fa-edit"></i> Editar Serviço</h3><input type="hidden" id="editServicoId"><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="editServicoData"></div><div class="form-group"><label>Cliente</label><input type="text" id="editServicoCliente"></div></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="editServicoTatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div><div class="form-group"><label>Tipo</label><select id="editServicoTipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div></div><div class="form-group"><label>Descrição</label><textarea id="editServicoDescricao" rows="2"></textarea></div><div class="form-row"><div class="form-group"><label>Valor</label><input type="number" id="editServicoValor" step="0.01"></div><div class="form-group"><label>Pagamento</label><select id="editServicoPagamento"><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartão">Cartão</option></select></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalEditarServico')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-danger" onclick="deleteServicoFromEdit()"><i class="fas fa-trash"></i> Excluir</button><button class="btn btn-primary" onclick="updateServico()"><i class="fas fa-save"></i> Atualizar</button></div></div></div>
-
-<div class="modal-overlay" id="modalPiercing"><div class="modal"><h3><i class="fas fa-plus-circle"></i> Novo Piercing</h3><input type="hidden" id="editPiercingId"><div class="form-group"><label>Modelo / Local / Tipo</label><input type="text" id="piercingModelo" placeholder="Ex: Argola Ouro, Brinco Prata, Nariz..."></div><div class="form-row"><div class="form-group"><label>Compra (Entrada)</label><input type="number" id="piercingEntrada" value="0" min="0"></div><div class="form-group"><label>Estoque Inicial</label><input type="number" id="piercingEstoqueInicial" value="0" min="0"></div></div><div class="form-row"><div class="form-group"><label>Custo Unitário (R$)</label><input type="number" id="piercingCusto" step="0.01" placeholder="Preço de compra"></div><div class="form-group"><label>Preço Venda (R$)</label><input type="number" id="piercingVenda" step="0.01" placeholder="Preço de venda"></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalPiercing')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-primary" onclick="savePiercing()"><i class="fas fa-save"></i> Salvar</button></div></div></div>
-
-<div class="modal-overlay" id="modalEditarPiercing"><div class="modal"><h3><i class="fas fa-edit"></i> Editar Piercing</h3><input type="hidden" id="editPiercingId2"><div class="form-group"><label>Modelo</label><input type="text" id="editPiercingModelo"></div><div class="form-row"><div class="form-group"><label>Custo Unitário (R$)</label><input type="number" id="editPiercingCusto" step="0.01"></div><div class="form-group"><label>Preço Venda (R$)</label><input type="number" id="editPiercingVenda" step="0.01"></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalEditarPiercing')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-danger" onclick="deletePiercingFromEdit()"><i class="fas fa-trash"></i> Excluir</button><button class="btn btn-primary" onclick="updatePiercing()"><i class="fas fa-save"></i> Atualizar</button></div></div></div>
-
-<div class="modal-overlay" id="modalMovimentarPiercing"><div class="modal"><h3><i class="fas fa-exchange-alt"></i> Movimentar Estoque</h3><input type="hidden" id="movPiercingId"><div class="form-group"><label>Produto</label><input type="text" id="movPiercingNome" readonly style="background:#f5f5f5"></div><div class="form-group"><label>Tipo</label><select id="movPiercingTipo"><option value="entrada"> Compra (Entrada)</option><option value="saida"> Venda (Saída)</option></select></div><div class="form-group"><label>Quantidade</label><input type="number" id="movPiercingQuantidade" min="1" value="1"></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalMovimentarPiercing')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-primary" onclick="movimentarPiercingEstoque()"><i class="fas fa-check"></i> Confirmar</button></div></div></div>
-
-<div class="modal-overlay" id="modalMaterial"><div class="modal"><h3><i class="fas fa-plus-circle"></i> Novo Material</h3><input type="hidden" id="editMaterialId"><div class="form-group"><label>Nome do Material</label><input type="text" id="materialNome" placeholder="Ex: Agulhas, Tintas, Luvas..."></div><div class="form-row"><div class="form-group"><label>Compra (Entrada)</label><input type="number" id="materialEntrada" value="0"></div><div class="form-group"><label>Estoque Inicial</label><input type="number" id="materialEstoqueInicial" value="0"></div></div><div class="form-row"><div class="form-group"><label>Custo Unitário (R$)</label><input type="number" id="materialCusto" step="0.01"></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalMaterial')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-primary" onclick="saveMaterial()"><i class="fas fa-save"></i> Salvar</button></div></div></div>
-
-<div class="modal-overlay" id="modalEditarMaterial"><div class="modal"><h3><i class="fas fa-edit"></i> Editar Material</h3><input type="hidden" id="editMaterialId2"><div class="form-group"><label>Nome</label><input type="text" id="editMaterialNome"></div><div class="form-row"><div class="form-group"><label>Custo Unitário (R$)</label><input type="number" id="editMaterialCusto" step="0.01"></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalEditarMaterial')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-danger" onclick="deleteMaterialFromEdit()"><i class="fas fa-trash"></i> Excluir</button><button class="btn btn-primary" onclick="updateMaterial()"><i class="fas fa-save"></i> Atualizar</button></div></div></div>
-
-<div class="modal-overlay" id="modalMovimentarMaterial"><div class="modal"><h3><i class="fas fa-exchange-alt"></i> Movimentar Estoque</h3><input type="hidden" id="movMaterialId"><div class="form-group"><label>Material</label><input type="text" id="movMaterialNome" readonly style="background:#f5f5f5"></div><div class="form-group"><label>Tipo</label><select id="movMaterialTipo"><option value="entrada"> Compra (Entrada)</option><option value="consumo"> Consumo (Uso)</option></select></div><div class="form-group"><label>Quantidade</label><input type="number" id="movMaterialQuantidade" min="1" value="1"></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalMovimentarMaterial')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-primary" onclick="movimentarMaterialEstoque()"><i class="fas fa-check"></i> Confirmar</button></div></div></div>
-
-<div class="modal-overlay" id="modalAgenda"><div class="modal"><h3><i class="fas fa-plus-circle"></i> Novo Agendamento</h3><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="agendaData"></div><div class="form-group"><label>Horário</label><input type="time" id="agendaHorario"></div></div><div class="form-group"><label>Cliente</label><input type="text" id="agendaCliente"></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="agendaTatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div><div class="form-group"><label>Tipo de Serviço</label><select id="agendaTipoServico"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div></div><div class="form-row"><div class="form-group"><label>Valor (R$)</label><input type="number" id="agendaValor" step="0.01"></div><div class="form-group"><label>Status</label><select id="agendaStatus"><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluído">Concluído</option><option value="Cancelado">Cancelado</option></select></div></div><div class="form-group"><label>Observações</label><textarea id="agendaObs" rows="2"></textarea></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalAgenda')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-primary" onclick="addAgendamento()"><i class="fas fa-save"></i> Salvar</button></div></div></div>
-
-<div class="modal-overlay" id="modalEditarAgenda"><div class="modal"><h3><i class="fas fa-edit"></i> Editar Agendamento</h3><input type="hidden" id="editAgendaId"><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="editAgendaData"></div><div class="form-group"><label>Horário</label><input type="time" id="editAgendaHorario"></div></div><div class="form-group"><label>Cliente</label><input type="text" id="editAgendaCliente"></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="editAgendaTatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div><div class="form-group"><label>Tipo</label><select id="editAgendaTipoServico"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div></div><div class="form-row"><div class="form-group"><label>Valor</label><input type="number" id="editAgendaValor" step="0.01"></div><div class="form-group"><label>Status</label><select id="editAgendaStatus"><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluído">Concluído</option><option value="Cancelado">Cancelado</option></select></div></div><div class="form-group"><label>Observações</label><textarea id="editAgendaObs" rows="2"></textarea></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modalEditarAgenda')"><i class="fas fa-times"></i> Cancelar</button><button class="btn btn-danger" onclick="deleteAgendamento()"><i class="fas fa-trash"></i> Excluir</button><button class="btn btn-primary" onclick="updateAgendamento()"><i class="fas fa-save"></i> Atualizar</button></div></div></div>
+<div class="modal-overlay" id="modalEditarServico">
+  <div class="modal">
+    <h3>Editar Serviço</h3>
+    <input type="hidden" id="editServicoId">
+    <div class="form-row">
+      <div class="form-group"><label>Data</label><input type="date" id="editServicoData"></div>
+      <div class="form-group"><label>Cliente</label><input type="text" id="editServicoCliente"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Tatuador</label><select id="editServicoTatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div>
+      <div class="form-group"><label>Tipo</label><select id="editServicoTipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Valor</label><input type="number" id="editServicoValor" step="0.01"></div>
+      <div class="form-group"><label>Pagamento</label><select id="editServicoPagamento"><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartão">Cartão</option></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modalEditarServico')">Cancelar</button>
+      <button class="btn btn-danger" onclick="deleteServicoFromEdit()">Excluir</button>
+      <button class="btn btn-primary" onclick="updateServico()">Atualizar</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
-  // ==================== CONFIGURAÇÃO SUPABASE ====================
+  // ==================== CONFIGURAÇÃO ====================
   const SUPABASE_URL = 'https://supsogyyekhtnvdojjzm.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1cHNvZ3l5ZWtodG52ZG9qanptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMDk1NTYsImV4cCI6MjA5MTU4NTU1Nn0.YfV1pvCpC43HfPKJdnIUnCAvyxd3m18PTAZ-Npk2HzM';
   
   let supabase = null;
-  let isSupabaseConnected = false;
-  let dados = { caixa: [], servicos: [], piercings: [], materiais: [], agenda: [] };
-  let currentDate = new Date();
-  let monthlyChart, typeChart;
-
-  // ==================== FUNÇÕES SUPABASE ====================
-  async function initSupabase() {
+  let dados = { servicos: [] };
+  
+  // ==================== INICIALIZAÇÃO ====================
+  async function init() {
+    console.log('Iniciando sistema...');
+    
+    // Carrega dados do localStorage primeiro
+    loadLocalData();
+    
+    // Tenta conectar ao Supabase
     try {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      await testConnection();
+      if (typeof window.supabase !== 'undefined') {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        await loadFromSupabase();
+        document.getElementById('cloudStatus').className = 'cloud-status online';
+        document.getElementById('cloudStatus').textContent = '✅ Nuvem conectada';
+      } else {
+        throw new Error('Supabase não carregado');
+      }
     } catch (error) {
-      console.error('Erro ao conectar Supabase:', error);
-      updateCloudStatus(false, 'Erro de conexão');
-      loadDataFromLocalStorage();
-      finishLoading();
+      console.log('Modo offline - usando dados locais');
+      document.getElementById('cloudStatus').className = 'cloud-status offline';
+      document.getElementById('cloudStatus').textContent = '⚠️ Modo offline';
     }
-  }
-  
-  async function testConnection() {
-    try {
-      const { error } = await supabase.from('caixa').select('count', { count: 'exact', head: true });
-      if (error && error.code !== '42P01') throw error;
-      isSupabaseConnected = true;
-      updateCloudStatus(true, 'Nuvem sincronizada ☁️');
-      await loadAllDataFromSupabase();
-    } catch (error) {
-      console.error('Falha na conexão:', error);
-      isSupabaseConnected = false;
-      updateCloudStatus(false, 'Modo offline ⚠️');
-      loadDataFromLocalStorage();
-    }
-    finishLoading();
-  }
-  
-  function updateCloudStatus(online, message = null) {
-    const statusDiv = document.getElementById('cloudStatus');
-    const statusText = document.getElementById('cloudStatusText');
-    if (online) {
-      statusDiv.className = 'cloud-status online';
-      statusText.textContent = message || 'Nuvem sincronizada ☁️';
-    } else {
-      statusDiv.className = 'cloud-status offline';
-      statusText.textContent = message || 'Modo offline ⚠️';
-    }
-  }
-  
-  function finishLoading() {
+    
+    // Atualiza interface
+    document.getElementById('currentDate').innerHTML = new Date().toLocaleDateString('pt-BR');
+    renderServicos();
+    updateDashboard();
+    
+    // Esconde loading
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
-    document.getElementById('currentDate').innerHTML = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    
+    console.log('Sistema carregado!', dados.servicos.length, 'serviços');
   }
   
-  async function loadAllDataFromSupabase() {
-    if (!isSupabaseConnected) return;
-    try {
-      const [caixaRes, servicosRes, piercingsRes, materiaisRes, agendaRes] = await Promise.all([
-        supabase.from('caixa').select('*').order('data', { ascending: true }),
-        supabase.from('servicos').select('*').order('data', { ascending: false }),
-        supabase.from('piercings').select('*'),
-        supabase.from('materiais').select('*'),
-        supabase.from('agenda').select('*').order('data', { ascending: true })
-      ]);
-      
-      if (caixaRes.data) dados.caixa = caixaRes.data;
-      if (servicosRes.data) dados.servicos = servicosRes.data;
-      if (piercingsRes.data) dados.piercings = piercingsRes.data;
-      if (materiaisRes.data) dados.materiais = materiaisRes.data;
-      if (agendaRes.data) dados.agenda = agendaRes.data;
-      
-      saveToLocalStorage();
-      renderAll();
-      showToast('Dados sincronizados da nuvem!', 'success');
-    } catch (error) {
-      console.error('Erro ao carregar dados da nuvem:', error);
-      loadDataFromLocalStorage();
-    }
-  }
-  
-  async function syncToSupabase(table, data) {
-    if (!isSupabaseConnected) return;
-    try {
-      const { error } = await supabase.from(table).upsert(data, { onConflict: 'id' });
-      if (error) throw error;
-    } catch (error) {
-      console.error(`Erro ao sincronizar ${table}:`, error);
-    }
-  }
-  
-  async function deleteFromSupabase(table, id) {
-    if (!isSupabaseConnected) return;
-    try {
-      await supabase.from(table).delete().eq('id', id);
-    } catch (error) {
-      console.error(`Erro ao deletar de ${table}:`, error);
-    }
-  }
-  
-  // ==================== PERSISTÊNCIA LOCAL ====================
-  function saveToLocalStorage() {
-    localStorage.setItem('dark013tattoo_data', JSON.stringify(dados));
-  }
-  
-  function loadDataFromLocalStorage() {
+  function loadLocalData() {
     const saved = localStorage.getItem('dark013tattoo_data');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         dados = { ...dados, ...parsed };
-        showToast('Dados carregados do cache local', 'success');
-      } catch(e) { console.error('Erro ao carregar dados locais'); }
+        console.log('Dados locais carregados:', dados.servicos.length);
+      } catch(e) {}
     }
-    renderAll();
+    
+    // Dados de exemplo se estiver vazio
+    if (dados.servicos.length === 0) {
+      dados.servicos = [
+        { id: Date.now(), data: new Date().toISOString().split('T')[0], cliente: "Cliente Exemplo", tatuador: "Fernando Dark", tipo: "Tatuagem", valor: 500, pagamento: "PIX" }
+      ];
+      saveLocalData();
+    }
+  }
+  
+  function saveLocalData() {
+    localStorage.setItem('dark013tattoo_data', JSON.stringify(dados));
+  }
+  
+  async function loadFromSupabase() {
+    try {
+      const { data, error } = await supabase.from('servicos').select('*');
+      if (error) throw error;
+      if (data && data.length > 0) {
+        dados.servicos = data;
+        saveLocalData();
+        console.log('Dados da nuvem carregados:', data.length);
+      }
+    } catch (error) {
+      console.log('Erro ao carregar da nuvem:', error.message);
+    }
+  }
+  
+  async function syncToSupabase(item) {
+    if (!supabase) return;
+    try {
+      await supabase.from('servicos').upsert(item, { onConflict: 'id' });
+    } catch (error) {
+      console.log('Erro ao sincronizar:', error.message);
+    }
+  }
+  
+  async function deleteFromSupabase(id) {
+    if (!supabase) return;
+    try {
+      await supabase.from('servicos').delete().eq('id', id);
+    } catch (error) {
+      console.log('Erro ao deletar:', error.message);
+    }
+  }
+  
+  // ==================== CRUD ====================
+  async function addServico() {
+    const data = document.getElementById('servicoData').value;
+    const cliente = document.getElementById('servicoCliente').value.trim();
+    const tatuador = document.getElementById('servicoTatuador').value;
+    const tipo = document.getElementById('servicoTipo').value;
+    const valor = parseFloat(document.getElementById('servicoValor').value);
+    const pagamento = document.getElementById('servicoPagamento').value;
+    
+    if (!data || !cliente || !valor) {
+      showToast('Preencha todos os campos!', 'error');
+      return;
+    }
+    
+    const newItem = { id: Date.now(), data, cliente, tatuador, tipo, valor, pagamento };
+    dados.servicos.push(newItem);
+    saveLocalData();
+    await syncToSupabase(newItem);
+    
+    renderServicos();
+    updateDashboard();
+    closeModal('modalServico');
+    showToast('Serviço adicionado!');
+    
+    // Limpa formulário
+    document.getElementById('servicoCliente').value = '';
+    document.getElementById('servicoValor').value = '';
+  }
+  
+  function openEditServico(id) {
+    const s = dados.servicos.find(s => s.id === id);
+    if (!s) return;
+    document.getElementById('editServicoId').value = id;
+    document.getElementById('editServicoData').value = s.data;
+    document.getElementById('editServicoCliente').value = s.cliente;
+    document.getElementById('editServicoTatuador').value = s.tatuador;
+    document.getElementById('editServicoTipo').value = s.tipo;
+    document.getElementById('editServicoValor').value = s.valor;
+    document.getElementById('editServicoPagamento').value = s.pagamento;
+    openModal('modalEditarServico');
+  }
+  
+  async function updateServico() {
+    const id = parseInt(document.getElementById('editServicoId').value);
+    const idx = dados.servicos.findIndex(s => s.id === id);
+    if (idx === -1) return;
+    
+    dados.servicos[idx] = {
+      ...dados.servicos[idx],
+      data: document.getElementById('editServicoData').value,
+      cliente: document.getElementById('editServicoCliente').value,
+      tatuador: document.getElementById('editServicoTatuador').value,
+      tipo: document.getElementById('editServicoTipo').value,
+      valor: parseFloat(document.getElementById('editServicoValor').value),
+      pagamento: document.getElementById('editServicoPagamento').value
+    };
+    
+    saveLocalData();
+    await syncToSupabase(dados.servicos[idx]);
+    renderServicos();
+    updateDashboard();
+    closeModal('modalEditarServico');
+    showToast('Serviço atualizado!');
+  }
+  
+  function deleteServicoFromEdit() {
+    const id = parseInt(document.getElementById('editServicoId').value);
+    deleteServico(id);
+    closeModal('modalEditarServico');
+  }
+  
+  async function deleteServico(id) {
+    dados.servicos = dados.servicos.filter(s => s.id !== id);
+    saveLocalData();
+    await deleteFromSupabase(id);
+    renderServicos();
+    updateDashboard();
+    showToast('Serviço removido!');
+  }
+  
+  function renderServicos() {
+    const tbody = document.getElementById('tbodyServicos');
+    const empty = document.getElementById('emptyServicos');
+    
+    if (dados.servicos.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    
+    empty.style.display = 'none';
+    tbody.innerHTML = dados.servicos.map(s => `
+      <tr>
+        <td>${s.data.split('-').reverse().join('/')}</td>
+        <td>${s.cliente}</td>
+        <td>${s.tatuador}</td>
+        <td>${s.tipo}</td>
+        <td class="total-positive">R$ ${s.valor.toFixed(2)}</td>
+        <td>${s.pagamento}</td>
+        <td>
+          <button class="btn-icon btn-edit" onclick="openEditServico(${s.id})"><i class="fas fa-edit"></i></button>
+          <button class="btn-icon btn-delete" onclick="deleteServico(${s.id})"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+    `).join('');
+    
+    const total = dados.servicos.reduce((s, i) => s + i.valor, 0);
+    document.getElementById('totalServicosTable').innerHTML = `R$ ${total.toFixed(2)}`;
+  }
+  
+  function updateDashboard() {
+    const total = dados.servicos.reduce((s, i) => s + i.valor, 0);
+    document.getElementById('totalServicos').innerHTML = `R$ ${total.toFixed(2)}`;
+    document.getElementById('quantidadeServicos').innerHTML = dados.servicos.length;
+    
+    const recentDiv = document.getElementById('recentServices');
+    if (dados.servicos.length === 0) {
+      recentDiv.innerHTML = '<p>Nenhum serviço registrado</p>';
+    } else {
+      recentDiv.innerHTML = dados.servicos.slice(-5).reverse().map(s => `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
+          <span><strong>${s.cliente}</strong><br><small>${s.data} - ${s.tatuador}</small></span>
+          <span class="total-positive">R$ ${s.valor.toFixed(2)}</span>
+        </div>
+      `).join('');
+    }
   }
   
   // ==================== BACKUP ====================
   function exportBackup() {
     const dataStr = JSON.stringify(dados, null, 2);
-    const blob = new Blob([dataStr], {type: 'application/json'});
+    const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `dark013tattoo_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
+    a.download = `dark013_backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('Backup exportado com sucesso!', 'success');
+    showToast('Backup exportado!');
   }
   
   function importBackup() {
     const fileInput = document.getElementById('backupFileInput');
-    if(!fileInput.files || fileInput.files.length === 0) {
-      showToast('Selecione um arquivo de backup primeiro.', 'error');
+    if (!fileInput.files || !fileInput.files[0]) {
+      showToast('Selecione um arquivo', 'error');
       return;
     }
-    const file = fileInput.files[0];
     const reader = new FileReader();
-    reader.onload = async function(e) {
+    reader.onload = function(e) {
       try {
         const imported = JSON.parse(e.target.result);
-        if(imported.caixa && imported.servicos && imported.piercings && imported.materiais && imported.agenda) {
+        if (imported.servicos) {
           dados = imported;
-          saveToLocalStorage();
-          if (isSupabaseConnected) {
-            await Promise.all([
-              syncToSupabase('caixa', dados.caixa),
-              syncToSupabase('servicos', dados.servicos),
-              syncToSupabase('piercings', dados.piercings),
-              syncToSupabase('materiais', dados.materiais),
-              syncToSupabase('agenda', dados.agenda)
-            ]);
-          }
-          renderAll();
-          showToast('Backup importado com sucesso!', 'success');
+          saveLocalData();
+          renderServicos();
+          updateDashboard();
+          showToast('Backup importado!');
         } else {
-          showToast('Arquivo inválido.', 'error');
+          showToast('Arquivo inválido', 'error');
         }
       } catch(err) {
-        showToast('Erro ao ler o arquivo.', 'error');
+        showToast('Erro ao ler arquivo', 'error');
       }
     };
-    reader.readAsText(file);
+    reader.readAsText(fileInput.files[0]);
   }
   
-  async function syncAllData() {
-    showToast('Sincronizando com a nuvem...', 'success');
-    if (isSupabaseConnected) {
-      await loadAllDataFromSupabase();
-    } else {
-      await initSupabase();
+  function clearAllData() {
+    if (confirm('⚠️ Apagar TODOS os dados? Esta ação é irreversível!')) {
+      dados = { servicos: [] };
+      saveLocalData();
+      renderServicos();
+      updateDashboard();
+      showToast('Todos os dados foram removidos');
     }
   }
   
   // ==================== UTILITÁRIOS ====================
-  function formatCurrency(v) { 
-    const num = parseFloat(v) || 0;
-    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); 
-  }
-  function parseNumber(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
-  function formatDate(d) { if (!d) return '—'; const p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
-  
-  function showToast(msg, type = 'success') { 
-    const c = document.getElementById('toastContainer'); 
-    const t = document.createElement('div'); 
-    t.className = `toast ${type}`; 
-    t.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`; 
-    c.appendChild(t); 
-    setTimeout(() => t.remove(), 3000); 
+  function showToast(msg, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
   }
   
-  function openModal(id) { 
-    document.getElementById(id).classList.add('show'); 
-    const today = new Date().toISOString().split('T')[0]; 
-    const dateInputs = document.getElementById(id).querySelectorAll('input[type="date"]');
-    dateInputs.forEach(i => { if (!i.value) i.value = today; });
+  function openModal(id) {
+    document.getElementById(id).classList.add('show');
+    if (id === 'modalServico') {
+      document.getElementById('servicoData').value = new Date().toISOString().split('T')[0];
+    }
   }
   
-  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+  }
   
-  document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); }));
-  
+  // Navegação
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       tab.classList.add('active');
       document.getElementById(`sec-${tab.dataset.section}`).classList.add('active');
-      if (tab.dataset.section === 'dashboard') { updateDashboard(); updateCharts(); }
-      if (tab.dataset.section === 'relatorios') updateRelatorios();
-      if (tab.dataset.section === 'agenda') renderCalendar();
     });
   });
   
-  function calcularEstudio(tat, v) { return tat === 'Thalia' ? v * 0.3 : v; }
-  function calcularRepasse(tat, v) { return tat === 'Thalia' ? v * 0.7 : 0; }
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('show'); });
+  });
   
-  // ==================== CRUD CAIXA ====================
-  async function addCaixa() {
-    const data = document.getElementById('caixaData').value;
-    const saldoInicial = parseNumber(document.getElementById('caixaSaldoInicial').value);
-    const entradas = parseNumber(document.getElementById('caixaEntradas').value);
-    const saidas = parseNumber(document.getElementById('caixaSaidas').value);
-    if (!data) { showToast('Preencha a data.', 'error'); return; }
-    const newItem = { id: Date.now(), data, saldoInicial, entradas, saidas, saldoFinal: saldoInicial + entradas - saidas };
-    dados.caixa.push(newItem);
-    saveToLocalStorage();
-    await syncToSupabase('caixa', [newItem]);
-    renderCaixa();
-    closeModal('modalCaixa');
-    showToast('Lançamento adicionado!');
-    updateDashboard();
-  }
-  
-  async function deleteCaixa(id) { 
-    dados.caixa = dados.caixa.filter(i => i.id !== id); 
-    saveToLocalStorage();
-    await deleteFromSupabase('caixa', id);
-    renderCaixa(); 
-    updateDashboard();
-    showToast('Lançamento removido!');
-  }
-  
-  function renderCaixa() {
-    const tbody = document.getElementById('tbodyCaixa');
-    const empty = document.getElementById('emptyCaixa');
-    if (dados.caixa.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; }
-    else {
-      empty.style.display = 'none';
-      dados.caixa.sort((a,b)=>a.data.localeCompare(b.data));
-      tbody.innerHTML = dados.caixa.map(i => `<tr><td>${formatDate(i.data)}</td><td>${formatCurrency(i.saldoInicial)}</td><td class="total-positive">${formatCurrency(i.entradas)}</td><td class="total-negative">${formatCurrency(i.saidas)}</td><td><strong>${formatCurrency(i.saldoFinal)}</strong></td><td><button class="btn-icon btn-delete" onclick="deleteCaixa(${i.id})"><i class="fas fa-trash"></i></button></td></tr>`).join('');
-    }
-    const ti = dados.caixa.reduce((s,i)=>s+i.saldoInicial,0);
-    const te = dados.caixa.reduce((s,i)=>s+i.entradas,0);
-    const ts = dados.caixa.reduce((s,i)=>s+i.saidas,0);
-    const tf = dados.caixa.reduce((s,i)=>s+i.saldoFinal,0);
-    document.getElementById('tfootCaixaInicial').textContent = formatCurrency(ti);
-    document.getElementById('tfootCaixaEntradas').textContent = formatCurrency(te);
-    document.getElementById('tfootCaixaSaidas').textContent = formatCurrency(ts);
-    document.getElementById('tfootCaixaFinal').innerHTML = `<strong>${formatCurrency(tf)}</strong>`;
-  }
-  
-  // ==================== CRUD SERVIÇOS ====================
-  async function addServico() {
-    const data = document.getElementById('servicoData').value;
-    const cliente = document.getElementById('servicoCliente').value.trim();
-    const tatuador = document.getElementById('servicoTatuador').value;
-    const tipo = document.getElementById('servicoTipo').value;
-    const desc = document.getElementById('servicoDescricao').value.trim();
-    const valor = parseNumber(document.getElementById('servicoValor').value);
-    const pag = document.getElementById('servicoPagamento').value;
-    if (!data || !cliente || !tatuador || !tipo || !valor) { showToast('Preencha todos os campos.', 'error'); return; }
-    const newItem = { id: Date.now(), data, cliente, tatuador, tipo, descricao: desc, valor, pagamento: pag, estudio: calcularEstudio(tatuador, valor), repasse: calcularRepasse(tatuador, valor) };
-    dados.servicos.push(newItem);
-    saveToLocalStorage();
-    await syncToSupabase('servicos', [newItem]);
-    renderServicos();
-    closeModal('modalServico');
-    showToast(`Serviço de ${cliente} registrado!`);
-    updateFilterTatuadores();
-    updateDashboard();
-    updateCharts();
-  }
-  
-  function openEditServico(id) { 
-    const s = dados.servicos.find(s=>s.id===id); if (!s) return; 
-    document.getElementById('editServicoId').value = id; 
-    document.getElementById('editServicoData').value = s.data; 
-    document.getElementById('editServicoCliente').value = s.cliente; 
-    document.getElementById('editServicoTatuador').value = s.tatuador; 
-    document.getElementById('editServicoTipo').value = s.tipo; 
-    document.getElementById('editServicoDescricao').value = s.descricao || ''; 
-    document.getElementById('editServicoValor').value = s.valor; 
-    document.getElementById('editServicoPagamento').value = s.pagamento; 
-    openModal('modalEditarServico'); 
-  }
-  
-  async function updateServico() { 
-    const id = parseInt(document.getElementById('editServicoId').value); 
-    const idx = dados.servicos.findIndex(s=>s.id===id); if (idx===-1) return; 
-    const data = document.getElementById('editServicoData').value;
-    const cliente = document.getElementById('editServicoCliente').value.trim();
-    const tatuador = document.getElementById('editServicoTatuador').value;
-    const tipo = document.getElementById('editServicoTipo').value;
-    const desc = document.getElementById('editServicoDescricao').value.trim();
-    const valor = parseNumber(document.getElementById('editServicoValor').value);
-    const pag = document.getElementById('editServicoPagamento').value; 
-    if (!data||!cliente||!tatuador||!tipo||!valor) { showToast('Preencha todos os campos.', 'error'); return; } 
-    dados.servicos[idx] = { ...dados.servicos[idx], data, cliente, tatuador, tipo, descricao: desc, valor, pagamento: pag, estudio: calcularEstudio(tatuador, valor), repasse: calcularRepasse(tatuador, valor) }; 
-    saveToLocalStorage();
-    await syncToSupabase('servicos', [dados.servicos[idx]]);
-    renderServicos();
-    closeModal('modalEditarServico');
-    showToast('Serviço atualizado!');
-    updateDashboard();
-    updateRelatorios();
-    updateCharts();
-    updateFilterTatuadores();
-  }
-  
-  function deleteServicoFromEdit() { const id = parseInt(document.getElementById('editServicoId').value); deleteServico(id); closeModal('modalEditarServico'); }
-  
-  async function deleteServico(id) { 
-    dados.servicos = dados.servicos.filter(i=>i.id!==id); 
-    saveToLocalStorage();
-    await deleteFromSupabase('servicos', id);
-    renderServicos();
-    updateFilterTatuadores();
-    updateDashboard();
-    updateRelatorios();
-    updateCharts();
-    showToast('Serviço removido.');
-  }
-  
-  function renderServicos() {
-    let f = [...dados.servicos];
-    const ft = document.getElementById('filterTatuador').value;
-    const ftp = document.getElementById('filterTipoServico').value;
-    const fp = document.getElementById('filterPagamento').value;
-    if (ft) f = f.filter(s=>s.tatuador===ft);
-    if (ftp) f = f.filter(s=>s.tipo===ftp);
-    if (fp) f = f.filter(s=>s.pagamento===fp);
-    const tbody = document.getElementById('tbodyServicos');
-    const empty = document.getElementById('emptyServicos');
-    if (f.length===0) { tbody.innerHTML=''; empty.style.display='block'; return; }
-    empty.style.display='none';
-    f.sort((a,b)=>a.data.localeCompare(b.data));
-    tbody.innerHTML = f.map(i => { 
-      const isT = i.tatuador==='Thalia'; 
-      return `<tr ${isT ? 'class="commission-row"' : ''}><td>${formatDate(i.data)}</td><td>${i.cliente}</td><td>${i.tatuador} ${isT ? '<span class="badge" style="background:#ffb703;color:#000">30% estúdio</span>' : ''}</td><td>${i.tipo}</td><td style="max-width:150px">${i.descricao ? (i.descricao.length>30?i.descricao.substring(0,30)+'...':i.descricao) : '—'}</td><td class="total-positive">${formatCurrency(i.valor)}</td><td class="total-positive">${formatCurrency(i.estudio)}</td><td class="${isT ? 'total-negative' : ''}">${isT ? formatCurrency(i.repasse) : '-'}</td><td><span class="badge badge-${i.pagamento === 'PIX' ? 'pix' : i.pagamento === 'Dinheiro' ? 'dinheiro' : 'cartao'}">${i.pagamento}</span></td><td><button class="btn-icon btn-edit" onclick="openEditServico(${i.id})"><i class="fas fa-edit"></i></button><button class="btn-icon btn-delete" onclick="deleteServico(${i.id})"><i class="fas fa-trash"></i></button></td></tr>`; 
-    }).join('');
-    const tv = f.reduce((s,i)=>s+i.valor,0);
-    const te = f.reduce((s,i)=>s+i.estudio,0);
-    const tr = f.reduce((s,i)=>s+i.repasse,0);
-    document.getElementById('tfootValorServicos').innerHTML = `<strong>${formatCurrency(tv)}</strong>`;
-    document.getElementById('tfootEstudioServicos').innerHTML = `<strong>${formatCurrency(te)}</strong>`;
-    document.getElementById('tfootRepasseServicos').innerHTML = `<strong>${formatCurrency(tr)}</strong>`;
-  }
-  
-  function updateFilterTatuadores() { 
-    const sel = document.getElementById('filterTatuador'); 
-    const tats = [...new Set(dados.servicos.map(s=>s.tatuador))]; 
-    sel.innerHTML = '<option value="">Todos</option>' + tats.map(t=>`<option value="${t}">${t}</option>`).join(''); 
-  }
-  
-  // ==================== PIERCINGS ====================
-  function openPiercingModal() { 
-    document.getElementById('editPiercingId').value = ''; 
-    document.getElementById('piercingModelo').value = ''; 
-    document.getElementById('piercingEstoqueInicial').value = '0'; 
-    document.getElementById('piercingEntrada').value = '0'; 
-    document.getElementById('piercingCusto').value = ''; 
-    document.getElementById('piercingVenda').value = ''; 
-    openModal('modalPiercing'); 
-  }
-  
-  async function savePiercing() {
-    const id = document.getElementById('editPiercingId').value;
-    const modelo = document.getElementById('piercingModelo').value.trim();
-    const estoqueInicial = parseNumber(document.getElementById('piercingEstoqueInicial').value);
-    const entrada = parseNumber(document.getElementById('piercingEntrada').value);
-    const custo = parseNumber(document.getElementById('piercingCusto').value);
-    const venda = parseNumber(document.getElementById('piercingVenda').value);
-    if (!modelo || !custo || !venda) { showToast('Preencha modelo, custo e preço de venda.', 'error'); return; }
-    const estoqueAtual = estoqueInicial + entrada;
-    let newItem;
-    if (id) {
-      const idx = dados.piercings.findIndex(p=>p.id==parseInt(id));
-      if (idx!==-1) {
-        dados.piercings[idx] = { ...dados.piercings[idx], modelo, custo, venda, lucroUnit: venda - custo };
-        newItem = dados.piercings[idx];
-      }
-    } else {
-      newItem = { id: Date.now(), modelo, estoqueInicial, entrada, saida: 0, estoqueAtual, custo, venda, lucroUnit: venda - custo, vendidoTotal: 0 };
-      dados.piercings.push(newItem);
-    }
-    saveToLocalStorage();
-    if (newItem) await syncToSupabase('piercings', [newItem]);
-    renderPiercings();
-    closeModal('modalPiercing');
-    showToast('Piercing salvo!');
-    updateCharts();
-    updateDashboard();
-  }
-  
-  function openEditPiercing(id) { 
-    const p = dados.piercings.find(p=>p.id===id); if (!p) return; 
-    document.getElementById('editPiercingId2').value = id; 
-    document.getElementById('editPiercingModelo').value = p.modelo; 
-    document.getElementById('editPiercingCusto').value = p.custo; 
-    document.getElementById('editPiercingVenda').value = p.venda; 
-    openModal('modalEditarPiercing'); 
-  }
-  
-  async function updatePiercing() { 
-    const id = parseInt(document.getElementById('editPiercingId2').value); 
-    const idx = dados.piercings.findIndex(p=>p.id===id); if (idx===-1) return; 
-    const custo = parseNumber(document.getElementById('editPiercingCusto').value);
-    const venda = parseNumber(document.getElementById('editPiercingVenda').value);
-    dados.piercings[idx] = { ...dados.piercings[idx], modelo: document.getElementById('editPiercingModelo').value, custo, venda, lucroUnit: venda - custo }; 
-    saveToLocalStorage();
-    await syncToSupabase('piercings', [dados.piercings[idx]]);
-    renderPiercings();
-    closeModal('modalEditarPiercing');
-    showToast('Piercing atualizado!');
-    updateCharts();
-  }
-  
-  function deletePiercingFromEdit() { const id = parseInt(document.getElementById('editPiercingId2').value); deletePiercing(id); closeModal('modalEditarPiercing'); }
-  
-  async function deletePiercing(id) { 
-    dados.piercings = dados.piercings.filter(i=>i.id!==id); 
-    saveToLocalStorage();
-    await deleteFromSupabase('piercings', id);
-    renderPiercings();
-    updateCharts();
-    updateDashboard();
-    showToast('Piercing removido.');
-  }
-  
-  function openMovimentarPiercing(id) { 
-    const p = dados.piercings.find(p=>p.id===id); if (!p) return; 
-    document.getElementById('movPiercingId').value = id; 
-    document.getElementById('movPiercingNome').value = p.modelo; 
-    openModal('modalMovimentarPiercing'); 
-  }
-  
-  async function movimentarPiercingEstoque() {
-    const id = parseInt(document.getElementById('movPiercingId').value);
-    const p = dados.piercings.find(p=>p.id===id); if (!p) return;
-    const tipo = document.getElementById('movPiercingTipo').value;
-    const qtd = parseNumber(document.getElementById('movPiercingQuantidade').value);
-    if (qtd<=0) { showToast('Quantidade deve ser maior que zero.', 'error'); return; }
-    if (tipo==='saida' && qtd>p.estoqueAtual) { showToast(`Estoque insuficiente! Disponível: ${p.estoqueAtual}`, 'error'); return; }
-    if (tipo==='entrada') { p.entrada = (p.entrada||0) + qtd; p.estoqueAtual = (p.estoqueAtual||0) + qtd; }
-    else { p.saida = (p.saida||0) + qtd; p.estoqueAtual = (p.estoqueAtual||0) - qtd; p.vendidoTotal = (p.vendidoTotal||0) + (qtd * p.venda); }
-    saveToLocalStorage();
-    await syncToSupabase('piercings', [p]);
-    renderPiercings();
-    closeModal('modalMovimentarPiercing');
-    showToast(`Movimentação de ${qtd} unidade(s) registrada!`);
-    updateCharts();
-    updateDashboard();
-  }
-  
-  function renderPiercings() {
-    const tbody = document.getElementById('tbodyPiercings');
-    const empty = document.getElementById('emptyPiercings');
-    const filtro = document.getElementById('filterPiercingTipo').value;
-    let lista = [...dados.piercings];
-    if (filtro === 'emEstoque') lista = lista.filter(p => p.estoqueAtual > 0);
-    if (filtro === 'semEstoque') lista = lista.filter(p => p.estoqueAtual === 0);
-    if (lista.length===0) { tbody.innerHTML=''; empty.style.display='block'; return; }
-    empty.style.display='none';
-    tbody.innerHTML = lista.map(i => { 
-      const lucroTotal = (i.saida || 0) * (i.lucroUnit || 0); 
-      return `<tr>
-        <td><strong>${i.modelo}</strong></td>
-        <td><strong>${i.estoqueAtual || 0}</strong>${(i.estoqueAtual||0)<=3 ? ' <i class="fas fa-exclamation-triangle stock-alert"></i>' : ''}</td>
-        <td class="total-positive"><i class="fas fa-plus-circle"></i> ${i.entrada || 0}</td>
-        <td class="total-negative"><i class="fas fa-shopping-cart"></i> ${i.saida || 0}</td>
-        <td class="total-negative">${formatCurrency(i.custo)}</td>
-        <td class="total-positive">${formatCurrency(i.venda)}</td>
-        <td class="total-positive">${formatCurrency(i.lucroUnit || 0)}</td>
-        <td class="total-positive">${formatCurrency(lucroTotal)}</td>
-        <td><button class="btn-icon btn-move" onclick="openMovimentarPiercing(${i.id})"><i class="fas fa-exchange-alt"></i></button><button class="btn-icon btn-edit" onclick="openEditPiercing(${i.id})"><i class="fas fa-edit"></i></button><button class="btn-icon btn-delete" onclick="deletePiercing(${i.id})"><i class="fas fa-trash"></i></button></td>
-      </tr>`; 
-    }).join('');
-    const totalEstoque = lista.reduce((s,i)=>s+(i.estoqueAtual||0),0);
-    const totalEntrada = lista.reduce((s,i)=>s+(i.entrada||0),0);
-    const totalSaida = lista.reduce((s,i)=>s+(i.saida||0),0);
-    const totalCusto = lista.reduce((s,i)=>s+((i.custo||0)*(i.entrada||0)),0);
-    const totalVenda = lista.reduce((s,i)=>s+(i.vendidoTotal||0),0);
-    const totalLucro = lista.reduce((s,i)=>s+((i.saida||0)*(i.lucroUnit||0)),0);
-    document.getElementById('tfootEstoquePiercings').textContent = totalEstoque;
-    document.getElementById('tfootCompradoPiercings').textContent = totalEntrada;
-    document.getElementById('tfootVendidoPiercings').textContent = totalSaida;
-    document.getElementById('tfootTotalCustoPiercings').innerHTML = `<strong>${formatCurrency(totalCusto)}</strong>`;
-    document.getElementById('tfootTotalVendaPiercings').innerHTML = `<strong>${formatCurrency(totalVenda)}</strong>`;
-    document.getElementById('tfootTotalLucroPiercings').innerHTML = `<strong>${formatCurrency(totalLucro)}</strong>`;
-  }
-  
-  // ==================== MATERIAIS ====================
-  async function saveMaterial() {
-    const id = document.getElementById('editMaterialId').value;
-    const nome = document.getElementById('materialNome').value.trim();
-    const estoqueInicial = parseNumber(document.getElementById('materialEstoqueInicial').value);
-    const entrada = parseNumber(document.getElementById('materialEntrada').value);
-    const custo = parseNumber(document.getElementById('materialCusto').value);
-    if (!nome) { showToast('Informe o nome.', 'error'); return; }
-    const estoqueAtual = estoqueInicial + entrada;
-    let newItem;
-    if (id) {
-      const idx = dados.materiais.findIndex(m=>m.id==parseInt(id));
-      if (idx!==-1) {
-        dados.materiais[idx] = { ...dados.materiais[idx], nome, custo, valorTotal: dados.materiais[idx].estoqueAtual * custo };
-        newItem = dados.materiais[idx];
-      }
-    } else {
-      newItem = { id: Date.now(), nome, estoqueInicial, entrada, consumo: 0, estoqueAtual, custo, valorTotal: estoqueAtual * custo };
-      dados.materiais.push(newItem);
-    }
-    saveToLocalStorage();
-    if (newItem) await syncToSupabase('materiais', [newItem]);
-    renderMateriais();
-    closeModal('modalMaterial');
-    showToast(`Material "${nome}" salvo!`);
-    updateDashboard();
-  }
-  
-  function openEditMaterial(id) { 
-    const m = dados.materiais.find(m=>m.id===id); if (!m) return; 
-    document.getElementById('editMaterialId2').value = id; 
-    document.getElementById('editMaterialNome').value = m.nome; 
-    document.getElementById('editMaterialCusto').value = m.custo; 
-    openModal('modalEditarMaterial'); 
-  }
-  
-  async function updateMaterial() { 
-    const id = parseInt(document.getElementById('editMaterialId2').value); 
-    const idx = dados.materiais.findIndex(m=>m.id===id); if (idx===-1) return; 
-    const custo = parseNumber(document.getElementById('editMaterialCusto').value);
-    dados.materiais[idx] = { ...dados.materiais[idx], nome: document.getElementById('editMaterialNome').value, custo, valorTotal: dados.materiais[idx].estoqueAtual * custo }; 
-    saveToLocalStorage();
-    await syncToSupabase('materiais', [dados.materiais[idx]]);
-    renderMateriais();
-    closeModal('modalEditarMaterial');
-    showToast('Material atualizado!'); 
-  }
-  
-  function deleteMaterialFromEdit() { const id = parseInt(document.getElementById('editMaterialId2').value); deleteMaterial(id); closeModal('modalEditarMaterial'); }
-  
-  async function deleteMaterial(id) { 
-    dados.materiais = dados.materiais.filter(i=>i.id!==id); 
-    saveToLocalStorage();
-    await deleteFromSupabase('materiais', id);
-    renderMateriais();
-    updateDashboard();
-    showToast('Material removido.');
-  }
-  
-  function openMovimentarMaterial(id) { 
-    const m = dados.materiais.find(m=>m.id===id); if (!m) return; 
-    document.getElementById('movMaterialId').value = id; 
-    document.getElementById('movMaterialNome').value = m.nome; 
-    openModal('modalMovimentarMaterial'); 
-  }
-  
-  async function movimentarMaterialEstoque() {
-    const id = parseInt(document.getElementById('movMaterialId').value);
-    const m = dados.materiais.find(m=>m.id===id); if (!m) return;
-    const tipo = document.getElementById('movMaterialTipo').value;
-    const qtd = parseNumber(document.getElementById('movMaterialQuantidade').value);
-    if (qtd<=0) { showToast('Quantidade deve ser maior que zero.', 'error'); return; }
-    if (tipo==='consumo' && qtd>m.estoqueAtual) { showToast(`Estoque insuficiente! Disponível: ${m.estoqueAtual}`, 'error'); return; }
-    if (tipo==='entrada') { m.entrada = (m.entrada||0) + qtd; m.estoqueAtual = (m.estoqueAtual||0) + qtd; }
-    else { m.consumo = (m.consumo||0) + qtd; m.estoqueAtual = (m.estoqueAtual||0) - qtd; }
-    m.valorTotal = m.estoqueAtual * m.custo;
-    saveToLocalStorage();
-    await syncToSupabase('materiais', [m]);
-    renderMateriais();
-    closeModal('modalMovimentarMaterial');
-    showToast(`Movimentação de ${qtd} unidade(s) registrada!`);
-    updateDashboard();
-  }
-  
-  function renderMateriais() {
-    const tbody = document.getElementById('tbodyMateriais');
-    const empty = document.getElementById('emptyMateriais');
-    if (dados.materiais.length===0) { tbody.innerHTML=''; empty.style.display='block'; return; }
-    empty.style.display='none';
-    tbody.innerHTML = dados.materiais.map(i => `<tr>
-      <td><strong><i class="fas fa-box"></i> ${i.nome}</strong></td>
-      <td><strong>${i.estoqueAtual}</strong>${i.estoqueAtual<=5 ? ' <i class="fas fa-exclamation-triangle stock-alert"></i>' : ''}</td>
-      <td class="total-positive"><i class="fas fa-plus-circle"></i> ${i.entrada||0}</td>
-      <td class="total-negative"><i class="fas fa-tools"></i> ${i.consumo||0}</td>
-      <td>${formatCurrency(i.custo)}</td>
-      <td class="total-positive">${formatCurrency(i.valorTotal)}</td>
-      <td><button class="btn-icon btn-move" onclick="openMovimentarMaterial(${i.id})"><i class="fas fa-exchange-alt"></i></button><button class="btn-icon btn-edit" onclick="openEditMaterial(${i.id})"><i class="fas fa-edit"></i></button><button class="btn-icon btn-delete" onclick="deleteMaterial(${i.id})"><i class="fas fa-trash"></i></button></td>
-    </tr>`).join('');
-    const totalEstoque = dados.materiais.reduce((s,i)=>s+(i.estoqueAtual||0),0);
-    const totalEntrada = dados.materiais.reduce((s,i)=>s+(i.entrada||0),0);
-    const totalConsumo = dados.materiais.reduce((s,i)=>s+(i.consumo||0),0);
-    const totalValor = dados.materiais.reduce((s,i)=>s+(i.valorTotal||0),0);
-    document.getElementById('tfootEstoqueMateriais').textContent = totalEstoque;
-    document.getElementById('tfootEntradaMateriais').textContent = totalEntrada;
-    document.getElementById('tfootConsumoMateriais').textContent = totalConsumo;
-    document.getElementById('tfootValorMateriais').innerHTML = `<strong>${formatCurrency(totalValor)}</strong>`;
-  }
-  
-  // ==================== AGENDA ====================
-  async function addAgendamento() {
-    const data = document.getElementById('agendaData').value;
-    const horario = document.getElementById('agendaHorario').value;
-    const cliente = document.getElementById('agendaCliente').value.trim();
-    const tat = document.getElementById('agendaTatuador').value;
-    const tipo = document.getElementById('agendaTipoServico').value;
-    const valor = parseNumber(document.getElementById('agendaValor').value);
-    const status = document.getElementById('agendaStatus').value;
-    const obs = document.getElementById('agendaObs').value;
-    if (!data||!cliente||!tat||!tipo) { showToast('Preencha os campos obrigatórios.', 'error'); return; }
-    const newItem = { id: Date.now(), data, horario, cliente, tatuador: tat, tipoServico: tipo, valor, status, observacoes: obs };
-    dados.agenda.push(newItem);
-    saveToLocalStorage();
-    await syncToSupabase('agenda', [newItem]);
-    renderCalendar();
-    closeModal('modalAgenda');
-    showToast(`Agendamento para ${cliente} criado!`);
-    updateDashboard();
-  }
-  
-  async function deleteAgendamento() { 
-    const id = parseInt(document.getElementById('editAgendaId').value); 
-    dados.agenda = dados.agenda.filter(i=>i.id!==id); 
-    saveToLocalStorage();
-    await deleteFromSupabase('agenda', id);
-    renderCalendar();
-    closeModal('modalEditarAgenda');
-    showToast('Agendamento removido.');
-    updateDashboard();
-  }
-  
-  async function updateAgendamento() { 
-    const id = parseInt(document.getElementById('editAgendaId').value); 
-    const idx = dados.agenda.findIndex(i=>i.id===id); if (idx===-1) return; 
-    dados.agenda[idx] = { ...dados.agenda[idx], data: document.getElementById('editAgendaData').value, horario: document.getElementById('editAgendaHorario').value, cliente: document.getElementById('editAgendaCliente').value, tatuador: document.getElementById('editAgendaTatuador').value, tipoServico: document.getElementById('editAgendaTipoServico').value, valor: parseNumber(document.getElementById('editAgendaValor').value), status: document.getElementById('editAgendaStatus').value, observacoes: document.getElementById('editAgendaObs').value }; 
-    saveToLocalStorage();
-    await syncToSupabase('agenda', [dados.agenda[idx]]);
-    renderCalendar();
-    closeModal('modalEditarAgenda');
-    showToast('Agendamento atualizado!');
-    updateDashboard();
-  }
-  
-  function openEditAgenda(id) { 
-    const a = dados.agenda.find(a=>a.id===id); if (!a) return; 
-    document.getElementById('editAgendaId').value = a.id; 
-    document.getElementById('editAgendaData').value = a.data; 
-    document.getElementById('editAgendaHorario').value = a.horario||''; 
-    document.getElementById('editAgendaCliente').value = a.cliente; 
-    document.getElementById('editAgendaTatuador').value = a.tatuador; 
-    document.getElementById('editAgendaTipoServico').value = a.tipoServico; 
-    document.getElementById('editAgendaValor').value = a.valor; 
-    document.getElementById('editAgendaStatus').value = a.status; 
-    document.getElementById('editAgendaObs').value = a.observacoes||''; 
-    openModal('modalEditarAgenda'); 
-  }
-  
-  function changeMonth(d) { currentDate.setMonth(currentDate.getMonth()+d); renderCalendar(); }
-  function goToToday() { currentDate = new Date(); renderCalendar(); }
-  
-  function renderCalendar() {
-    const y = currentDate.getFullYear();
-    const m = currentDate.getMonth();
-    const fd = new Date(y,m,1);
-    const ld = new Date(y,m+1,0);
-    const sw = fd.getDay();
-    const dm = ld.getDate();
-    document.getElementById('currentMonthYear').innerHTML = fd.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-    const ft = document.getElementById('filterAgendaTatuador').value;
-    const fs = document.getElementById('filterAgendaStatus').value;
-    let f = [...dados.agenda];
-    if (ft) f = f.filter(a=>a.tatuador===ft);
-    if (fs) f = f.filter(a=>a.status===fs);
-    const byDate = {};
-    f.forEach(i=>{ if(!byDate[i.data]) byDate[i.data]=[]; byDate[i.data].push(i); });
-    const grid = document.getElementById('calendarGrid'); grid.innerHTML='';
-    ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d=>{ const dh=document.createElement('div'); dh.className='calendar-day-header'; dh.textContent=d; grid.appendChild(dh); });
-    for(let i=0;i<sw;i++){ const ed=document.createElement('div'); ed.className='calendar-day empty'; grid.appendChild(ed); }
-    const today = new Date().toISOString().split('T')[0];
-    for(let d=1;d<=dm;d++){
-      const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const dd = document.createElement('div'); dd.className='calendar-day';
-      if(ds===today) dd.style.border='2px solid var(--accent)';
-      dd.innerHTML = `<div class="calendar-day-number">${d}</div><div class="calendar-events"></div>`;
-      const evDiv = dd.querySelector('.calendar-events');
-      if(byDate[ds]) byDate[ds].forEach(e=>{ 
-        const ev=document.createElement('div'); 
-        ev.className=`calendar-event ${e.tatuador.split(' ')[0]}`; 
-        ev.textContent = `${e.horario?e.horario.substring(0,5)+' ':''}${e.cliente.substring(0,15)}`; 
-        ev.onclick=(evt)=>{ evt.stopPropagation(); openEditAgenda(e.id); }; 
-        evDiv.appendChild(ev); 
-      });
-      dd.onclick = ()=>{ document.getElementById('agendaData').value=ds; openModal('modalAgenda'); showDayAppointments(ds); };
-      grid.appendChild(dd);
-    }
-    showDayAppointments(today);
-  }
-  
-  function showDayAppointments(date) {
-    const c = document.getElementById('dayAppointments');
-    const ft = document.getElementById('filterAgendaTatuador').value;
-    const fs = document.getElementById('filterAgendaStatus').value;
-    let ev = dados.agenda.filter(a=>a.data===date);
-    if(ft) ev = ev.filter(a=>a.tatuador===ft);
-    if(fs) ev = ev.filter(a=>a.status===fs);
-    if(ev.length===0){ c.innerHTML='<div class="empty-state"><i class="far fa-calendar-times"></i><br>Nenhum agendamento para este dia.</div>'; return; }
-    ev.sort((a,b)=>(a.horario||'00:00').localeCompare(b.horario||'00:00'));
-    c.innerHTML = ev.map(e=>`<div class="report-item" style="cursor:pointer" onclick="openEditAgenda(${e.id})"><div><div class="name"><i class="fas fa-user"></i> ${e.cliente}</div><div style="font-size:0.75rem"><i class="far fa-clock"></i> ${e.horario?e.horario.substring(0,5):'Horário flexível'} · <i class="fas fa-user-tie"></i> ${e.tatuador} · ${e.tipoServico}</div>${e.valor?`<div style="font-size:0.7rem;color:var(--accent-green)"><i class="fas fa-dollar-sign"></i> ${formatCurrency(e.valor)}</div>`:''}</div><div><span class="badge badge-${e.status === 'Agendado' ? 'agendado' : e.status === 'Confirmado' ? 'confirmado' : e.status === 'Concluído' ? 'concluido' : 'cancelado'}">${e.status}</span></div></div>`).join('');
-  }
-  
-  // ==================== DASHBOARD ====================
-  function updateDashboard() {
-    const te = dados.caixa.reduce((s,c)=>s+(c.entradas||0),0);
-    const ts = dados.caixa.reduce((s,c)=>s+(c.saidas||0),0);
-    const sortedCaixa = [...dados.caixa].sort((a,b)=>a.data.localeCompare(b.data));
-    const ls = sortedCaixa.length>0 ? sortedCaixa[sortedCaixa.length-1].saldoFinal : 0;
-    const tr = dados.servicos.reduce((s,sv)=>s+(sv.repasse||0),0);
-    document.getElementById('dashSaldo').textContent = formatCurrency(ls);
-    document.getElementById('dashEntradas').textContent = formatCurrency(te);
-    document.getElementById('dashSaidas').textContent = formatCurrency(ts);
-    document.getElementById('dashServicos').textContent = dados.servicos.length;
-    document.getElementById('dashRepasse').textContent = formatCurrency(tr);
-    
-    const recentDiv = document.getElementById('recentServices');
-    if(dados.servicos.length===0) recentDiv.innerHTML='<div class="empty-state"><i class="fas fa-inbox"></i><br>Nenhum serviço registrado</div>';
-    else recentDiv.innerHTML = [...dados.servicos].sort((a,b)=>b.data.localeCompare(a.data)).slice(0,5).map(s=>`<div class="report-item"><div><div class="name"><i class="fas fa-user"></i> ${s.cliente}</div><div style="font-size:0.75rem"><i class="fas fa-user-tie"></i> ${s.tatuador} · ${s.tipo} · ${formatDate(s.data)}</div>${s.descricao?`<div style="font-size:0.7rem">${s.descricao.substring(0,40)}${s.descricao.length>40?'...':''}</div>`:''}</div><div class="amount total-positive">${formatCurrency(s.valor)}</div></div>`).join('');
-    
-    const lowStockDiv = document.getElementById('lowStock');
-    const low = [...dados.materiais, ...dados.piercings].filter(p=>p.estoqueAtual<=3);
-    if(low.length===0) lowStockDiv.innerHTML='<div class="empty-state"><i class="fas fa-check-circle"></i><br>Tudo em ordem!</div>';
-    else lowStockDiv.innerHTML = low.map(p=>`<div class="report-item"><div><div class="name"><i class="fas fa-box"></i> ${p.nome || p.modelo || 'Piercing'}</div><div style="font-size:0.75rem;color:var(--accent-orange)"><i class="fas fa-archive"></i> Estoque: ${p.estoqueAtual} unidades</div></div><span class="badge" style="background:#ffeaa7;color:#d63031;">Baixo</span></div>`).join('');
-    
-    const upcomingDiv = document.getElementById('upcomingAppointments');
-    const today = new Date().toISOString().split('T')[0];
-    const future = dados.agenda.filter(a=>a.data>=today && a.status!=='Cancelado' && a.status!=='Concluído').sort((a,b)=>a.data.localeCompare(b.data)).slice(0,5);
-    if(future.length===0) upcomingDiv.innerHTML='<div class="empty-state"><i class="fas fa-calendar-check"></i><br>Nenhum agendamento futuro</div>';
-    else upcomingDiv.innerHTML = future.map(a=>`<div class="report-item"><div><div class="name"><i class="fas fa-user"></i> ${a.cliente}</div><div style="font-size:0.75rem"><i class="fas fa-calendar-alt"></i> ${formatDate(a.data)}${a.horario?' às '+a.horario.substring(0,5):''} · <i class="fas fa-user-tie"></i> ${a.tatuador}</div></div><span class="badge badge-${a.status === 'Agendado' ? 'agendado' : 'confirmado'}">${a.status}</span></div>`).join('');
-  }
-  
-  // ==================== RELATÓRIOS ====================
-  function updateRelatorios() {
-    const tatDiv = document.getElementById('reportTatuadores');
-    if(dados.servicos.length===0) tatDiv.innerHTML='<div class="empty-state"><i class="fas fa-chart-line"></i><br>Sem dados de tatuadores</div>';
-    else { 
-      const map={}; 
-      dados.servicos.forEach(s=>{ if(!map[s.tatuador]) map[s.tatuador]={count:0,total:0,repasse:0}; map[s.tatuador].count++; map[s.tatuador].total+=s.valor; map[s.tatuador].repasse+=s.repasse; }); 
-      tatDiv.innerHTML = Object.entries(map).sort((a,b)=>b[1].total-a[1].total).map(([n,d])=>`<div class="report-item"><div><div class="name"><i class="fas fa-user-tie"></i> ${n}</div><div style="font-size:0.75rem"><i class="fas fa-briefcase"></i> ${d.count} serviço(s)</div>${n==='Thalia'?`<div style="font-size:0.7rem;color:var(--accent-orange)"><i class="fas fa-hand-holding-usd"></i> Repasse: ${formatCurrency(d.repasse)}</div>`:''}</div><div class="amount total-positive">${formatCurrency(d.total)}</div></div>`).join(''); 
-    }
-    
-    const repDiv = document.getElementById('reportRepasses');
-    const servThalia = dados.servicos.filter(s=>s.tatuador==='Thalia');
-    const totalRep = servThalia.reduce((s,sv)=>s+(sv.repasse||0),0);
-    if(servThalia.length===0) repDiv.innerHTML='<div class="empty-state"><i class="fas fa-hand-holding-usd"></i><br>Sem repasses registrados</div>';
-    else repDiv.innerHTML = `<div class="report-item"><div><div class="name"><i class="fas fa-user-tie"></i> Thalia</div><div style="font-size:0.75rem"><i class="fas fa-briefcase"></i> ${servThalia.length} serviço(s)</div></div><div class="amount total-negative">${formatCurrency(totalRep)}</div></div><div class="report-item" style="border-top:2px solid var(--border);margin-top:8px;padding-top:12px;"><div><div class="name"><i class="fas fa-money-bill-wave"></i> Total a Pagar (70%)</div><div style="font-size:0.7rem">Repasse para Thalia</div></div><div class="amount" style="color:var(--accent-yellow);font-size:1.1rem">${formatCurrency(totalRep)}</div></div>`;
-    
-    const pierDiv = document.getElementById('reportPiercings');
-    const lucroP = dados.piercings.reduce((s,p)=>s+((p.saida||0)*(p.lucroUnit||0)),0);
-    const vendaP = dados.piercings.reduce((s,p)=>s+(p.vendidoTotal||0),0);
-    pierDiv.innerHTML = `<div class="report-item"><div><div class="name"><i class="fas fa-chart-line"></i> Total Vendas</div></div><div class="amount total-positive">${formatCurrency(vendaP)}</div></div><div class="report-item"><div><div class="name"><i class="fas fa-tags"></i> Custo Revendedor</div></div><div class="amount total-negative">- ${formatCurrency(vendaP-lucroP)}</div></div><div class="report-item"><div><div class="name"><i class="fas fa-coins"></i> Lucro Total</div></div><div class="amount total-positive" style="font-size:1rem">${formatCurrency(lucroP)}</div></div>`;
-    
-    const matDiv = document.getElementById('reportMateriais');
-    const gastoMat = dados.materiais.reduce((s,m)=>s+((m.entrada||0)*(m.custo||0)),0);
-    matDiv.innerHTML = `<div class="report-item"><div><div class="name"><i class="fas fa-boxes"></i> Total em Materiais</div><div style="font-size:0.75rem"><i class="fas fa-box"></i> ${dados.materiais.length} materiais</div></div><div class="amount total-negative">${formatCurrency(gastoMat)}</div></div>`;
-    
-    const lucroDiv = document.getElementById('reportLucro');
-    const te = dados.caixa.reduce((s,c)=>s+(c.entradas||0),0);
-    const ts = dados.caixa.reduce((s,c)=>s+(c.saidas||0),0);
-    const recServ = dados.servicos.reduce((s,sv)=>s+(sv.estudio||0),0);
-    const recPier = dados.piercings.reduce((s,p)=>s+((p.saida||0)*(p.lucroUnit||0)),0);
-    const gastoMat2 = dados.materiais.reduce((s,m)=>s+((m.entrada||0)*(m.custo||0)),0);
-    const lucro = (te+recServ+recPier)-ts-gastoMat2;
-    const pct = (recServ+recPier)>0?((lucro/(recServ+recPier))*100).toFixed(1):0;
-    lucroDiv.innerHTML = `<div class="report-item"><div class="name"><i class="fas fa-paint-brush"></i> Receita Serviços</div><div class="amount total-positive">${formatCurrency(recServ)}</div></div><div class="report-item"><div class="name"><i class="fas fa-gem"></i> Lucro Piercings</div><div class="amount total-positive">${formatCurrency(recPier)}</div></div><div class="report-item"><div class="name"><i class="fas fa-boxes"></i> Gasto Materiais</div><div class="amount total-negative">- ${formatCurrency(gastoMat2)}</div></div><div class="report-item"><div class="name"><i class="fas fa-arrow-up"></i> Saídas Operacionais</div><div class="amount total-negative">- ${formatCurrency(ts)}</div></div><div class="report-item" style="border-top:2px solid var(--border);padding-top:14px;margin-top:6px;"><div class="name" style="font-size:1rem"><i class="fas fa-chart-line"></i> Lucro Líquido</div><div class="amount" style="font-size:1.1rem;color:${lucro>=0?'var(--accent-green)':'var(--accent-orange)'}">${formatCurrency(lucro)}</div></div><div class="profit-bar-container" style="margin-top:16px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span><i class="fas fa-percent"></i> Margem de Lucro</span><span style="font-weight:700">${pct}%</span></div><div class="profit-bar"><div class="profit-bar-fill" style="width:${Math.min(Math.abs(pct),100)}%;background:${lucro>=0?'var(--accent-green)':'var(--accent-orange)'}"></div></div></div>`;
-  }
-  
-  // ==================== GRÁFICOS ====================
-  function updateCharts() {
-    const monthlyData = {}; 
-    const currentYear = new Date().getFullYear();
-    dados.servicos.forEach(s => { const month = s.data.substring(0, 7); monthlyData[month] = (monthlyData[month] || 0) + s.valor; });
-    dados.piercings.forEach(p => { if (p.vendidoTotal) { const month = new Date().toISOString().substring(0,7); monthlyData[month] = (monthlyData[month] || 0) + p.vendidoTotal; } });
-    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const values = [];
-    for (let i = 0; i < 12; i++) { const monthKey = `${currentYear}-${String(i+1).padStart(2,'0')}`; values.push(monthlyData[monthKey] || 0); }
-    if (monthlyChart) monthlyChart.destroy();
-    const ctx1 = document.getElementById('monthlyChart').getContext('2d');
-    monthlyChart = new Chart(ctx1, { type: 'bar', data: { labels: months, datasets: [{ label: 'Faturamento (R$)', data: values, backgroundColor: '#dc2f02', borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: true } });
-    
-    const totalServicos = dados.servicos.reduce((s, i) => s + i.valor, 0);
-    const totalPiercings = dados.piercings.reduce((s, i) => s + (i.vendidoTotal || 0), 0);
-    if (typeChart) typeChart.destroy();
-    const ctx2 = document.getElementById('typeChart').getContext('2d');
-    typeChart = new Chart(ctx2, { type: 'pie', data: { labels: ['Serviços', 'Piercings'], datasets: [{ data: [totalServicos, totalPiercings], backgroundColor: ['#dc2f02', '#2b9348'] }] }, options: { responsive: true } });
-  }
-  
-  function renderAll() {
-    renderCaixa();
-    renderServicos();
-    renderPiercings();
-    renderMateriais();
-    updateFilterTatuadores();
-    updateDashboard();
-    renderCalendar();
-    updateCharts();
-    updateRelatorios();
-  }
-  
-  // ==================== INICIALIZAÇÃO ====================
-  initSupabase();
+  // Inicia
+  init();
 </script>
 </body>
 </html>
