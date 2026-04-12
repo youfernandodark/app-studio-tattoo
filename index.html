@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fluxo de Caixa - Estúdio de Tatuagem</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-primary: #f4f5f7;
+      --bg-card: #ffffff;
+      --bg-header: #1a1a2e;
+      --bg-header-accent: #16213e;
+      --text-primary: #2d3436;
+      --text-secondary: #636e72;
+      --text-light: #b2bec3;
+      --accent: #e94560;
+      --accent-hover: #c0392b;
+      --accent-green: #00b894;
+      --accent-green-hover: #00a381;
+      --accent-blue: #0984e3;
+      --accent-purple: #6c5ce7;
+      --accent-orange: #e17055;
+      --border: #dfe6e9;
+      --border-light: #eee;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --transition: 0.25s ease;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: linear-gradient(135deg, var(--bg-header) 0%, var(--bg-header-accent) 50%, #0f3460 100%);
+      color: #fff;
+      padding: 1.8rem 1rem;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .header h1 .icon {
+      margin-right: 8px;
+    }
+
+    .header p {
+      color: var(--text-light);
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    /* ===== NAV TABS ===== */
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      position: sticky;
+      top: 76px;
+      z-index: 99;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-tab {
+      padding: 10px 18px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .nav-tab:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .nav-tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ===== MAIN CONTAINER ===== */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+    }
+
+    /* ===== SECTIONS ===== */
+    .section {
+      display: none;
+      animation: fadeIn 0.35s ease;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border-light);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, #fafafa, #fff);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .card-header h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    /* ===== SUMMARY CARDS ===== */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-light);
+      border-left: 4px solid var(--accent);
+      transition: var(--transition);
+    }
+
+    .summary-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .summary-card.green { border-left-color: var(--accent-green); }
+    .summary-card.blue { border-left-color: var(--accent-blue); }
+    .summary-card.purple { border-left-color: var(--accent-purple); }
+    .summary-card.orange { border-left-color: var(--accent-orange); }
+
+    .summary-card .label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .summary-card .value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .summary-card.green .value { color: var(--accent-green); }
+    .summary-card.blue .value { color: var(--accent-blue); }
+    .summary-card.purple .value { color: var(--accent-purple); }
+    .summary-card.orange .value { color: var(--accent-orange); }
+
+    /* ===== TABLES ===== */
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: var(--radius-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      min-width: 600px;
+    }
+
+    thead th {
+      background: linear-gradient(135deg, var(--bg-header), var(--bg-header-accent));
+      color: #fff;
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      white-space: nowrap;
+    }
+
+    thead th:first-child {
+      border-radius: var(--radius-sm) 0 0 0;
+    }
+
+    thead th:last-child {
+      border-radius: 0 var(--radius-sm) 0 0;
+    }
+
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: middle;
+    }
+
+    tbody tr {
+      transition: var(--transition);
+    }
+
+    tbody tr:hover {
+      background: #f8f9ff;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ===== FORM INPUTS ===== */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      background: #fff;
+      transition: var(--transition);
+      font-family: inherit;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.12);
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23636e72' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+    }
+
+    .btn-success {
+      background: var(--accent-green);
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      background: var(--accent-green-hover);
+      box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+    }
+
+    .btn-blue {
+      background: var(--accent-blue);
+      color: #fff;
+    }
+
+    .btn-blue:hover {
+      background: #0770c2;
+      box-shadow: 0 4px 12px rgba(9, 132, 227, 0.3);
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.75rem;
+    }
+
+    .btn-danger {
+      background: var(--accent-orange);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: #c0392b;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(233, 69, 96, 0.04);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    /* ===== TABLE FOOTER (TOTALS ROW) ===== */
+    tfoot td {
+      padding: 12px 14px;
+      font-weight: 700;
+      background: #f8f9ff;
+      border-top: 2px solid var(--border);
+      font-size: 0.88rem;
+    }
+
+    .total-positive { color: var(--accent-green); }
+    .total-negative { color: var(--accent-orange); }
+
+    /* ===== BADGE ===== */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-pix { background: #d4edda; color: #155724; }
+    .badge-dinheiro { background: #fff3cd; color: #856404; }
+    .badge-cartao { background: #cce5ff; color: #004085; }
+    .badge-boleto { background: #e2d5f1; color: #4a235a; }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+    }
+
+    .empty-state .emoji {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .empty-state p {
+      font-size: 0.9rem;
+    }
+
+    /* ===== REPORT CARDS ===== */
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .report-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-light);
+    }
+
+    .report-card h3 {
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .report-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .report-item:last-child {
+      border-bottom: none;
+    }
+
+    .report-item .name {
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    .report-item .amount {
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+
+    /* ===== PROFIT BAR ===== */
+    .profit-bar-container {
+      margin-top: 12px;
+    }
+
+    .profit-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+      color: var(--text-secondary);
+    }
+
+    .profit-bar {
+      height: 10px;
+      background: var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .profit-bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.6s ease;
+    }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+      animation: modalIn 0.3s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal h3 {
+      font-size: 1.1rem;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    /* ===== DELETE BTN ===== */
+    .btn-delete {
+      background: none;
+      border: none;
+      color: var(--accent-orange);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+      border-radius: 4px;
+      transition: var(--transition);
+      line-height: 1;
+    }
+
+    .btn-delete:hover {
+      background: rgba(225, 112, 85, 0.1);
+      transform: scale(1.15);
+    }
+
+    /* ===== FILTER BAR ===== */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    .filter-bar input,
+    .filter-bar select {
+      max-width: 180px;
+    }
+
+    .filter-bar label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* ===== TOAST ===== */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--bg-header);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.success { border-left: 4px solid var(--accent-green); }
+    .toast.error { border-left: 4px solid var(--accent-orange); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(40px); }
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.2rem;
+      }
+
+      .nav-tabs {
+        top: 66px;
+      }
+
+      .nav-tab {
+        padding: 8px 14px;
+        font-size: 0.78rem;
+      }
+
+      .container {
+        padding: 14px 10px 40px;
+      }
+
+      .card-body {
+        padding: 12px;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .summary-card {
+        padding: 14px;
+      }
+
+      .summary-card .value {
+        font-size: 1.2rem;
+      }
+
+      table {
+        min-width: 550px;
+        font-size: 0.8rem;
+      }
+
+      thead th, tbody td, tfoot td {
+        padding: 8px 10px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .modal {
+        padding: 20px;
+        margin: 10px;
+      }
+
+      .btn-group {
+        flex-direction: column;
+      }
+
+      .btn-group .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .report-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-bar {
+        flex-direction: column;
+      }
+
+      .filter-bar input,
+      .filter-bar select {
+        max-width: 100%;
+      }
+
+      .toast-container {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .header h1 {
+        font-size: 1.05rem;
+      }
+
+      .nav-tabs {
+        justify-content: flex-start;
+      }
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      .header, .nav-tabs, .btn, .btn-delete, .filter-bar, .toast-container {
+        display: none !important;
+      }
+
+      .section {
+        display: block !important;
+        page-break-inside: avoid;
+      }
+
+      .card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+      }
+
+      body {
+        background: #fff;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <h1><span class="icon">🖤</span> Fluxo de Caixa — Estúdio de Tatuagem</h1>
+    <p>Gerencie entradas, saídas, serviços e produtos</p>
+  </header>
+
+  <!-- ===== NAVIGATION ===== -->
+  <nav class="nav-tabs" id="navTabs">
+    <button class="nav-tab active" data-section="dashboard">📊 Dashboard</button>
+    <button class="nav-tab" data-section="caixa">💰 Caixa Diário</button>
+    <button class="nav-tab" data-section="servicos">🎨 Serviços</button>
+    <button class="nav-tab" data-section="produtos">📦 Produtos</button>
+    <button class="nav-tab" data-section="relatorios">📈 Relatórios</button>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="container">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="section active" id="sec-dashboard">
+      <div class="summary-grid" id="summaryCards">
+        <div class="summary-card blue">
+          <div class="label">Saldo Atual</div>
+          <div class="value" id="dashSaldo">R$ 0,00</div>
+        </div>
+        <div class="summary-card green">
+          <div class="label">Total Entradas</div>
+          <div class="value" id="dashEntradas">R$ 0,00</div>
+        </div>
+        <div class="summary-card orange">
+          <div class="label">Total Saídas</div>
+          <div class="value" id="dashSaidas">R$ 0,00</div>
+        </div>
+        <div class="summary-card purple">
+          <div class="label">Serviços Realizados</div>
+          <div class="value" id="dashServicos">0</div>
+        </div>
+      </div>
+
+      <div class="report-grid">
+        <div class="report-card">
+          <h3>🎨 Serviços Recentes</h3>
+          <div id="recentServices">
+            <div class="empty-state">
+              <div class="emoji">🎨</div>
+              <p>Nenhum serviço registrado ainda.</p>
+            </div>
+          </div>
+        </div>
+        <div class="report-card">
+          <h3>📦 Estoque Baixo</h3>
+          <div id="lowStock">
+            <div class="empty-state">
+              <div class="emoji">📦</div>
+              <p>Nenhum produto com estoque baixo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CAIXA DIÁRIO ===== -->
+    <div class="section" id="sec-caixa">
+      <div class="card">
+        <div class="card-header">
+          <h2>💰 Caixa Diário</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalCaixa')">➕ Novo Lançamento</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table id="tableCaixa">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Saldo Inicial</th>
+                  <th>Entradas</th>
+                  <th>Saídas</th>
+                  <th>Saldo Final</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyCaixa">
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="1"><strong>TOTAIS</strong></td>
+                  <td id="tfootCaixaInicial">R$ 0,00</td>
+                  <td id="tfootCaixaEntradas" class="total-positive">R$ 0,00</td>
+                  <td id="tfootCaixaSaidas" class="total-negative">R$ 0,00</td>
+                  <td id="tfootCaixaFinal"><strong>R$ 0,00</strong></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="empty-state" id="emptyCaixa">
+            <div class="emoji">💰</div>
+            <p>Nenhum lançamento no caixa. Clique em "Novo Lançamento" para começar.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SERVIÇOS ===== -->
+    <div class="section" id="sec-servicos">
+      <div class="card">
+        <div class="card-header">
+          <h2>🎨 Serviços</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalServico')">➕ Novo Serviço</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <label>Filtrar por tatuador:</label>
+            <select id="filterTatuador" onchange="renderServicos()">
+              <option value="">Todos</option>
+            </select>
+            <label>Forma de pagamento:</label>
+            <select id="filterPagamento" onchange="renderServicos()">
+              <option value="">Todas</option>
+              <option value="PIX">PIX</option>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="Cartão">Cartão</option>
+              <option value="Boleto">Boleto</option>
+            </select>
+          </div>
+          <div class="table-wrapper">
+            <table id="tableServicos">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Cliente</th>
+                  <th>Tatuador</th>
+                  <th>Tipo de Serviço</th>
+                  <th>Valor</th>
+                  <th>Pagamento</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyServicos">
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3"><strong>TOTAIS</strong></td>
+                  <td id="tfootTotalServicos"></td>
+                  <td id="tfootValorServicos" class="total-positive"><strong>R$ 0,00</strong></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="empty-state" id="emptyServicos">
+            <div class="emoji">🎨</div>
+            <p>Nenhum serviço registrado. Clique em "Novo Serviço" para começar.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PRODUTOS ===== -->
+    <div class="section" id="sec-produtos">
+      <div class="card">
+        <div class="card-header">
+          <h2>📦 Produtos</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalProduto')">➕ Novo Produto</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table id="tableProdutos">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Estoque Inicial</th>
+                  <th>Entrada</th>
+                  <th>Saída</th>
+                  <th>Estoque Atual</th>
+                  <th>Valor Unitário</th>
+                  <th>Valor Total</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyProdutos">
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="4"><strong>TOTAIS</strong></td>
+                  <td id="tfootEstoqueProdutos"></td>
+                  <td></td>
+                  <td id="tfootValorProdutos" class="total-positive"><strong>R$ 0,00</strong></td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="empty-state" id="emptyProdutos">
+            <div class="emoji">📦</div>
+            <p>Nenhum produto cadastrado. Clique em "Novo Produto" para começar.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RELATÓRIOS ===== -->
+    <div class="section" id="sec-relatorios">
+      <div class="report-grid" id="reportGrid">
+        <div class="report-card">
+          <h3>👤 Faturamento por Tatuador</h3>
+          <div id="reportTatuadores">
+            <div class="empty-state">
+              <div class="emoji">👤</div>
+              <p>Sem dados de tatuadores.</p>
+            </div>
+          </div>
+        </div>
+        <div class="report-card">
+          <h3>🎨 Faturamento por Tipo de Serviço</h3>
+          <div id="reportTipos">
+            <div class="empty-state">
+              <div class="emoji">🎨</div>
+              <p>Sem dados de serviços.</p>
+            </div>
+          </div>
+        </div>
+        <div class="report-card">
+          <h3>📦 Vendas de Produtos</h3>
+          <div id="reportProdutos">
+            <div class="empty-state">
+              <div class="emoji">📦</div>
+              <p>Sem dados de produtos.</p>
+            </div>
+          </div>
+        </div>
+        <div class="report-card">
+          <h3>💎 Lucro Líquido</h3>
+          <div id="reportLucro">
+            <div class="empty-state">
+              <div class="emoji">💎</div>
+              <p>Sem dados para cálculo.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===== MODAL CAIXA ===== -->
+  <div class="modal-overlay" id="modalCaixa">
+    <div class="modal">
+      <h3>💰 Novo Lançamento — Caixa</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="caixaData">
+        </div>
+        <div class="form-group">
+          <label>Saldo Inicial (R$)</label>
+          <input type="number" id="caixaSaldoInicial" step="0.01" value="0" placeholder="0,00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Entradas (R$)</label>
+          <input type="number" id="caixaEntradas" step="0.01" value="0" placeholder="0,00">
+        </div>
+        <div class="form-group">
+          <label>Saídas (R$)</label>
+          <input type="number" id="caixaSaidas" step="0.01" value="0" placeholder="0,00">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modalCaixa')">Cancelar</button>
+        <button class="btn btn-primary" onclick="addCaixa()">Salvar Lançamento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL SERVIÇO ===== -->
+  <div class="modal-overlay" id="modalServico">
+    <div class="modal">
+      <h3>🎨 Novo Serviço</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="servicoData">
+        </div>
+        <div class="form-group">
+          <label>Cliente</label>
+          <input type="text" id="servicoCliente" placeholder="Nome do cliente">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tatuador</label>
+          <select id="servicoTatuador">
+            <option value="">Selecione...</option>
+            <option value="Fernando Dark">Fernando Dark</option>
+            <option value="Thalia">Thalia</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tipo de Serviço</label>
+          <select id="servicoTipo">
+            <option value="">Selecione...</option>
+            <option value="Tatuagem P&B">Tatuagem P&B</option>
+            <option value="Tatuagem Colorida">Tatuagem Colorida</option>
+            <option value="Cover-up">Cover-up</option>
+            <option value="Piercing">Piercing</option>
+            <option value="Retoque">Retoque</option>
+            <option value="Consultoria">Consultoria</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Valor (R$)</label>
+          <input type="number" id="servicoValor" step="0.01" placeholder="0,00">
+        </div>
+        <div class="form-group">
+          <label>Forma de Pagamento</label>
+          <select id="servicoPagamento">
+            <option value="">Selecione...</option>
+            <option value="PIX">PIX</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Cartão">Cartão</option>
+            <option value="Boleto">Boleto</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modalServico')">Cancelar</button>
+        <button class="btn btn-primary" onclick="addServico()">Salvar Serviço</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL PRODUTO ===== -->
+  <div class="modal-overlay" id="modalProduto">
+    <div class="modal">
+      <h3>📦 Novo Produto</h3>
+      <div class="form-group">
+        <label>Nome do Produto</label>
+        <input type="text" id="produtoNome" placeholder="Ex: Tinta Preta 30ml">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Estoque Inicial</label>
+          <input type="number" id="produtoEstoqueInicial" value="0" min="0" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Entrada (qtd)</label>
+          <input type="number" id="produtoEntrada" value="0" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Saída (qtd)</label>
+          <input type="number" id="produtoSaida" value="0" min="0" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Valor Unitário (R$)</label>
+          <input type="number" id="produtoValorUnit" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modalProduto')">Cancelar</button>
+        <button class="btn btn-primary" onclick="addProduto()">Salvar Produto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST CONTAINER ===== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ===== JAVASCRIPT ===== -->
+  <script>
+    // ===== DATA STORE =====
+    let dados = {
+      caixa: [],
+      servicos: [],
+      produtos: []
+    };
+
+    // Load from localStorage
+    function loadData() {
+      const saved = localStorage.getItem('studioTatuagemData');
+      if (saved) {
+        dados = JSON.parse(saved);
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('studioTatuagemData', JSON.stringify(dados));
+    }
+
+    // ===== UTILITIES =====
+    function formatCurrency(value) {
+      return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function parseNumber(value) {
+      const num = parseFloat(value);
+      return isNaN(num) ? 0 : num;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      const parts = dateStr.split('-');
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `${type === 'success' ? '✅' : '⚠️'} ${message}`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function getBadgeClass(pagamento) {
+      const map = {
+        'PIX': 'badge-pix',
+        'Dinheiro': 'badge-dinheiro',
+        'Cartão': 'badge-cartao',
+        'Boleto': 'badge-boleto'
+      };
+      return map[pagamento] || '';
+    }
+
+    // ===== MODAL =====
+    function openModal(id) {
+      document.getElementById(id).classList.add('show');
+      // Set default date to today
+      const today = new Date().toISOString().split('T')[0];
+      const dateInputs = document.getElementById(id).querySelectorAll('input[type="date"]');
+      dateInputs.forEach(input => {
+        if (!input.value) input.value = today;
+      });
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('show');
+    }
+
+    // Close modal on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('show');
+        }
+      });
+    });
+
+    // ===== NAVIGATION =====
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        const sectionId = `sec-${tab.dataset.section}`;
+        document.getElementById(sectionId).classList.add('active');
+
+        if (tab.dataset.section === 'dashboard') updateDashboard();
+        if (tab.dataset.section === 'relatorios') updateRelatorios();
+      });
+    });
+
+    // ===== CAIXA DIÁRIO =====
+    function addCaixa() {
+      const data = document.getElementById('caixaData').value;
+      const saldoInicial = parseNumber(document.getElementById('caixaSaldoInicial').value);
+      const entradas = parseNumber(document.getElementById('caixaEntradas').value);
+      const saidas = parseNumber(document.getElementById('caixaSaidas').value);
+      const saldoFinal = saldoInicial + entradas - saidas;
+
+      if (!data) {
+        showToast('Preencha a data.', 'error');
+        return;
+      }
+
+      dados.caixa.push({
+        id: Date.now(),
+        data,
+        saldoInicial,
+        entradas,
+        saidas,
+        saldoFinal
+      });
+
+      saveData();
+      renderCaixa();
+      closeModal('modalCaixa');
+      showToast('Lançamento adicionado ao caixa!');
+
+      // Reset form
+      document.getElementById('caixaSaldoInicial').value = 0;
+      document.getElementById('caixaEntradas').value = 0;
+      document.getElementById('caixaSaidas').value = 0;
+    }
+
+    function deleteCaixa(id) {
+      dados.caixa = dados.caixa.filter(item => item.id !== id);
+      saveData();
+      renderCaixa();
+      showToast('Lançamento removido.');
+    }
+
+    function renderCaixa() {
+      const tbody = document.getElementById('tbodyCaixa');
+      const empty = document.getElementById('emptyCaixa');
+      const table = document.getElementById('tableCaixa');
+
+      if (dados.caixa.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        table.style.display = 'none';
+        updateTotaisCaixa();
+        return;
+      }
+
+      empty.style.display = 'none';
+      table.style.display = 'table';
+
+      // Sort by date
+      dados.caixa.sort((a, b) => a.data.localeCompare(b.data));
+
+      tbody.innerHTML = dados.caixa.map(item => `
+        <tr>
+          <td>${formatDate(item.data)}</td>
+          <td>${formatCurrency(item.saldoInicial)}</td>
+          <td class="total-positive">${formatCurrency(item.entradas)}</td>
+          <td class="total-negative">${formatCurrency(item.saidas)}</td>
+          <td><strong>${formatCurrency(item.saldoFinal)}</strong></td>
+          <td>
+            <button class="btn-delete" onclick="deleteCaixa(${item.id})" title="Remover">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+
+      updateTotaisCaixa();
+    }
+
+    function updateTotaisCaixa() {
+      const totalInicial = dados.caixa.reduce((sum, item) => sum + item.saldoInicial, 0);
+      const totalEntradas = dados.caixa.reduce((sum, item) => sum + item.entradas, 0);
+      const totalSaidas = dados.caixa.reduce((sum, item) => sum + item.saidas, 0);
+      const totalFinal = dados.caixa.reduce((sum, item) => sum + item.saldoFinal, 0);
+
+      document.getElementById('tfootCaixaInicial').textContent = formatCurrency(totalInicial);
+      document.getElementById('tfootCaixaEntradas').textContent = formatCurrency(totalEntradas);
+      document.getElementById('tfootCaixaSaidas').textContent = formatCurrency(totalSaidas);
+      document.getElementById('tfootCaixaFinal').innerHTML = `<strong>${formatCurrency(totalFinal)}</strong>`;
+    }
+
+    // ===== SERVIÇOS =====
+    function addServico() {
+      const data = document.getElementById('servicoData').value;
+      const cliente = document.getElementById('servicoCliente').value.trim();
+      const tatuador = document.getElementById('servicoTatuador').value;
+      const tipo = document.getElementById('servicoTipo').value;
+      const valor = parseNumber(document.getElementById('servicoValor').value);
+      const pagamento = document.getElementById('servicoPagamento').value;
+
+      if (!data || !cliente || !tatuador || !tipo || !valor || !pagamento) {
+        showToast('Preencha todos os campos.', 'error');
+        return;
+      }
+
+      dados.servicos.push({
+        id: Date.now(),
+        data,
+        cliente,
+        tatuador,
+        tipo,
+        valor,
+        pagamento
+      });
+
+      saveData();
+      renderServicos();
+      closeModal('modalServico');
+      showToast(`Serviço de ${cliente} registrado!`);
+
+      // Reset form
+      document.getElementById('servicoCliente').value = '';
+      document.getElementById('servicoTatuador').value = '';
+      document.getElementById('servicoTipo').value = '';
+      document.getElementById('servicoValor').value = '';
+      document.getElementById('servicoPagamento').value = '';
+
+      // Update filter options
+      updateFilterTatuadores();
+    }
+
+    function deleteServico(id) {
+      dados.servicos = dados.servicos.filter(item => item.id !== id);
+      saveData();
+      renderServicos();
+      updateFilterTatuadores();
+      showToast('Serviço removido.');
+    }
+
+    function renderServicos() {
+      const tbody = document.getElementById('tbodyServicos');
+      const empty = document.getElementById('emptyServicos');
+      const table = document.getElementById('tableServicos');
+
+      let filtered = [...dados.servicos];
+
+      // Apply filters
+      const filterTat = document.getElementById('filterTatuador').value;
+      const filterPag = document.getElementById('filterPagamento').value;
+
+      if (filterTat) filtered = filtered.filter(s => s.tatuador === filterTat);
+      if (filterPag) filtered = filtered.filter(s => s.pagamento === filterPag);
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        table.style.display = dados.servicos.length > 0 ? 'table' : 'none';
+        updateTotaisServicos(filtered);
+        return;
+      }
+
+      empty.style.display = 'none';
+      if (dados.servicos.length === 0) table.style.display = 'none';
+      else table.style.display = 'table';
+
+      // Sort by date
+      filtered.sort((a, b) => a.data.localeCompare(b.data));
+
+      tbody.innerHTML = filtered.map(item => `
+        <tr>
+          <td>${formatDate(item.data)}</td>
+          <td>${item.cliente}</td>
+          <td>${item.tatuador}</td>
+          <td>${item.tipo}</td>
+          <td class="total-positive">${formatCurrency(item.valor)}</td>
+          <td><span class="badge ${getBadgeClass(item.pagamento)}">${item.pagamento}</span></td>
+          <td>
+            <button class="btn-delete" onclick="deleteServico(${item.id})" title="Remover">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+
+      updateTotaisServicos(filtered);
+    }
+
+    function updateTotaisServicos(filtered) {
+      const total = filtered.reduce((sum, item) => sum + item.valor, 0);
+      const tipos = [...new Set(filtered.map(s => s.tipo))];
+      document.getElementById('tfootValorServicos').innerHTML = `<strong>${formatCurrency(total)}</strong>`;
+      document.getElementById('tfootTotalServicos').textContent = `${filtered.length} serviço(s) · ${tipos.length} tipo(s)`;
+    }
+
+    function updateFilterTatuadores() {
+      const select = document.getElementById('filterTatuador');
+      const current = select.value;
+      const tatuadores = [...new Set(dados.servicos.map(s => s.tatuador))].sort();
+
+      select.innerHTML = '<option value="">Todos</option>';
+      tatuadores.forEach(t => {
+        select.innerHTML += `<option value="${t}" ${t === current ? 'selected' : ''}>${t}</option>`;
+      });
+    }
+
+    // ===== PRODUTOS =====
+    function addProduto() {
+      const nome = document.getElementById('produtoNome').value.trim();
+      const estoqueInicial = parseNumber(document.getElementById('produtoEstoqueInicial').value);
+      const entrada = parseNumber(document.getElementById('produtoEntrada').value);
+      const saida = parseNumber(document.getElementById('produtoSaida').value);
+      const valorUnit = parseNumber(document.getElementById('produtoValorUnit').value);
+
+      if (!nome) {
+        showToast('Informe o nome do produto.', 'error');
+        return;
+      }
+
+      const estoqueAtual = estoqueInicial + entrada - saida;
+      const valorTotal = estoqueAtual * valorUnit;
+
+      dados.produtos.push({
+        id: Date.now(),
+        nome,
+        estoqueInicial,
+        entrada,
+        saida,
+        estoqueAtual,
+        valorUnit,
+        valorTotal
+      });
+
+      saveData();
+      renderProdutos();
+      closeModal('modalProduto');
+      showToast(`Produto "${nome}" cadastrado!`);
+
+      // Reset
+      document.getElementById('produtoNome').value = '';
+      document.getElementById('produtoEstoqueInicial').value = 0;
+      document.getElementById('produtoEntrada').value = 0;
+      document.getElementById('produtoSaida').value = 0;
+      document.getElementById('produtoValorUnit').value = '';
+    }
+
+    function deleteProduto(id) {
+      dados.produtos = dados.produtos.filter(item => item.id !== id);
+      saveData();
+      renderProdutos();
+      showToast('Produto removido.');
+    }
+
+    function renderProdutos() {
+      const tbody = document.getElementById('tbodyProdutos');
+      const empty = document.getElementById('emptyProdutos');
+      const table = document.getElementById('tableProdutos');
+
+      if (dados.produtos.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        table.style.display = 'none';
+        updateTotaisProdutos();
+        return;
+      }
+
+      empty.style.display = 'none';
+      table.style.display = 'table';
+
+      tbody.innerHTML = dados.produtos.map(item => `
+        <tr>
+          <td><strong>${item.nome}</strong></td>
+          <td>${item.estoqueInicial}</td>
+          <td style="color: var(--accent-green);">+${item.entrada}</td>
+          <td style="color: var(--accent-orange);">-${item.saida}</td>
+          <td><strong>${item.estoqueAtual}</strong>${item.estoqueAtual <= 5 ? ' ⚠️' : ''}</td>
+          <td>${formatCurrency(item.valorUnit)}</td>
+          <td class="total-positive">${formatCurrency(item.valorTotal)}</td>
+          <td>
+            <button class="btn-delete" onclick="deleteProduto(${item.id})" title="Remover">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+
+      updateTotaisProdutos();
+    }
+
+    function updateTotaisProdutos() {
+      const totalEstoque = dados.produtos.reduce((sum, p) => sum + p.estoqueAtual, 0);
+      const totalValor = dados.produtos.reduce((sum, p) => sum + p.valorTotal, 0);
+
+      document.getElementById('tfootEstoqueProdutos').textContent = totalEstoque;
+      document.getElementById('tfootValorProdutos').innerHTML = `<strong>${formatCurrency(totalValor)}</strong>`;
+    }
+
+    // ===== DASHBOARD =====
+    function updateDashboard() {
+      // Summary cards
+      const totalEntradas = dados.caixa.reduce((sum, c) => sum + c.entradas, 0);
+      const totalSaidas = dados.caixa.reduce((sum, c) => sum + c.saidas, 0);
+      const lastSaldo = dados.caixa.length > 0
+        ? dados.caixa[dados.caixa.length - 1].saldoFinal
+        : 0;
+
+      document.getElementById('dashSaldo').textContent = formatCurrency(lastSaldo);
+      document.getElementById('dashEntradas').textContent = formatCurrency(totalEntradas);
+      document.getElementById('dashSaidas').textContent = formatCurrency(totalSaidas);
+      document.getElementById('dashServicos').textContent = dados.servicos.length;
+
+      // Recent services
+      const recentDiv = document.getElementById('recentServices');
+      if (dados.servicos.length === 0) {
+        recentDiv.innerHTML = `
+          <div class="empty-state">
+            <div class="emoji">🎨</div>
+            <p>Nenhum serviço registrado ainda.</p>
+          </div>`;
+      } else {
+        const recent = [...dados.servicos].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 5);
+        recentDiv.innerHTML = recent.map(s => `
+          <div class="report-item">
+            <div>
+              <div class="name">${s.cliente}</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary)">${s.tatuador} · ${s.tipo} · ${formatDate(s.data)}</div>
+            </div>
+            <div class="amount total-positive">${formatCurrency(s.valor)}</div>
+          </div>
+        `).join('');
+      }
+
+      // Low stock
+      const lowStockDiv = document.getElementById('lowStock');
+      const lowStock = dados.produtos.filter(p => p.estoqueAtual <= 5);
+      if (lowStock.length === 0) {
+        lowStockDiv.innerHTML = `
+          <div class="empty-state">
+            <div class="emoji">📦</div>
+            <p>Nenhum produto com estoque baixo.</p>
+          </div>`;
+      } else {
+        lowStockDiv.innerHTML = lowStock.map(p => `
+          <div class="report-item">
+            <div>
+              <div class="name">${p.nome}</div>
+              <div style="font-size:0.75rem;color:var(--accent-orange)">Estoque: ${p.estoqueAtual} unidades</div>
+            </div>
+            <span class="badge" style="background:#ffeaa7;color:#d63031;">Baixo</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // ===== RELATÓRIOS =====
+    function updateRelatorios() {
+      // Faturamento por Tatuador
+      const tatDiv = document.getElementById('reportTatuadores');
+      if (dados.servicos.length === 0) {
+        tatDiv.innerHTML = `<div class="empty-state"><div class="emoji">👤</div><p>Sem dados de tatuadores.</p></div>`;
+      } else {
+        const tatMap = {};
+        dados.servicos.forEach(s => {
+          if (!tatMap[s.tatuador]) tatMap[s.tatuador] = { count: 0, total: 0 };
+          tatMap[s.tatuador].count++;
+          tatMap[s.tatuador].total += s.valor;
+        });
+
+        const maxTat = Math.max(...Object.values(tatMap).map(t => t.total));
+        tatDiv.innerHTML = Object.entries(tatMap)
+          .sort((a, b) => b[1].total - a[1].total)
+          .map(([name, data]) => {
+            const pct = maxTat > 0 ? (data.total / maxTat * 100) : 0;
+            return `
+              <div class="report-item">
+                <div>
+                  <div class="name">${name}</div>
+                  <div style="font-size:0.75rem;color:var(--text-secondary)">${data.count} serviço(s)</div>
+                  <div class="profit-bar-container">
+                    <div class="profit-bar">
+                      <div class="profit-bar-fill" style="width:${pct}%;background:var(--accent-blue)"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="amount total-positive">${formatCurrency(data.total)}</div>
+              </div>`;
+          }).join('');
+      }
+
+      // Faturamento por Tipo de Serviço
+      const tiposDiv = document.getElementById('reportTipos');
+      if (dados.servicos.length === 0) {
+        tiposDiv.innerHTML = `<div class="empty-state"><div class="emoji">🎨</div><p>Sem dados de serviços.</p></div>`;
+      } else {
+        const tipoMap = {};
+        dados.servicos.forEach(s => {
+          if (!tipoMap[s.tipo]) tipoMap[s.tipo] = { count: 0, total: 0 };
+          tipoMap[s.tipo].count++;
+          tipoMap[s.tipo].total += s.valor;
+        });
+
+        const maxTipo = Math.max(...Object.values(tipoMap).map(t => t.total));
+        tiposDiv.innerHTML = Object.entries(tipoMap)
+          .sort((a, b) => b[1].total - a[1].total)
+          .map(([name, data]) => {
+            const pct = maxTipo > 0 ? (data.total / maxTipo * 100) : 0;
+            return `
+              <div class="report-item">
+                <div>
+                  <div class="name">${name}</div>
+                  <div style="font-size:0.75rem;color:var(--text-secondary)">${data.count} serviço(s)</div>
+                  <div class="profit-bar-container">
+                    <div class="profit-bar">
+                      <div class="profit-bar-fill" style="width:${pct}%;background:var(--accent-purple)"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="amount total-positive">${formatCurrency(data.total)}</div>
+              </div>`;
+          }).join('');
+      }
+
+      // Vendas de Produtos
+      const prodDiv = document.getElementById('reportProdutos');
+      if (dados.produtos.length === 0) {
+        prodDiv.innerHTML = `<div class="empty-state"><div class="emoji">📦</div><p>Sem dados de produtos.</p></div>`;
+      } else {
+        prodDiv.innerHTML = dados.produtos.map(p => `
+          <div class="report-item">
+            <div>
+              <div class="name">${p.nome}</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary)">Estoque: ${p.estoqueAtual} · Entrada: ${p.entrada} · Saída: ${p.saida}</div>
+            </div>
+            <div class="amount">${formatCurrency(p.valorTotal)}</div>
+          </div>
+        `).join('');
+      }
+
+      // Lucro Líquido
+      const lucroDiv = document.getElementById('reportLucro');
+      const totalEntradas = dados.caixa.reduce((sum, c) => sum + c.entradas, 0);
+      const totalSaidas = dados.caixa.reduce((sum, c) => sum + c.saidas, 0);
+      const receitaServicos = dados.servicos.reduce((sum, s) => sum + s.valor, 0);
+      const receitaProdutos = dados.produtos.reduce((sum, p) => sum + p.valorTotal, 0);
+      const custoProdutos = dados.produtos.reduce((sum, p) => sum + (p.saida * p.valorUnit), 0);
+      const lucro = (totalEntradas + receitaServicos) - totalSaidas - custoProdutos;
+
+      const lucroPct = receitaServicos > 0 ? ((lucro / receitaServicos) * 100).toFixed(1) : 0;
+
+      lucroDiv.innerHTML = `
+        <div class="report-item">
+          <div class="name">Receita de Serviços</div>
+          <div class="amount total-positive">${formatCurrency(receitaServicos)}</div>
+        </div>
+        <div class="report-item">
+          <div class="name">Receita de Produtos</div>
+          <div class="amount total-positive">${formatCurrency(receitaProdutos)}</div>
+        </div>
+        <div class="report-item">
+          <div class="name">Saídas / Custos</div>
+          <div class="amount total-negative">- ${formatCurrency(totalSaidas + custoProdutos)}</div>
+        </div>
+        <div class="report-item" style="border-top: 2px solid var(--border); padding-top: 14px; margin-top: 6px;">
+          <div class="name" style="font-size:1rem;">💎 Lucro Líquido</div>
+          <div class="amount" style="font-size:1.1rem; color: ${lucro >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'}">
+            ${formatCurrency(lucro)}
+          </div>
+        </div>
+        <div class="profit-bar-container" style="margin-top:16px;">
+          <div class="profit-bar-label">
+            <span>Margem de Lucro</span>
+            <span style="font-weight:700;">${lucroPct}%</span>
+          </div>
+          <div class="profit-bar">
+            <div class="profit-bar-fill" style="width:${Math.min(Math.abs(lucroPct), 100)}%;background:${lucro >= 0 ? 'var(--accent-green)' : 'var(--accent-orange)'}"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ===== INIT =====
+    function init() {
+      loadData();
+      renderCaixa();
+      renderServicos();
+      renderProdutos();
+      updateFilterTatuadores();
+      updateDashboard();
+    }
+
+    init();
+  </script>
+</body>
+</html>
