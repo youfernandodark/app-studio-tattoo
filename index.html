@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fluxo de Caixa - Estúdio de Tatuagem</title>
+  <title>Fluxo de Caixa + Agenda - Estúdio de Tatuagem</title>
   <style>
     /* ===== RESET & BASE ===== */
     *, *::before, *::after {
@@ -153,6 +153,8 @@
       padding: 16px 20px;
       background: linear-gradient(135deg, #fafafa, #fff);
       border-bottom: 1px solid var(--border-light);
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .card-header h2 {
@@ -271,7 +273,9 @@
     input[type="text"],
     input[type="number"],
     input[type="date"],
-    select {
+    input[type="time"],
+    select,
+    textarea {
       width: 100%;
       padding: 8px 10px;
       border: 1.5px solid var(--border);
@@ -284,7 +288,8 @@
     }
 
     input:focus,
-    select:focus {
+    select:focus,
+    textarea:focus {
       outline: none;
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.12);
@@ -386,7 +391,7 @@
       margin-top: 14px;
     }
 
-    /* ===== TABLE FOOTER (TOTALS ROW) ===== */
+    /* ===== TABLE FOOTER ===== */
     tfoot td {
       padding: 12px 14px;
       font-weight: 700;
@@ -413,6 +418,11 @@
     .badge-dinheiro { background: #fff3cd; color: #856404; }
     .badge-cartao { background: #cce5ff; color: #004085; }
     .badge-boleto { background: #e2d5f1; color: #4a235a; }
+    
+    .badge-agendado { background: #cce5ff; color: #004085; }
+    .badge-confirmado { background: #d4edda; color: #155724; }
+    .badge-concluido { background: #d1f2eb; color: #0e6655; }
+    .badge-cancelado { background: #fadbd8; color: #922b21; }
 
     /* ===== EMPTY STATE ===== */
     .empty-state {
@@ -504,6 +514,91 @@
       transition: width 0.6s ease;
     }
 
+    /* ===== CALENDAR ===== */
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .calendar-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .calendar-nav button {
+      padding: 8px 12px;
+    }
+    
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .calendar-day-header {
+      text-align: center;
+      font-weight: 700;
+      padding: 10px;
+      background: var(--bg-primary);
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+    
+    .calendar-day {
+      min-height: 100px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    
+    .calendar-day:hover {
+      box-shadow: var(--shadow-md);
+      transform: scale(1.02);
+      z-index: 1;
+    }
+    
+    .calendar-day.empty {
+      background: var(--bg-primary);
+      opacity: 0.5;
+    }
+    
+    .calendar-day-number {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+      color: var(--text-primary);
+    }
+    
+    .calendar-event {
+      font-size: 0.7rem;
+      padding: 2px 4px;
+      margin-bottom: 2px;
+      border-radius: 3px;
+      background: var(--accent);
+      color: white;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+    
+    .calendar-event.Fernando { background: #6c5ce7; }
+    .calendar-event.Thalia { background: #00b894; }
+    
+    .agenda-list {
+      margin-top: 20px;
+    }
+    
     /* ===== MODAL ===== */
     .modal-overlay {
       display: none;
@@ -527,6 +622,8 @@
       padding: 28px;
       max-width: 500px;
       width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
       box-shadow: var(--shadow-lg);
       animation: modalIn 0.3s ease;
     }
@@ -586,6 +683,23 @@
 
     .btn-delete:hover {
       background: rgba(225, 112, 85, 0.1);
+      transform: scale(1.15);
+    }
+    
+    .btn-edit {
+      background: none;
+      border: none;
+      color: var(--accent-blue);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+      border-radius: 4px;
+      transition: var(--transition);
+      line-height: 1;
+    }
+    
+    .btn-edit:hover {
+      background: rgba(9, 132, 227, 0.1);
       transform: scale(1.15);
     }
 
@@ -728,6 +842,19 @@
         right: 16px;
         bottom: 16px;
       }
+      
+      .calendar-grid {
+        gap: 4px;
+      }
+      
+      .calendar-day {
+        min-height: 70px;
+        padding: 4px;
+      }
+      
+      .calendar-event {
+        font-size: 0.6rem;
+      }
     }
 
     @media (max-width: 480px) {
@@ -746,7 +873,7 @@
 
     /* ===== PRINT ===== */
     @media print {
-      .header, .nav-tabs, .btn, .btn-delete, .filter-bar, .toast-container {
+      .header, .nav-tabs, .btn, .btn-delete, .btn-edit, .filter-bar, .toast-container {
         display: none !important;
       }
 
@@ -771,7 +898,7 @@
   <!-- ===== HEADER ===== -->
   <header class="header">
     <h1><span class="icon">🖤</span> Fluxo de Caixa — Estúdio de Tatuagem</h1>
-    <p>Gerencie entradas, saídas, serviços e produtos</p>
+    <p>Gerencie entradas, saídas, serviços, produtos e agendamentos</p>
   </header>
 
   <!-- ===== NAVIGATION ===== -->
@@ -780,6 +907,7 @@
     <button class="nav-tab" data-section="caixa">💰 Caixa Diário</button>
     <button class="nav-tab" data-section="servicos">🎨 Serviços</button>
     <button class="nav-tab" data-section="produtos">📦 Produtos</button>
+    <button class="nav-tab" data-section="agenda">📅 Agenda</button>
     <button class="nav-tab" data-section="relatorios">📈 Relatórios</button>
   </nav>
 
@@ -823,6 +951,15 @@
             <div class="empty-state">
               <div class="emoji">📦</div>
               <p>Nenhum produto com estoque baixo.</p>
+            </div>
+          </div>
+        </div>
+        <div class="report-card">
+          <h3>📅 Próximos Agendamentos</h3>
+          <div id="upcomingAppointments">
+            <div class="empty-state">
+              <div class="emoji">📅</div>
+              <p>Nenhum agendamento futuro.</p>
             </div>
           </div>
         </div>
@@ -970,6 +1107,50 @@
       </div>
     </div>
 
+    <!-- ===== AGENDA ===== -->
+    <div class="section" id="sec-agenda">
+      <div class="card">
+        <div class="card-header">
+          <h2>📅 Agenda de Agendamentos</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalAgenda')">➕ Novo Agendamento</button>
+        </div>
+        <div class="card-body">
+          <div class="filter-bar">
+            <label>Filtrar por tatuador:</label>
+            <select id="filterAgendaTatuador" onchange="renderCalendar()">
+              <option value="">Todos</option>
+              <option value="Fernando Dark">Fernando Dark</option>
+              <option value="Thalia">Thalia</option>
+            </select>
+            <label>Status:</label>
+            <select id="filterAgendaStatus" onchange="renderCalendar()">
+              <option value="">Todos</option>
+              <option value="Agendado">Agendado</option>
+              <option value="Confirmado">Confirmado</option>
+              <option value="Concluído">Concluído</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+          </div>
+          
+          <div class="calendar-header">
+            <div class="calendar-nav">
+              <button class="btn btn-outline btn-sm" onclick="changeMonth(-1)">◀ Mês anterior</button>
+              <button class="btn btn-outline btn-sm" onclick="goToToday()">Hoje</button>
+              <button class="btn btn-outline btn-sm" onclick="changeMonth(1)">Próximo mês ▶</button>
+            </div>
+            <h3 id="currentMonthYear"></h3>
+          </div>
+          
+          <div class="calendar-grid" id="calendarGrid"></div>
+          
+          <div class="agenda-list">
+            <h4 style="margin-bottom: 10px;">📋 Agendamentos do dia</h4>
+            <div id="dayAppointments"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== RELATÓRIOS ===== -->
     <div class="section" id="sec-relatorios">
       <div class="report-grid" id="reportGrid">
@@ -1072,12 +1253,8 @@
           <label>Tipo de Serviço</label>
           <select id="servicoTipo">
             <option value="">Selecione...</option>
-            <option value="Tatuagem P&B">Tatuagem P&B</option>
-            <option value="Tatuagem Colorida">Tatuagem Colorida</option>
-            <option value="Cover-up">Cover-up</option>
-            <option value="Piercing">Piercing</option>
-            <option value="Retoque">Retoque</option>
-            <option value="Consultoria">Consultoria</option>
+            <option value="Tatuagem ">Tatuagem</option>  
+            <option value="Piercing">Piercing</option>  
           </select>
         </div>
       </div>
@@ -1093,7 +1270,6 @@
             <option value="PIX">PIX</option>
             <option value="Dinheiro">Dinheiro</option>
             <option value="Cartão">Cartão</option>
-            <option value="Boleto">Boleto</option>
           </select>
         </div>
       </div>
@@ -1139,6 +1315,164 @@
     </div>
   </div>
 
+  <!-- ===== MODAL MOVIMENTAR PRODUTO ===== -->
+  <div class="modal-overlay" id="modalMovimentarProduto">
+    <div class="modal">
+      <h3>📦 Movimentar Estoque</h3>
+      <div class="form-group">
+        <label>Produto</label>
+        <input type="text" id="movProdutoNome" readonly style="background: #f5f5f5;">
+      </div>
+      <div class="form-group">
+        <label>Tipo de Movimentação</label>
+        <select id="movTipo">
+          <option value="entrada">➕ Entrada (Adicionar)</option>
+          <option value="saida">➖ Saída (Remover)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantidade</label>
+        <input type="number" id="movQuantidade" min="1" value="1" step="1">
+      </div>
+      <div class="form-group">
+        <label>Observação (opcional)</label>
+        <textarea id="movObservacao" rows="2" placeholder="Ex: Compra de fornecedor, Venda para cliente..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modalMovimentarProduto')">Cancelar</button>
+        <button class="btn btn-primary" onclick="movimentarEstoque()">Confirmar Movimentação</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL AGENDA ===== -->
+  <div class="modal-overlay" id="modalAgenda">
+    <div class="modal">
+      <h3>📅 Novo Agendamento</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="agendaData">
+        </div>
+        <div class="form-group">
+          <label>Horário</label>
+          <input type="time" id="agendaHorario">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Cliente</label>
+        <input type="text" id="agendaCliente" placeholder="Nome do cliente">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tatuador</label>
+          <select id="agendaTatuador">
+            <option value="">Selecione...</option>
+            <option value="Fernando Dark">Fernando Dark</option>
+            <option value="Thalia">Thalia</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tipo de Serviço</label>
+          <select id="agendaTipoServico">
+            <option value="">Selecione...</option>
+            <option value="Tatuagem">Tatuagem</option>
+            <option value="Piercing">Piercing</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Valor (R$)</label>
+          <input type="number" id="agendaValor" step="0.01" placeholder="0,00">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="agendaStatus">
+            <option value="Agendado">Agendado</option>
+            <option value="Confirmado">Confirmado</option>
+            <option value="Concluído">Concluído</option>
+            <option value="Cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Observações</label>
+        <textarea id="agendaObs" rows="2" placeholder="Informações adicionais..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modalAgenda')">Cancelar</button>
+        <button class="btn btn-primary" onclick="addAgendamento()">Salvar Agendamento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL EDITAR AGENDA ===== -->
+  <div class="modal-overlay" id="modalEditarAgenda">
+    <div class="modal">
+      <h3>✏️ Editar Agendamento</h3>
+      <input type="hidden" id="editAgendaId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="editAgendaData">
+        </div>
+        <div class="form-group">
+          <label>Horário</label>
+          <input type="time" id="editAgendaHorario">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Cliente</label>
+        <input type="text" id="editAgendaCliente">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tatuador</label>
+          <select id="editAgendaTatuador">
+            <option value="Fernando Dark">Fernando Dark</option>
+            <option value="Thalia">Thalia</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tipo de Serviço</label>
+          <select id="editAgendaTipoServico">
+            <option value="Tatuagem P&B">Tatuagem P&B</option>
+            <option value="Tatuagem Colorida">Tatuagem Colorida</option>
+            <option value="Cover-up">Cover-up</option>
+            <option value="Piercing">Piercing</option>
+            <option value="Retoque">Retoque</option>
+            <option value="Consultoria">Consultoria</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Valor (R$)</label>
+          <input type="number" id="editAgendaValor" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="editAgendaStatus">
+            <option value="Agendado">Agendado</option>
+            <option value="Confirmado">Confirmado</option>
+            <option value="Concluído">Concluído</option>
+            <option value="Cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Observações</label>
+        <textarea id="editAgendaObs" rows="2"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal('modalEditarAgenda')">Cancelar</button>
+        <button class="btn btn-danger" onclick="deleteAgendamento()">Excluir</button>
+        <button class="btn btn-primary" onclick="updateAgendamento()">Atualizar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== TOAST CONTAINER ===== -->
   <div class="toast-container" id="toastContainer"></div>
 
@@ -1148,8 +1482,13 @@
     let dados = {
       caixa: [],
       servicos: [],
-      produtos: []
+      produtos: [],
+      agenda: []
     };
+    
+    let currentMoveProductId = null;
+    let currentDate = new Date();
+    let currentViewDate = null;
 
     // Load from localStorage
     function loadData() {
@@ -1157,6 +1496,7 @@
       if (saved) {
         dados = JSON.parse(saved);
       }
+      if (!dados.agenda) dados.agenda = [];
     }
 
     function saveData() {
@@ -1178,6 +1518,12 @@
       const parts = dateStr.split('-');
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
+    
+    function formatDateTime(dateStr, timeStr) {
+      if (!dateStr) return '—';
+      const formattedDate = formatDate(dateStr);
+      return timeStr ? `${formattedDate} às ${timeStr}` : formattedDate;
+    }
 
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
@@ -1197,11 +1543,20 @@
       };
       return map[pagamento] || '';
     }
+    
+    function getStatusBadgeClass(status) {
+      const map = {
+        'Agendado': 'badge-agendado',
+        'Confirmado': 'badge-confirmado',
+        'Concluído': 'badge-concluido',
+        'Cancelado': 'badge-cancelado'
+      };
+      return map[status] || 'badge-agendado';
+    }
 
     // ===== MODAL =====
     function openModal(id) {
       document.getElementById(id).classList.add('show');
-      // Set default date to today
       const today = new Date().toISOString().split('T')[0];
       const dateInputs = document.getElementById(id).querySelectorAll('input[type="date"]');
       dateInputs.forEach(input => {
@@ -1233,6 +1588,7 @@
 
         if (tab.dataset.section === 'dashboard') updateDashboard();
         if (tab.dataset.section === 'relatorios') updateRelatorios();
+        if (tab.dataset.section === 'agenda') renderCalendar();
       });
     });
 
@@ -1263,7 +1619,6 @@
       closeModal('modalCaixa');
       showToast('Lançamento adicionado ao caixa!');
 
-      // Reset form
       document.getElementById('caixaSaldoInicial').value = 0;
       document.getElementById('caixaEntradas').value = 0;
       document.getElementById('caixaSaidas').value = 0;
@@ -1292,7 +1647,6 @@
       empty.style.display = 'none';
       table.style.display = 'table';
 
-      // Sort by date
       dados.caixa.sort((a, b) => a.data.localeCompare(b.data));
 
       tbody.innerHTML = dados.caixa.map(item => `
@@ -1304,7 +1658,7 @@
           <td><strong>${formatCurrency(item.saldoFinal)}</strong></td>
           <td>
             <button class="btn-delete" onclick="deleteCaixa(${item.id})" title="Remover">🗑️</button>
-          </td>
+           </td>
         </tr>
       `).join('');
 
@@ -1352,14 +1706,12 @@
       closeModal('modalServico');
       showToast(`Serviço de ${cliente} registrado!`);
 
-      // Reset form
       document.getElementById('servicoCliente').value = '';
       document.getElementById('servicoTatuador').value = '';
       document.getElementById('servicoTipo').value = '';
       document.getElementById('servicoValor').value = '';
       document.getElementById('servicoPagamento').value = '';
 
-      // Update filter options
       updateFilterTatuadores();
     }
 
@@ -1378,7 +1730,6 @@
 
       let filtered = [...dados.servicos];
 
-      // Apply filters
       const filterTat = document.getElementById('filterTatuador').value;
       const filterPag = document.getElementById('filterPagamento').value;
 
@@ -1397,7 +1748,6 @@
       if (dados.servicos.length === 0) table.style.display = 'none';
       else table.style.display = 'table';
 
-      // Sort by date
       filtered.sort((a, b) => a.data.localeCompare(b.data));
 
       tbody.innerHTML = filtered.map(item => `
@@ -1459,7 +1809,8 @@
         saida,
         estoqueAtual,
         valorUnit,
-        valorTotal
+        valorTotal,
+        movimentacoes: []
       });
 
       saveData();
@@ -1467,7 +1818,6 @@
       closeModal('modalProduto');
       showToast(`Produto "${nome}" cadastrado!`);
 
-      // Reset
       document.getElementById('produtoNome').value = '';
       document.getElementById('produtoEstoqueInicial').value = 0;
       document.getElementById('produtoEntrada').value = 0;
@@ -1480,6 +1830,62 @@
       saveData();
       renderProdutos();
       showToast('Produto removido.');
+    }
+    
+    function openMovimentarProduto(id) {
+      const produto = dados.produtos.find(p => p.id === id);
+      if (!produto) return;
+      currentMoveProductId = id;
+      document.getElementById('movProdutoNome').value = produto.nome;
+      document.getElementById('movQuantidade').value = 1;
+      document.getElementById('movTipo').value = 'entrada';
+      openModal('modalMovimentarProduto');
+    }
+    
+    function movimentarEstoque() {
+      if (!currentMoveProductId) return;
+      const produto = dados.produtos.find(p => p.id === currentMoveProductId);
+      if (!produto) return;
+      
+      const tipo = document.getElementById('movTipo').value;
+      const quantidade = parseNumber(document.getElementById('movQuantidade').value);
+      const observacao = document.getElementById('movObservacao').value;
+      
+      if (quantidade <= 0) {
+        showToast('Quantidade deve ser maior que zero.', 'error');
+        return;
+      }
+      
+      if (tipo === 'saida' && quantidade > produto.estoqueAtual) {
+        showToast(`Estoque insuficiente! Disponível: ${produto.estoqueAtual}`, 'error');
+        return;
+      }
+      
+      if (tipo === 'entrada') {
+        produto.entrada += quantidade;
+        produto.estoqueAtual += quantidade;
+      } else {
+        produto.saida += quantidade;
+        produto.estoqueAtual -= quantidade;
+      }
+      
+      produto.valorTotal = produto.estoqueAtual * produto.valorUnit;
+      
+      if (!produto.movimentacoes) produto.movimentacoes = [];
+      produto.movimentacoes.push({
+        data: new Date().toISOString().split('T')[0],
+        tipo: tipo,
+        quantidade: quantidade,
+        observacao: observacao,
+        estoqueAnterior: tipo === 'entrada' ? produto.estoqueAtual - quantidade : produto.estoqueAtual + quantidade,
+        estoqueNovo: produto.estoqueAtual
+      });
+      
+      saveData();
+      renderProdutos();
+      closeModal('modalMovimentarProduto');
+      document.getElementById('movObservacao').value = '';
+      showToast(`${tipo === 'entrada' ? 'Entrada' : 'Saída'} de ${quantidade} unidade(s) registrada!`);
     }
 
     function renderProdutos() {
@@ -1508,6 +1914,7 @@
           <td>${formatCurrency(item.valorUnit)}</td>
           <td class="total-positive">${formatCurrency(item.valorTotal)}</td>
           <td>
+            <button class="btn-edit" onclick="openMovimentarProduto(${item.id})" title="Movimentar Estoque">📦</button>
             <button class="btn-delete" onclick="deleteProduto(${item.id})" title="Remover">🗑️</button>
           </td>
         </tr>
@@ -1524,9 +1931,224 @@
       document.getElementById('tfootValorProdutos').innerHTML = `<strong>${formatCurrency(totalValor)}</strong>`;
     }
 
+    // ===== AGENDA =====
+    function addAgendamento() {
+      const data = document.getElementById('agendaData').value;
+      const horario = document.getElementById('agendaHorario').value;
+      const cliente = document.getElementById('agendaCliente').value.trim();
+      const tatuador = document.getElementById('agendaTatuador').value;
+      const tipoServico = document.getElementById('agendaTipoServico').value;
+      const valor = parseNumber(document.getElementById('agendaValor').value);
+      const status = document.getElementById('agendaStatus').value;
+      const observacoes = document.getElementById('agendaObs').value;
+
+      if (!data || !cliente || !tatuador || !tipoServico) {
+        showToast('Preencha os campos obrigatórios.', 'error');
+        return;
+      }
+
+      dados.agenda.push({
+        id: Date.now(),
+        data,
+        horario,
+        cliente,
+        tatuador,
+        tipoServico,
+        valor,
+        status,
+        observacoes
+      });
+
+      saveData();
+      renderCalendar();
+      closeModal('modalAgenda');
+      showToast(`Agendamento para ${cliente} criado!`);
+
+      document.getElementById('agendaHorario').value = '';
+      document.getElementById('agendaCliente').value = '';
+      document.getElementById('agendaTatuador').value = '';
+      document.getElementById('agendaTipoServico').value = '';
+      document.getElementById('agendaValor').value = '';
+      document.getElementById('agendaObs').value = '';
+    }
+    
+    function deleteAgendamento() {
+      const id = parseInt(document.getElementById('editAgendaId').value);
+      dados.agenda = dados.agenda.filter(item => item.id !== id);
+      saveData();
+      renderCalendar();
+      closeModal('modalEditarAgenda');
+      showToast('Agendamento removido.');
+    }
+    
+    function updateAgendamento() {
+      const id = parseInt(document.getElementById('editAgendaId').value);
+      const index = dados.agenda.findIndex(item => item.id === id);
+      if (index === -1) return;
+      
+      dados.agenda[index] = {
+        ...dados.agenda[index],
+        data: document.getElementById('editAgendaData').value,
+        horario: document.getElementById('editAgendaHorario').value,
+        cliente: document.getElementById('editAgendaCliente').value,
+        tatuador: document.getElementById('editAgendaTatuador').value,
+        tipoServico: document.getElementById('editAgendaTipoServico').value,
+        valor: parseNumber(document.getElementById('editAgendaValor').value),
+        status: document.getElementById('editAgendaStatus').value,
+        observacoes: document.getElementById('editAgendaObs').value
+      };
+      
+      saveData();
+      renderCalendar();
+      closeModal('modalEditarAgenda');
+      showToast('Agendamento atualizado!');
+    }
+    
+    function openEditAgenda(id) {
+      const item = dados.agenda.find(a => a.id === id);
+      if (!item) return;
+      
+      document.getElementById('editAgendaId').value = item.id;
+      document.getElementById('editAgendaData').value = item.data;
+      document.getElementById('editAgendaHorario').value = item.horario || '';
+      document.getElementById('editAgendaCliente').value = item.cliente;
+      document.getElementById('editAgendaTatuador').value = item.tatuador;
+      document.getElementById('editAgendaTipoServico').value = item.tipoServico;
+      document.getElementById('editAgendaValor').value = item.valor;
+      document.getElementById('editAgendaStatus').value = item.status;
+      document.getElementById('editAgendaObs').value = item.observacoes || '';
+      
+      openModal('modalEditarAgenda');
+    }
+    
+    function changeMonth(delta) {
+      currentDate.setMonth(currentDate.getMonth() + delta);
+      renderCalendar();
+    }
+    
+    function goToToday() {
+      currentDate = new Date();
+      renderCalendar();
+    }
+    
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDayOfWeek = firstDay.getDay();
+      const daysInMonth = lastDay.getDate();
+      
+      document.getElementById('currentMonthYear').innerHTML = `${firstDay.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`;
+      
+      const filterTatuador = document.getElementById('filterAgendaTatuador').value;
+      const filterStatus = document.getElementById('filterAgendaStatus').value;
+      
+      let filteredAgenda = [...dados.agenda];
+      if (filterTatuador) filteredAgenda = filteredAgenda.filter(a => a.tatuador === filterTatuador);
+      if (filterStatus) filteredAgenda = filteredAgenda.filter(a => a.status === filterStatus);
+      
+      const agendaByDate = {};
+      filteredAgenda.forEach(item => {
+        if (!agendaByDate[item.data]) agendaByDate[item.data] = [];
+        agendaByDate[item.data].push(item);
+      });
+      
+      const calendarGrid = document.getElementById('calendarGrid');
+      calendarGrid.innerHTML = '';
+      
+      const weekDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+      weekDays.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'calendar-day-header';
+        dayHeader.textContent = day.substring(0, 3);
+        calendarGrid.appendChild(dayHeader);
+      });
+      
+      for (let i = 0; i < startDayOfWeek; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day empty';
+        calendarGrid.appendChild(emptyDay);
+      }
+      
+      const today = new Date().toISOString().split('T')[0];
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
+        if (dateStr === today) dayDiv.style.border = `2px solid var(--accent)`;
+        
+        dayDiv.innerHTML = `
+          <div class="calendar-day-number">${day}</div>
+          <div class="calendar-events"></div>
+        `;
+        
+        const eventsDiv = dayDiv.querySelector('.calendar-events');
+        if (agendaByDate[dateStr]) {
+          agendaByDate[dateStr].forEach(event => {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `calendar-event ${event.tatuador.split(' ')[0]}`;
+            const timeText = event.horario ? `${event.horario.substring(0, 5)} ` : '';
+            eventDiv.textContent = `${timeText}${event.cliente.substring(0, 15)}`;
+            eventDiv.title = `${event.cliente} - ${event.tipoServico} - ${event.status}`;
+            eventDiv.onclick = (e) => {
+              e.stopPropagation();
+              openEditAgenda(event.id);
+            };
+            eventsDiv.appendChild(eventDiv);
+          });
+        }
+        
+        dayDiv.onclick = () => {
+          const todayDate = new Date().toISOString().split('T')[0];
+          document.getElementById('agendaData').value = dateStr;
+          openModal('modalAgenda');
+          showDayAppointments(dateStr);
+        };
+        
+        calendarGrid.appendChild(dayDiv);
+      }
+      
+      const selectedDate = document.getElementById('agendaData')?.value || today;
+      showDayAppointments(selectedDate);
+    }
+    
+    function showDayAppointments(date) {
+      const container = document.getElementById('dayAppointments');
+      const filterTatuador = document.getElementById('filterAgendaTatuador').value;
+      const filterStatus = document.getElementById('filterAgendaStatus').value;
+      
+      let dayEvents = dados.agenda.filter(a => a.data === date);
+      if (filterTatuador) dayEvents = dayEvents.filter(a => a.tatuador === filterTatuador);
+      if (filterStatus) dayEvents = dayEvents.filter(a => a.status === filterStatus);
+      
+      if (dayEvents.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="emoji">📅</div><p>Nenhum agendamento para este dia.</p></div>`;
+        return;
+      }
+      
+      dayEvents.sort((a, b) => (a.horario || '00:00').localeCompare(b.horario || '00:00'));
+      
+      container.innerHTML = dayEvents.map(event => `
+        <div class="report-item" style="cursor: pointer;" onclick="openEditAgenda(${event.id})">
+          <div>
+            <div class="name">${event.cliente}</div>
+            <div style="font-size:0.75rem;color:var(--text-secondary)">
+              ${event.horario ? event.horario.substring(0,5) : 'Horário flexível'} · ${event.tatuador} · ${event.tipoServico}
+            </div>
+            ${event.valor ? `<div style="font-size:0.7rem;color:var(--accent-green);">${formatCurrency(event.valor)}</div>` : ''}
+          </div>
+          <div>
+            <span class="badge ${getStatusBadgeClass(event.status)}">${event.status}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
     // ===== DASHBOARD =====
     function updateDashboard() {
-      // Summary cards
       const totalEntradas = dados.caixa.reduce((sum, c) => sum + c.entradas, 0);
       const totalSaidas = dados.caixa.reduce((sum, c) => sum + c.saidas, 0);
       const lastSaldo = dados.caixa.length > 0
@@ -1541,11 +2163,7 @@
       // Recent services
       const recentDiv = document.getElementById('recentServices');
       if (dados.servicos.length === 0) {
-        recentDiv.innerHTML = `
-          <div class="empty-state">
-            <div class="emoji">🎨</div>
-            <p>Nenhum serviço registrado ainda.</p>
-          </div>`;
+        recentDiv.innerHTML = `<div class="empty-state"><div class="emoji">🎨</div><p>Nenhum serviço registrado ainda.</p></div>`;
       } else {
         const recent = [...dados.servicos].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 5);
         recentDiv.innerHTML = recent.map(s => `
@@ -1563,11 +2181,7 @@
       const lowStockDiv = document.getElementById('lowStock');
       const lowStock = dados.produtos.filter(p => p.estoqueAtual <= 5);
       if (lowStock.length === 0) {
-        lowStockDiv.innerHTML = `
-          <div class="empty-state">
-            <div class="emoji">📦</div>
-            <p>Nenhum produto com estoque baixo.</p>
-          </div>`;
+        lowStockDiv.innerHTML = `<div class="empty-state"><div class="emoji">📦</div><p>Nenhum produto com estoque baixo.</p></div>`;
       } else {
         lowStockDiv.innerHTML = lowStock.map(p => `
           <div class="report-item">
@@ -1576,6 +2190,28 @@
               <div style="font-size:0.75rem;color:var(--accent-orange)">Estoque: ${p.estoqueAtual} unidades</div>
             </div>
             <span class="badge" style="background:#ffeaa7;color:#d63031;">Baixo</span>
+          </div>
+        `).join('');
+      }
+      
+      // Upcoming appointments
+      const upcomingDiv = document.getElementById('upcomingAppointments');
+      const today = new Date().toISOString().split('T')[0];
+      const futureAppointments = dados.agenda
+        .filter(a => a.data >= today && a.status !== 'Cancelado' && a.status !== 'Concluído')
+        .sort((a, b) => a.data.localeCompare(b.data))
+        .slice(0, 5);
+      
+      if (futureAppointments.length === 0) {
+        upcomingDiv.innerHTML = `<div class="empty-state"><div class="emoji">📅</div><p>Nenhum agendamento futuro.</p></div>`;
+      } else {
+        upcomingDiv.innerHTML = futureAppointments.map(a => `
+          <div class="report-item">
+            <div>
+              <div class="name">${a.cliente}</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary)">${formatDateTime(a.data, a.horario)} · ${a.tatuador}</div>
+            </div>
+            <span class="badge ${getStatusBadgeClass(a.status)}">${a.status}</span>
           </div>
         `).join('');
       }
@@ -1715,6 +2351,7 @@
       renderProdutos();
       updateFilterTatuadores();
       updateDashboard();
+      renderCalendar();
     }
 
     init();
