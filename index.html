@@ -49,6 +49,7 @@
         .status-info { background: #17a2b8; color: white; }
         #status-nuvem { display: inline-block; padding: 5px 15px; border-radius: 20px; background: #ffc107; color: #000; font-weight: bold; margin: 10px 0; }
         tfoot { font-weight: bold; background: #f8f9fa; }
+        .btn-group { display: flex; gap: 5px; flex-wrap: wrap; }
         @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } table { font-size: 12px; } th, td { padding: 8px; } }
     </style>
 </head>
@@ -100,30 +101,9 @@
                 </div>
             </div>
             
-            <div class="grid">
-                <div class="card">
-                    <h3>📈 Faturamento Mensal</h3>
-                    <canvas id="chart-faturamento"></canvas>
-                </div>
-                <div class="card">
-                    <h3>📊 Distribuição por Tipo</h3>
-                    <canvas id="chart-tipos"></canvas>
-                </div>
-            </div>
-
-            <div class="grid">
-                <div class="card">
-                    <h3>🕐 Serviços Recentes</h3>
-                    <div id="servicos-recentes">Carregando...</div>
-                </div>
-                <div class="card">
-                    <h3>⚠️ Estoque Baixo</h3>
-                    <div id="estoque-baixo">Carregando...</div>
-                </div>
-                <div class="card">
-                    <h3>📅 Próximos Agendamentos</h3>
-                    <div id="proximos-agendamentos">Carregando...</div>
-                </div>
+            <div class="card">
+                <h3>🕐 Serviços Recentes</h3>
+                <div id="servicos-recentes">Carregando...</div>
             </div>
         </section>
 
@@ -135,28 +115,10 @@
                 
                 <table id="tabela-caixa">
                     <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Saldo Inicial</th>
-                            <th>Entradas</th>
-                            <th>Saídas</th>
-                            <th>Saldo Final</th>
-                            <th>Descrição</th>
-                            <th>Ações</th>
-                        </tr>
+                        <tr><th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo Final</th><th>Descrição</th><th>Ações</th></tr>
                     </thead>
-                    <tbody>
-                        <tr><td colspan="7" style="text-align:center;">Nenhum lançamento no caixa</td></tr>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="2">TOTAIS</td>
-                            <td id="caixa-total-entradas">R$ 0,00</td>
-                            <td id="caixa-total-saidas">R$ 0,00</td>
-                            <td id="caixa-saldo-final">R$ 0,00</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
+                    <tbody><tr><td colspan="7" style="text-align:center;">Nenhum lançamento no caixa</td></tr></tbody>
+                    <tfoot><tr><td colspan="2">TOTAIS</td><td id="caixa-total-entradas">R$ 0,00</td><td id="caixa-total-saidas">R$ 0,00</td><td id="caixa-saldo-final">R$ 0,00</td><td colspan="2"></td></tr></tfoot>
                 </table>
             </div>
         </section>
@@ -168,51 +130,22 @@
                 <button class="btn btn-primary" onclick="abrirModalServico()">+ Novo Serviço</button>
                 
                 <div class="filters">
-                    <select id="filtro-tatuador-servico">
+                    <select id="filtro-tatuador-servico" onchange="filtrarServicos()">
                         <option value="">Tatuador: Todos</option>
                         <option value="Fernando Dark">Fernando Dark</option>
                         <option value="Thalia">Thalia</option>
                     </select>
-                    <select id="filtro-tipo-servico">
+                    <select id="filtro-tipo-servico" onchange="filtrarServicos()">
                         <option value="">Tipo: Todos</option>
                         <option value="Tatuagem">Tatuagem</option>
                         <option value="Piercing">Piercing</option>
                     </select>
-                    <select id="filtro-pagamento">
-                        <option value="">Pagamento: Todas</option>
-                        <option value="PIX">PIX</option>
-                        <option value="Dinheiro">Dinheiro</option>
-                        <option value="Cartão">Cartão</option>
-                    </select>
                 </div>
 
                 <table id="tabela-servicos">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Cliente</th>
-                            <th>Tatuador</th>
-                            <th>Tipo</th>
-                            <th>Descrição</th>
-                            <th>Valor</th>
-                            <th>Estúdio (30%)</th>
-                            <th>Repasse (70%)</th>
-                            <th>Pagamento</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="10" style="text-align:center;">Nenhum serviço registrado</td></tr>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="5">TOTAIS</td>
-                            <td id="servicos-total-valor">R$ 0,00</td>
-                            <td id="servicos-total-estudio">R$ 0,00</td>
-                            <td id="servicos-total-repasse">R$ 0,00</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
+                    <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30%)</th><th>Repasse (70%)</th><th>Pagamento</th><th>Ações</th></tr></thead>
+                    <tbody><tr><td colspan="10" style="text-align:center;">Nenhum serviço registrado</td></tr></tbody>
+                    <tfoot><tr><td colspan="5">TOTAIS</td><td id="servicos-total-valor">R$ 0,00</td><td id="servicos-total-estudio">R$ 0,00</td><td id="servicos-total-repasse">R$ 0,00</td><td colspan="2"></td></tr></tfoot>
                 </table>
             </div>
         </section>
@@ -223,43 +156,10 @@
                 <h2>💎 Piercings - Revenda</h2>
                 <button class="btn btn-primary" onclick="abrirModalPiercing()">+ Novo Piercing</button>
                 
-                <div class="filters">
-                    <select id="filtro-piercing">
-                        <option value="">Todos os Piercings</option>
-                        <option value="estoque">Em Estoque</option>
-                        <option value="sem-estoque">Sem Estoque</option>
-                    </select>
-                </div>
-
                 <table id="tabela-piercings">
-                    <thead>
-                        <tr>
-                            <th>Modelo/Local</th>
-                            <th>Estoque Atual</th>
-                            <th>Comprado</th>
-                            <th>Vendido</th>
-                            <th>Custo Unit.</th>
-                            <th>Preço Venda</th>
-                            <th>Lucro Unit.</th>
-                            <th>Lucro Total</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="9" style="text-align:center;">Nenhum piercing cadastrado</td></tr>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="2">TOTAIS</td>
-                            <td id="piercings-total-comprado">0</td>
-                            <td id="piercings-total-vendido">0</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td id="piercings-total-lucro">R$ 0,00</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
+                    <thead><tr><th>Modelo/Local</th><th>Estoque Atual</th><th>Comprado</th><th>Vendido</th><th>Custo Unit.</th><th>Preço Venda</th><th>Lucro Unit.</th><th>Lucro Total</th><th>Ações</th></tr></thead>
+                    <tbody><tr><td colspan="9" style="text-align:center;">Nenhum piercing cadastrado</td></tr></tbody>
+                    <tfoot><tr><td colspan="2">TOTAIS</td><td id="piercings-total-comprado">0</td><td id="piercings-total-vendido">0</td><td></td><td></td><td></td><td id="piercings-total-lucro">R$ 0,00</td><td></td></tr></tfoot>
                 </table>
             </div>
         </section>
@@ -271,30 +171,9 @@
                 <button class="btn btn-primary" onclick="abrirModalMaterial()">+ Novo Material</button>
 
                 <table id="tabela-materiais">
-                    <thead>
-                        <tr>
-                            <th>Material</th>
-                            <th>Estoque Atual</th>
-                            <th>Comprado</th>
-                            <th>Consumido</th>
-                            <th>Custo Unit.</th>
-                            <th>Valor em Estoque</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="7" style="text-align:center;">Nenhum material cadastrado</td></tr>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="2">TOTAIS</td>
-                            <td id="materiais-total-comprado">0</td>
-                            <td id="materiais-total-consumido">0</td>
-                            <td></td>
-                            <td id="materiais-total-valor">R$ 0,00</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
+                    <thead><tr><th>Material</th><th>Estoque Atual</th><th>Comprado</th><th>Consumido</th><th>Custo Unit.</th><th>Valor em Estoque</th><th>Ações</th></tr></thead>
+                    <tbody><tr><td colspan="7" style="text-align:center;">Nenhum material cadastrado</td></tr></tbody>
+                    <tfoot><tr><td colspan="2">TOTAIS</td><td id="materiais-total-comprado">0</td><td id="materiais-total-consumido">0</td><td></td><td id="materiais-total-valor">R$ 0,00</td><td></td></tr></tfoot>
                 </table>
             </div>
         </section>
@@ -306,38 +185,26 @@
                 <button class="btn btn-primary" onclick="abrirModalAgendamento()">+ Novo Agendamento</button>
                 
                 <div class="filters">
-                    <select id="filtro-tatuador-agenda">
+                    <select id="filtro-tatuador-agenda" onchange="filtrarAgenda()">
                         <option value="">Tatuador: Todos</option>
                         <option value="Fernando Dark">Fernando Dark</option>
                         <option value="Thalia">Thalia</option>
                     </select>
-                    <select id="filtro-status-agenda">
+                    <select id="filtro-status-agenda" onchange="filtrarAgenda()">
                         <option value="">Status: Todos</option>
                         <option value="Agendado">Agendado</option>
                         <option value="Confirmado">Confirmado</option>
                         <option value="Concluído">Concluído</option>
                         <option value="Cancelado">Cancelado</option>
                     </select>
-                    <input type="date" id="filtro-data-agenda">
+                    <input type="date" id="filtro-data-agenda" onchange="filtrarAgenda()">
                     <button class="btn btn-primary" onclick="filtrarAgendaHoje()">Hoje</button>
+                    <button class="btn btn-warning" onclick="limparFiltrosAgenda()">Limpar</button>
                 </div>
 
                 <table id="tabela-agenda">
-                    <thead>
-                        <tr>
-                            <th>Data/Hora</th>
-                            <th>Cliente</th>
-                            <th>Tatuador</th>
-                            <th>Tipo</th>
-                            <th>Valor</th>
-                            <th>Status</th>
-                            <th>Observações</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td colspan="8" style="text-align:center;">Nenhum agendamento</td></tr>
-                    </tbody>
+                    <thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Observações</th><th>Ações</th></tr></thead>
+                    <tbody><tr><td colspan="8" style="text-align:center;">Nenhum agendamento</td></tr></tbody>
                 </table>
             </div>
         </section>
@@ -363,10 +230,6 @@
                         <p>📦 Gastos com Materiais</p>
                         <div id="relatorio-gasto-materiais"></div>
                     </div>
-                    <div class="stat">
-                        <p>💎 Lucro Líquido</p>
-                        <div id="relatorio-lucro-liquido"></div>
-                    </div>
                 </div>
             </div>
         </section>
@@ -377,235 +240,87 @@
                 <h2>💾 Backup e Sincronização</h2>
                 <div class="form-group">
                     <h3>Status da Nuvem</h3>
-                    <p>Seus dados estão sincronizados automaticamente com o Supabase. Todas as alterações são salvas instantaneamente na nuvem.</p>
+                    <p>Seus dados estão sincronizados automaticamente com o Supabase.</p>
                     <button class="btn btn-primary" onclick="sincronizarAgora()">🔄 Sincronizar agora</button>
                 </div>
-                
                 <div class="form-group">
-                    <h3>Exportar Backup Local</h3>
-                    <p>Baixe um arquivo de backup com todos os dados do sistema.</p>
+                    <h3>Exportar Backup</h3>
                     <button class="btn btn-success" onclick="exportarBackup()">📥 Exportar Backup (.json)</button>
                 </div>
-                
                 <div class="form-group">
-                    <h3>Importar Backup Local</h3>
-                    <p>Restaure um backup salvo anteriormente.</p>
+                    <h3>Importar Backup</h3>
                     <input type="file" id="import-backup" accept=".json" style="display:none" onchange="importarBackup(this)">
                     <button class="btn btn-warning" onclick="document.getElementById('import-backup').click()">📤 Importar Backup</button>
-                </div>
-                
-                <div class="form-group">
-                    <h3>Sobre a Sincronização</h3>
-                    <p><strong>DARK013TATTOO Cloud</strong> - Dados sincronizados com Supabase</p>
-                    <ul>
-                        <li>✅ Sincronização em tempo real</li>
-                        <li>✅ Backup automático na nuvem</li>
-                        <li>✅ Acesso de qualquer dispositivo</li>
-                    </ul>
                 </div>
             </div>
         </section>
     </div>
 
     <!-- MODAIS -->
-    <!-- Modal Caixa -->
-    <div id="modal-caixa" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="fecharModal('modal-caixa')">&times;</span>
-            <h2>Novo Lançamento</h2>
-            <div class="form-group">
-                <label>Data</label>
-                <input type="date" id="caixa-data">
-            </div>
-            <div class="form-group">
-                <label>Saldo Inicial</label>
-                <input type="number" step="0.01" id="caixa-saldo-inicial" value="0">
-            </div>
-            <div class="form-group">
-                <label>Entradas</label>
-                <input type="number" step="0.01" id="caixa-entradas" value="0">
-            </div>
-            <div class="form-group">
-                <label>Saídas</label>
-                <input type="number" step="0.01" id="caixa-saidas" value="0">
-            </div>
-            <div class="form-group">
-                <label>Descrição</label>
-                <input type="text" id="caixa-descricao">
-            </div>
-            <button class="btn btn-success" onclick="salvarCaixa()">💾 Salvar</button>
-            <button class="btn btn-danger" onclick="fecharModal('modal-caixa')">❌ Cancelar</button>
-        </div>
-    </div>
+    <div id="modal-caixa" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-caixa')">&times;</span><h2>Lançamento de Caixa</h2>
+        <div class="form-group"><label>Data</label><input type="date" id="caixa-data"></div>
+        <div class="form-group"><label>Saldo Inicial</label><input type="number" step="0.01" id="caixa-saldo-inicial" value="0"></div>
+        <div class="form-group"><label>Entradas</label><input type="number" step="0.01" id="caixa-entradas" value="0"></div>
+        <div class="form-group"><label>Saídas</label><input type="number" step="0.01" id="caixa-saidas" value="0"></div>
+        <div class="form-group"><label>Descrição</label><input type="text" id="caixa-descricao"></div>
+        <button class="btn btn-success" onclick="salvarCaixa()">💾 Salvar</button>
+        <button class="btn btn-danger" onclick="fecharModal('modal-caixa')">❌ Cancelar</button>
+    </div></div>
 
-    <!-- Modal Serviço -->
-    <div id="modal-servico" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="fecharModal('modal-servico')">&times;</span>
-            <h2>Novo Serviço</h2>
-            <div class="form-group">
-                <label>Data</label>
-                <input type="date" id="servico-data">
-            </div>
-            <div class="form-group">
-                <label>Cliente</label>
-                <input type="text" id="servico-cliente">
-            </div>
-            <div class="form-group">
-                <label>Tatuador</label>
-                <select id="servico-tatuador">
-                    <option value="Fernando Dark">Fernando Dark</option>
-                    <option value="Thalia">Thalia</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Tipo</label>
-                <select id="servico-tipo">
-                    <option value="Tatuagem">Tatuagem</option>
-                    <option value="Piercing">Piercing</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Descrição</label>
-                <input type="text" id="servico-descricao">
-            </div>
-            <div class="form-group">
-                <label>Valor (R$)</label>
-                <input type="number" step="0.01" id="servico-valor">
-            </div>
-            <div class="form-group">
-                <label>Pagamento</label>
-                <select id="servico-pagamento">
-                    <option value="PIX">PIX</option>
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Cartão">Cartão</option>
-                </select>
-            </div>
-            <button class="btn btn-success" onclick="salvarServico()">💾 Salvar</button>
-            <button class="btn btn-danger" onclick="fecharModal('modal-servico')">❌ Cancelar</button>
-        </div>
-    </div>
+    <div id="modal-servico" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-servico')">&times;</span><h2>Serviço</h2>
+        <div class="form-group"><label>Data</label><input type="date" id="servico-data"></div>
+        <div class="form-group"><label>Cliente</label><input type="text" id="servico-cliente"></div>
+        <div class="form-group"><label>Tatuador</label><select id="servico-tatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div>
+        <div class="form-group"><label>Tipo</label><select id="servico-tipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
+        <div class="form-group"><label>Descrição</label><input type="text" id="servico-descricao"></div>
+        <div class="form-group"><label>Valor (R$)</label><input type="number" step="0.01" id="servico-valor"></div>
+        <div class="form-group"><label>Pagamento</label><select id="servico-pagamento"><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartão">Cartão</option></select></div>
+        <button class="btn btn-success" onclick="salvarServico()">💾 Salvar</button>
+        <button class="btn btn-danger" onclick="fecharModal('modal-servico')">❌ Cancelar</button>
+    </div></div>
 
-    <!-- Modal Piercing -->
-    <div id="modal-piercing" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="fecharModal('modal-piercing')">&times;</span>
-            <h2>Novo Piercing</h2>
-            <div class="form-group">
-                <label>Modelo / Local / Tipo</label>
-                <input type="text" id="piercing-modelo">
-            </div>
-            <div class="form-group">
-                <label>Compra (Entrada)</label>
-                <input type="number" id="piercing-comprado" value="0">
-            </div>
-            <div class="form-group">
-                <label>Estoque Inicial</label>
-                <input type="number" id="piercing-estoque" value="0">
-            </div>
-            <div class="form-group">
-                <label>Custo Unitário (R$)</label>
-                <input type="number" step="0.01" id="piercing-custo">
-            </div>
-            <div class="form-group">
-                <label>Preço Venda (R$)</label>
-                <input type="number" step="0.01" id="piercing-venda">
-            </div>
-            <button class="btn btn-success" onclick="salvarPiercing()">💾 Salvar</button>
-            <button class="btn btn-danger" onclick="fecharModal('modal-piercing')">❌ Cancelar</button>
-        </div>
-    </div>
+    <div id="modal-piercing" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-piercing')">&times;</span><h2>Piercing</h2>
+        <div class="form-group"><label>Modelo</label><input type="text" id="piercing-modelo"></div>
+        <div class="form-group"><label>Comprado</label><input type="number" id="piercing-comprado" value="0"></div>
+        <div class="form-group"><label>Estoque Atual</label><input type="number" id="piercing-estoque" value="0"></div>
+        <div class="form-group"><label>Custo Unitário</label><input type="number" step="0.01" id="piercing-custo"></div>
+        <div class="form-group"><label>Preço Venda</label><input type="number" step="0.01" id="piercing-venda"></div>
+        <button class="btn btn-success" onclick="salvarPiercing()">💾 Salvar</button>
+        <button class="btn btn-danger" onclick="fecharModal('modal-piercing')">❌ Cancelar</button>
+    </div></div>
 
-    <!-- Modal Material -->
-    <div id="modal-material" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="fecharModal('modal-material')">&times;</span>
-            <h2>Novo Material</h2>
-            <div class="form-group">
-                <label>Nome do Material</label>
-                <input type="text" id="material-nome">
-            </div>
-            <div class="form-group">
-                <label>Compra (Entrada)</label>
-                <input type="number" id="material-comprado" value="0">
-            </div>
-            <div class="form-group">
-                <label>Estoque Inicial</label>
-                <input type="number" id="material-estoque" value="0">
-            </div>
-            <div class="form-group">
-                <label>Custo Unitário (R$)</label>
-                <input type="number" step="0.01" id="material-custo">
-            </div>
-            <button class="btn btn-success" onclick="salvarMaterial()">💾 Salvar</button>
-            <button class="btn btn-danger" onclick="fecharModal('modal-material')">❌ Cancelar</button>
-        </div>
-    </div>
+    <div id="modal-material" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-material')">&times;</span><h2>Material</h2>
+        <div class="form-group"><label>Nome</label><input type="text" id="material-nome"></div>
+        <div class="form-group"><label>Comprado</label><input type="number" id="material-comprado" value="0"></div>
+        <div class="form-group"><label>Estoque Atual</label><input type="number" id="material-estoque" value="0"></div>
+        <div class="form-group"><label>Custo Unitário</label><input type="number" step="0.01" id="material-custo"></div>
+        <button class="btn btn-success" onclick="salvarMaterial()">💾 Salvar</button>
+        <button class="btn btn-danger" onclick="fecharModal('modal-material')">❌ Cancelar</button>
+    </div></div>
 
-    <!-- Modal Agendamento -->
-    <div id="modal-agenda" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="fecharModal('modal-agenda')">&times;</span>
-            <h2>Novo Agendamento</h2>
-            <div class="form-group">
-                <label>Data</label>
-                <input type="date" id="agenda-data">
-            </div>
-            <div class="form-group">
-                <label>Horário</label>
-                <input type="time" id="agenda-horario">
-            </div>
-            <div class="form-group">
-                <label>Cliente</label>
-                <input type="text" id="agenda-cliente">
-            </div>
-            <div class="form-group">
-                <label>Tatuador</label>
-                <select id="agenda-tatuador">
-                    <option value="Fernando Dark">Fernando Dark</option>
-                    <option value="Thalia">Thalia</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Tipo de Serviço</label>
-                <select id="agenda-tipo">
-                    <option value="Tatuagem">Tatuagem</option>
-                    <option value="Piercing">Piercing</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Valor (R$)</label>
-                <input type="number" step="0.01" id="agenda-valor">
-            </div>
-            <div class="form-group">
-                <label>Status</label>
-                <select id="agenda-status">
-                    <option value="Agendado">Agendado</option>
-                    <option value="Confirmado">Confirmado</option>
-                    <option value="Concluído">Concluído</option>
-                    <option value="Cancelado">Cancelado</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Observações</label>
-                <textarea id="agenda-obs"></textarea>
-            </div>
-            <button class="btn btn-success" onclick="salvarAgenda()">💾 Salvar</button>
-            <button class="btn btn-danger" onclick="fecharModal('modal-agenda')">❌ Cancelar</button>
-        </div>
-    </div>
+    <div id="modal-agenda" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-agenda')">&times;</span><h2>Agendamento</h2>
+        <div class="form-group"><label>Data</label><input type="date" id="agenda-data"></div>
+        <div class="form-group"><label>Horário</label><input type="time" id="agenda-horario"></div>
+        <div class="form-group"><label>Cliente</label><input type="text" id="agenda-cliente"></div>
+        <div class="form-group"><label>Tatuador</label><select id="agenda-tatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div>
+        <div class="form-group"><label>Tipo</label><select id="agenda-tipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
+        <div class="form-group"><label>Valor</label><input type="number" step="0.01" id="agenda-valor"></div>
+        <div class="form-group"><label>Status</label><select id="agenda-status"><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluído">Concluído</option><option value="Cancelado">Cancelado</option></select></div>
+        <div class="form-group"><label>Observações</label><textarea id="agenda-obs"></textarea></div>
+        <button class="btn btn-success" onclick="salvarAgenda()">💾 Salvar</button>
+        <button class="btn btn-danger" onclick="fecharModal('modal-agenda')">❌ Cancelar</button>
+    </div></div>
 
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script>
-        // CONFIGURAÇÃO SUPABASE
         const SUPABASE_URL = 'https://bhymkxsgrghhpqgzqrni.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeW1reHNncmdoaHBxZ3pxcm5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzEyOTYsImV4cCI6MjA5MTYwNzI5Nn0.GuY32wg63pzCz5aZtGUJBXcb9zicwhsJSzH-czX3Ly4';
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // NAVEGAÇÃO
+        // Variáveis para controle de edição
+        let editandoCaixaId = null, editandoServicoId = null, editandoPiercingId = null, editandoMaterialId = null, editandoAgendaId = null;
+
+        // Navegação
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
@@ -614,32 +329,34 @@
             carregarDados(sectionId);
         }
 
-        // MODAIS
+        function fecharModal(modalId) { document.getElementById(modalId).style.display = 'none'; limparVariaveisEdicao(); }
+        
+        function limparVariaveisEdicao() {
+            editandoCaixaId = null; editandoServicoId = null; editandoPiercingId = null; editandoMaterialId = null; editandoAgendaId = null;
+        }
+
         function abrirModalCaixa() { document.getElementById('modal-caixa').style.display = 'block'; }
         function abrirModalServico() { document.getElementById('modal-servico').style.display = 'block'; }
         function abrirModalPiercing() { document.getElementById('modal-piercing').style.display = 'block'; }
         function abrirModalMaterial() { document.getElementById('modal-material').style.display = 'block'; }
         function abrirModalAgendamento() { document.getElementById('modal-agenda').style.display = 'block'; }
-        function fecharModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
 
-        // TESTAR CONEXÃO
+        // Conexão
         async function testarConexao() {
             try {
-                const { data, error } = await supabaseClient.from('caixa').select('id').limit(1);
+                const { error } = await supabase.from('caixa').select('id').limit(1);
                 if (error) throw error;
                 document.getElementById('status-nuvem').innerHTML = '✅ Conectado';
                 document.getElementById('status-nuvem').style.background = '#28a745';
                 document.getElementById('status-nuvem').style.color = 'white';
                 return true;
             } catch (err) {
-                console.error('Erro:', err);
                 document.getElementById('status-nuvem').innerHTML = '❌ Erro';
                 document.getElementById('status-nuvem').style.background = '#dc3545';
                 return false;
             }
         }
 
-        // CARREGAR DADOS
         async function carregarDados(section) {
             if (section === 'caixa' || section === 'dashboard') await carregarCaixa();
             if (section === 'servicos' || section === 'dashboard') await carregarServicos();
@@ -649,238 +366,155 @@
             if (section === 'relatorios') await carregarRelatorios();
         }
 
+        // CAIXA
         async function carregarCaixa() {
-            const { data, error } = await supabaseClient.from('caixa').select('*').order('data', { ascending: false });
-            if (error) { console.error('Erro caixa:', error); return; }
-
+            const { data, error } = await supabase.from('caixa').select('*').order('data', { ascending: false });
+            if (error) { console.error(error); return; }
             const tbody = document.querySelector('#tabela-caixa tbody');
             tbody.innerHTML = '';
-            
-            let totalEntradas = 0, totalSaidas = 0, saldoFinal = 0;
-            
+            let totalEntradas = 0, totalSaidas = 0;
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum lançamento no caixa</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum lançamento</td></tr>';
             } else {
                 data.forEach(lanc => {
                     totalEntradas += parseFloat(lanc.entradas) || 0;
                     totalSaidas += parseFloat(lanc.saidas) || 0;
-                    saldoFinal = parseFloat(lanc.saldo_final) || 0;
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${new Date(lanc.data).toLocaleDateString('pt-BR')}</td>
-                            <td>R$ ${parseFloat(lanc.saldo_inicial).toFixed(2)}</td>
-                            <td style="color:green">R$ ${parseFloat(lanc.entradas).toFixed(2)}</td>
-                            <td style="color:red">R$ ${parseFloat(lanc.saidas).toFixed(2)}</td>
-                            <td><strong>R$ ${parseFloat(lanc.saldo_final).toFixed(2)}</strong></td>
-                            <td>${lanc.descricao || '-'}</td>
-                            <td>
-                                <button class="btn btn-warning" onclick="editarCaixa('${lanc.id}')">✏️</button>
-                            </td>
-                        </tr>
-                    `;
+                    tbody.innerHTML += `<tr>
+                        <td>${new Date(lanc.data).toLocaleDateString('pt-BR')}</td>
+                        <td>R$ ${parseFloat(lanc.saldo_inicial).toFixed(2)}</td>
+                        <td style="color:green">R$ ${parseFloat(lanc.entradas).toFixed(2)}</td>
+                        <td style="color:red">R$ ${parseFloat(lanc.saidas).toFixed(2)}</td>
+                        <td><strong>R$ ${parseFloat(lanc.saldo_final || (lanc.saldo_inicial + lanc.entradas - lanc.saidas)).toFixed(2)}</strong></td>
+                        <td>${lanc.descricao || '-'}</td>
+                        <td class="btn-group"><button class="btn btn-warning" onclick="editarCaixa('${lanc.id}')">✏️</button><button class="btn btn-danger" onclick="excluirCaixa('${lanc.id}')">🗑️</button></td>
+                    </tr>`;
                 });
             }
-            
             document.getElementById('caixa-total-entradas').innerText = `R$ ${totalEntradas.toFixed(2)}`;
             document.getElementById('caixa-total-saidas').innerText = `R$ ${totalSaidas.toFixed(2)}`;
-            document.getElementById('caixa-saldo-final').innerText = `R$ ${saldoFinal.toFixed(2)}`;
-            document.getElementById('saldo-atual').innerText = `R$ ${saldoFinal.toFixed(2)}`;
+            document.getElementById('caixa-saldo-final').innerText = `R$ ${(totalEntradas - totalSaidas).toFixed(2)}`;
+            document.getElementById('saldo-atual').innerText = `R$ ${(totalEntradas - totalSaidas).toFixed(2)}`;
             document.getElementById('total-entradas').innerText = `R$ ${totalEntradas.toFixed(2)}`;
             document.getElementById('total-saidas').innerText = `R$ ${totalSaidas.toFixed(2)}`;
         }
 
-        async function carregarServicos() {
-            const { data, error } = await supabaseClient.from('servicos').select('*').order('data', { ascending: false });
-            if (error) { console.error('Erro servicos:', error); return; }
-
-            const tbody = document.querySelector('#tabela-servicos tbody');
-            tbody.innerHTML = '';
-            
-            let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
-            
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum serviço registrado</td></tr>';
-            } else {
-                data.forEach(serv => {
-                    const valor = parseFloat(serv.valor_total) || 0;
-                    const estudio = valor * 0.30;
-                    const repasse = valor * 0.70;
-                    
-                    totalValor += valor;
-                    totalEstudio += estudio;
-                    totalRepasse += repasse;
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${new Date(serv.data).toLocaleDateString('pt-BR')}</td>
-                            <td>${serv.cliente}</td>
-                            <td>${serv.tatuador_nome}</td>
-                            <td>${serv.tipo}</td>
-                            <td>${serv.descricao || '-'}</td>
-                            <td>R$ ${valor.toFixed(2)}</td>
-                            <td>R$ ${estudio.toFixed(2)}</td>
-                            <td>R$ ${repasse.toFixed(2)}</td>
-                            <td>${serv.forma_pagamento || '-'}</td>
-                            <td>
-                                <button class="btn btn-warning" onclick="editarServico('${serv.id}')">✏️</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-            
-            document.getElementById('servicos-total-valor').innerText = `R$ ${totalValor.toFixed(2)}`;
-            document.getElementById('servicos-total-estudio').innerText = `R$ ${totalEstudio.toFixed(2)}`;
-            document.getElementById('servicos-total-repasse').innerText = `R$ ${totalRepasse.toFixed(2)}`;
-            document.getElementById('servicos-realizados').innerText = data.length;
-            document.getElementById('repasse-thalia').innerText = `R$ ${totalRepasse.toFixed(2)}`;
+        async function editarCaixa(id) {
+            const { data, error } = await supabase.from('caixa').select('*').eq('id', id).single();
+            if (error) { alert('Erro: ' + error.message); return; }
+            document.getElementById('caixa-data').value = data.data.split('T')[0];
+            document.getElementById('caixa-saldo-inicial').value = data.saldo_inicial;
+            document.getElementById('caixa-entradas').value = data.entradas;
+            document.getElementById('caixa-saidas').value = data.saidas;
+            document.getElementById('caixa-descricao').value = data.descricao || '';
+            editandoCaixaId = id;
+            document.getElementById('modal-caixa').style.display = 'block';
         }
 
-        async function carregarPiercings() {
-            const { data, error } = await supabaseClient.from('piercings').select('*');
-            if (error) { console.error('Erro piercings:', error); return; }
-
-            const tbody = document.querySelector('#tabela-piercings tbody');
-            tbody.innerHTML = '';
-            
-            let totalComprado = 0, totalVendido = 0, totalLucro = 0;
-            
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Nenhum piercing cadastrado</td></tr>';
-            } else {
-                data.forEach(p => {
-                    const lucroUnit = (parseFloat(p.preco_venda) || 0) - (parseFloat(p.custo_unitario) || 0);
-                    const lucroTotal = lucroUnit * (parseFloat(p.vendido) || 0);
-                    
-                    totalComprado += parseInt(p.comprado) || 0;
-                    totalVendido += parseInt(p.vendido) || 0;
-                    totalLucro += lucroTotal;
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${p.modelo}</td>
-                            <td>${p.estoque_atual}</td>
-                            <td>${p.comprado}</td>
-                            <td>${p.vendido}</td>
-                            <td>R$ ${parseFloat(p.custo_unitario).toFixed(2)}</td>
-                            <td>R$ ${parseFloat(p.preco_venda).toFixed(2)}</td>
-                            <td>R$ ${lucroUnit.toFixed(2)}</td>
-                            <td>R$ ${lucroTotal.toFixed(2)}</td>
-                            <td>
-                                <button class="btn btn-warning" onclick="editarPiercing('${p.id}')">✏️</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-            
-            document.getElementById('piercings-total-comprado').innerText = totalComprado;
-            document.getElementById('piercings-total-vendido').innerText = totalVendido;
-            document.getElementById('piercings-total-lucro').innerText = `R$ ${totalLucro.toFixed(2)}`;
-        }
-
-        async function carregarMateriais() {
-            const { data, error } = await supabaseClient.from('materiais').select('*');
-            if (error) { console.error('Erro materiais:', error); return; }
-
-            const tbody = document.querySelector('#tabela-materiais tbody');
-            tbody.innerHTML = '';
-            
-            let totalComprado = 0, totalConsumido = 0, totalValor = 0;
-            
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum material cadastrado</td></tr>';
-            } else {
-                data.forEach(m => {
-                    const valorEstoque = (parseFloat(m.estoque_atual) || 0) * (parseFloat(m.custo_unitario) || 0);
-                    
-                    totalComprado += parseInt(m.comprado) || 0;
-                    totalConsumido += parseInt(m.consumido) || 0;
-                    totalValor += valorEstoque;
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${m.nome}</td>
-                            <td>${m.estoque_atual}</td>
-                            <td>${m.comprado}</td>
-                            <td>${m.consumido}</td>
-                            <td>R$ ${parseFloat(m.custo_unitario).toFixed(2)}</td>
-                            <td>R$ ${valorEstoque.toFixed(2)}</td>
-                            <td>
-                                <button class="btn btn-warning" onclick="editarMaterial('${m.id}')">✏️</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-            
-            document.getElementById('materiais-total-comprado').innerText = totalComprado;
-            document.getElementById('materiais-total-consumido').innerText = totalConsumido;
-            document.getElementById('materiais-total-valor').innerText = `R$ ${totalValor.toFixed(2)}`;
-        }
-
-        async function carregarAgenda() {
-            const { data, error } = await supabaseClient.from('agenda').select('*').order('data_hora', { ascending: true });
-            if (error) { console.error('Erro agenda:', error); return; }
-
-            const tbody = document.querySelector('#tabela-agenda tbody');
-            tbody.innerHTML = '';
-            
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Nenhum agendamento</td></tr>';
-            } else {
-                data.forEach(a => {
-                    const statusClass = {
-                        'Agendado': 'status-warning',
-                        'Confirmado': 'status-info',
-                        'Concluído': 'status-success',
-                        'Cancelado': 'status-danger'
-                    }[a.status] || 'status-warning';
-                    
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${new Date(a.data_hora).toLocaleString('pt-BR')}</td>
-                            <td>${a.cliente}</td>
-                            <td>${a.tatuador_nome}</td>
-                            <td>${a.tipo_servico}</td>
-                            <td>R$ ${parseFloat(a.valor_estimado).toFixed(2)}</td>
-                            <td><span class="status-badge ${statusClass}">${a.status}</span></td>
-                            <td>${a.observacoes || '-'}</td>
-                            <td>
-                                <button class="btn btn-warning" onclick="editarAgenda('${a.id}')">✏️</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-        }
-
-        async function carregarRelatorios() {
-            // Implementar relatórios
-        }
-
-        // SALVAR DADOS
         async function salvarCaixa() {
-            const data = {
+            const dados = {
                 data: document.getElementById('caixa-data').value,
                 saldo_inicial: parseFloat(document.getElementById('caixa-saldo-inicial').value) || 0,
                 entradas: parseFloat(document.getElementById('caixa-entradas').value) || 0,
                 saidas: parseFloat(document.getElementById('caixa-saidas').value) || 0,
-                descricao: document.getElementById('caixa-descricao').value
+                descricao: document.getElementById('caixa-descricao').value,
+                saldo_final: (parseFloat(document.getElementById('caixa-saldo-inicial').value) || 0) + (parseFloat(document.getElementById('caixa-entradas').value) || 0) - (parseFloat(document.getElementById('caixa-saidas').value) || 0)
             };
-            
-            const { error } = await supabaseClient.from('caixa').insert([data]);
+            let error;
+            if (editandoCaixaId) {
+                const result = await supabase.from('caixa').update(dados).eq('id', editandoCaixaId);
+                error = result.error;
+                editandoCaixaId = null;
+            } else {
+                const result = await supabase.from('caixa').insert([dados]);
+                error = result.error;
+            }
             if (error) { alert('Erro: ' + error.message); return; }
-            
-            alert('✅ Lançamento salvo!');
+            alert('✅ Salvo!');
             fecharModal('modal-caixa');
             carregarCaixa();
         }
 
+        async function excluirCaixa(id) {
+            if (confirm('Tem certeza?')) {
+                const { error } = await supabase.from('caixa').delete().eq('id', id);
+                if (error) alert('Erro: ' + error.message);
+                else { alert('Excluído!'); carregarCaixa(); }
+            }
+        }
+
+        // SERVIÇOS
+        let todosServicos = [];
+        async function carregarServicos() {
+            const { data, error } = await supabase.from('servicos').select('*').order('data', { ascending: false });
+            if (error) { console.error(error); return; }
+            todosServicos = data;
+            filtrarServicos();
+        }
+
+        function filtrarServicos() {
+            const tatuador = document.getElementById('filtro-tatuador-servico').value;
+            const tipo = document.getElementById('filtro-tipo-servico').value;
+            let filtrados = todosServicos;
+            if (tatuador) filtrados = filtrados.filter(s => s.tatuador_nome === tatuador);
+            if (tipo) filtrados = filtrados.filter(s => s.tipo === tipo);
+            
+            const tbody = document.querySelector('#tabela-servicos tbody');
+            tbody.innerHTML = '';
+            let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
+            if (filtrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum serviço registrado</td></tr>';
+            } else {
+                filtrados.forEach(serv => {
+                    const valor = parseFloat(serv.valor_total) || 0;
+                    const estudio = valor * 0.30;
+                    const repasse = valor * 0.70;
+                    totalValor += valor;
+                    totalEstudio += estudio;
+                    totalRepasse += repasse;
+                    tbody.innerHTML += `<tr>
+                        <td>${new Date(serv.data).toLocaleDateString('pt-BR')}</td>
+                        <td>${serv.cliente}</td>
+                        <td>${serv.tatuador_nome}</td>
+                        <td>${serv.tipo}</td>
+                        <td>${serv.descricao || '-'}</td>
+                        <td>R$ ${valor.toFixed(2)}</td>
+                        <td>R$ ${estudio.toFixed(2)}</td>
+                        <td>R$ ${repasse.toFixed(2)}</td>
+                        <td>${serv.forma_pagamento || '-'}</td>
+                        <td class="btn-group"><button class="btn btn-warning" onclick="editarServico('${serv.id}')">✏️</button><button class="btn btn-danger" onclick="excluirServico('${serv.id}')">🗑️</button></td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('servicos-total-valor').innerText = `R$ ${totalValor.toFixed(2)}`;
+            document.getElementById('servicos-total-estudio').innerText = `R$ ${totalEstudio.toFixed(2)}`;
+            document.getElementById('servicos-total-repasse').innerText = `R$ ${totalRepasse.toFixed(2)}`;
+            document.getElementById('servicos-realizados').innerText = filtrados.length;
+            document.getElementById('repasse-thalia').innerText = `R$ ${totalRepasse.toFixed(2)}`;
+            
+            // Recentes no dashboard
+            const recentesDiv = document.getElementById('servicos-recentes');
+            if (recentesDiv) {
+                recentesDiv.innerHTML = filtrados.slice(0, 5).map(s => `<p>📅 ${new Date(s.data).toLocaleDateString()} - ${s.cliente} (R$ ${parseFloat(s.valor_total).toFixed(2)})</p>`).join('') || '<p>Nenhum serviço</p>';
+            }
+        }
+
+        async function editarServico(id) {
+            const { data, error } = await supabase.from('servicos').select('*').eq('id', id).single();
+            if (error) { alert('Erro: ' + error.message); return; }
+            document.getElementById('servico-data').value = data.data.split('T')[0];
+            document.getElementById('servico-cliente').value = data.cliente;
+            document.getElementById('servico-tatuador').value = data.tatuador_nome;
+            document.getElementById('servico-tipo').value = data.tipo;
+            document.getElementById('servico-descricao').value = data.descricao || '';
+            document.getElementById('servico-valor').value = data.valor_total;
+            document.getElementById('servico-pagamento').value = data.forma_pagamento || 'PIX';
+            editandoServicoId = id;
+            document.getElementById('modal-servico').style.display = 'block';
+        }
+
         async function salvarServico() {
-            const data = {
-                 document.getElementById('servico-data').value,
+            const dados = {
+                data: document.getElementById('servico-data').value,
                 cliente: document.getElementById('servico-cliente').value,
                 tatuador_nome: document.getElementById('servico-tatuador').value,
                 tipo: document.getElementById('servico-tipo').value,
@@ -888,51 +522,244 @@
                 valor_total: parseFloat(document.getElementById('servico-valor').value) || 0,
                 forma_pagamento: document.getElementById('servico-pagamento').value
             };
-            
-            const { error } = await supabaseClient.from('servicos').insert([data]);
+            let error;
+            if (editandoServicoId) {
+                const result = await supabase.from('servicos').update(dados).eq('id', editandoServicoId);
+                error = result.error;
+                editandoServicoId = null;
+            } else {
+                const result = await supabase.from('servicos').insert([dados]);
+                error = result.error;
+            }
             if (error) { alert('Erro: ' + error.message); return; }
-            
-            alert('✅ Serviço registrado!');
+            alert('✅ Salvo!');
             fecharModal('modal-servico');
             carregarServicos();
         }
 
+        async function excluirServico(id) {
+            if (confirm('Tem certeza?')) {
+                const { error } = await supabase.from('servicos').delete().eq('id', id);
+                if (error) alert('Erro: ' + error.message);
+                else { alert('Excluído!'); carregarServicos(); }
+            }
+        }
+
+        // PIERCINGS
+        async function carregarPiercings() {
+            const { data, error } = await supabase.from('piercings').select('*');
+            if (error) { console.error(error); return; }
+            const tbody = document.querySelector('#tabela-piercings tbody');
+            tbody.innerHTML = '';
+            let totalComprado = 0, totalVendido = 0, totalLucro = 0;
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Nenhum piercing</td></tr>';
+            } else {
+                data.forEach(p => {
+                    const lucroUnit = (parseFloat(p.preco_venda) || 0) - (parseFloat(p.custo_unitario) || 0);
+                    const lucroTotal = lucroUnit * (parseFloat(p.vendido) || 0);
+                    totalComprado += parseInt(p.comprado) || 0;
+                    totalVendido += parseInt(p.vendido) || 0;
+                    totalLucro += lucroTotal;
+                    tbody.innerHTML += `<tr>
+                        <td>${p.modelo}</td><td>${p.estoque_atual}</td><td>${p.comprado}</td><td>${p.vendido}</td>
+                        <td>R$ ${parseFloat(p.custo_unitario).toFixed(2)}</td><td>R$ ${parseFloat(p.preco_venda).toFixed(2)}</td>
+                        <td>R$ ${lucroUnit.toFixed(2)}</td><td>R$ ${lucroTotal.toFixed(2)}</td>
+                        <td class="btn-group"><button class="btn btn-warning" onclick="editarPiercing('${p.id}')">✏️</button><button class="btn btn-danger" onclick="excluirPiercing('${p.id}')">🗑️</button></td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('piercings-total-comprado').innerText = totalComprado;
+            document.getElementById('piercings-total-vendido').innerText = totalVendido;
+            document.getElementById('piercings-total-lucro').innerText = `R$ ${totalLucro.toFixed(2)}`;
+        }
+
+        async function editarPiercing(id) {
+            const { data, error } = await supabase.from('piercings').select('*').eq('id', id).single();
+            if (error) { alert('Erro: ' + error.message); return; }
+            document.getElementById('piercing-modelo').value = data.modelo;
+            document.getElementById('piercing-comprado').value = data.comprado;
+            document.getElementById('piercing-estoque').value = data.estoque_atual;
+            document.getElementById('piercing-custo').value = data.custo_unitario;
+            document.getElementById('piercing-venda').value = data.preco_venda;
+            editandoPiercingId = id;
+            document.getElementById('modal-piercing').style.display = 'block';
+        }
+
         async function salvarPiercing() {
-            const data = {
+            const dados = {
                 modelo: document.getElementById('piercing-modelo').value,
                 comprado: parseInt(document.getElementById('piercing-comprado').value) || 0,
                 estoque_atual: parseInt(document.getElementById('piercing-estoque').value) || 0,
                 custo_unitario: parseFloat(document.getElementById('piercing-custo').value) || 0,
-                preco_venda: parseFloat(document.getElementById('piercing-venda').value) || 0
+                preco_venda: parseFloat(document.getElementById('piercing-venda').value) || 0,
+                vendido: (parseInt(document.getElementById('piercing-comprado').value) || 0) - (parseInt(document.getElementById('piercing-estoque').value) || 0)
             };
-            
-            const { error } = await supabaseClient.from('piercings').insert([data]);
+            let error;
+            if (editandoPiercingId) {
+                const result = await supabase.from('piercings').update(dados).eq('id', editandoPiercingId);
+                error = result.error;
+                editandoPiercingId = null;
+            } else {
+                const result = await supabase.from('piercings').insert([dados]);
+                error = result.error;
+            }
             if (error) { alert('Erro: ' + error.message); return; }
-            
-            alert('✅ Piercing cadastrado!');
+            alert('✅ Salvo!');
             fecharModal('modal-piercing');
             carregarPiercings();
         }
 
+        async function excluirPiercing(id) {
+            if (confirm('Tem certeza?')) {
+                const { error } = await supabase.from('piercings').delete().eq('id', id);
+                if (error) alert('Erro: ' + error.message);
+                else { alert('Excluído!'); carregarPiercings(); }
+            }
+        }
+
+        // MATERIAIS
+        async function carregarMateriais() {
+            const { data, error } = await supabase.from('materiais').select('*');
+            if (error) { console.error(error); return; }
+            const tbody = document.querySelector('#tabela-materiais tbody');
+            tbody.innerHTML = '';
+            let totalComprado = 0, totalConsumido = 0, totalValor = 0;
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum material</td></tr>';
+            } else {
+                data.forEach(m => {
+                    const valorEstoque = (parseFloat(m.estoque_atual) || 0) * (parseFloat(m.custo_unitario) || 0);
+                    totalComprado += parseInt(m.comprado) || 0;
+                    totalConsumido += parseInt(m.consumido) || 0;
+                    totalValor += valorEstoque;
+                    tbody.innerHTML += `<tr>
+                        <td>${m.nome}</td><td>${m.estoque_atual}</td><td>${m.comprado}</td><td>${m.consumido}</td>
+                        <td>R$ ${parseFloat(m.custo_unitario).toFixed(2)}</td><td>R$ ${valorEstoque.toFixed(2)}</td>
+                        <td class="btn-group"><button class="btn btn-warning" onclick="editarMaterial('${m.id}')">✏️</button><button class="btn btn-danger" onclick="excluirMaterial('${m.id}')">🗑️</button></td>
+                    </tr>`;
+                });
+            }
+            document.getElementById('materiais-total-comprado').innerText = totalComprado;
+            document.getElementById('materiais-total-consumido').innerText = totalConsumido;
+            document.getElementById('materiais-total-valor').innerText = `R$ ${totalValor.toFixed(2)}`;
+        }
+
+        async function editarMaterial(id) {
+            const { data, error } = await supabase.from('materiais').select('*').eq('id', id).single();
+            if (error) { alert('Erro: ' + error.message); return; }
+            document.getElementById('material-nome').value = data.nome;
+            document.getElementById('material-comprado').value = data.comprado;
+            document.getElementById('material-estoque').value = data.estoque_atual;
+            document.getElementById('material-custo').value = data.custo_unitario;
+            editandoMaterialId = id;
+            document.getElementById('modal-material').style.display = 'block';
+        }
+
         async function salvarMaterial() {
-            const data = {
+            const dados = {
                 nome: document.getElementById('material-nome').value,
                 comprado: parseInt(document.getElementById('material-comprado').value) || 0,
                 estoque_atual: parseInt(document.getElementById('material-estoque').value) || 0,
-                custo_unitario: parseFloat(document.getElementById('material-custo').value) || 0
+                custo_unitario: parseFloat(document.getElementById('material-custo').value) || 0,
+                consumido: (parseInt(document.getElementById('material-comprado').value) || 0) - (parseInt(document.getElementById('material-estoque').value) || 0)
             };
-            
-            const { error } = await supabaseClient.from('materiais').insert([data]);
+            let error;
+            if (editandoMaterialId) {
+                const result = await supabase.from('materiais').update(dados).eq('id', editandoMaterialId);
+                error = result.error;
+                editandoMaterialId = null;
+            } else {
+                const result = await supabase.from('materiais').insert([dados]);
+                error = result.error;
+            }
             if (error) { alert('Erro: ' + error.message); return; }
-            
-            alert('✅ Material cadastrado!');
+            alert('✅ Salvo!');
             fecharModal('modal-material');
             carregarMateriais();
         }
 
+        async function excluirMaterial(id) {
+            if (confirm('Tem certeza?')) {
+                const { error } = await supabase.from('materiais').delete().eq('id', id);
+                if (error) alert('Erro: ' + error.message);
+                else { alert('Excluído!'); carregarMateriais(); }
+            }
+        }
+
+        // AGENDA
+        let todosAgendamentos = [];
+        async function carregarAgenda() {
+            const { data, error } = await supabase.from('agenda').select('*').order('data_hora', { ascending: true });
+            if (error) { console.error(error); return; }
+            todosAgendamentos = data;
+            filtrarAgenda();
+        }
+
+        function filtrarAgenda() {
+            const tatuador = document.getElementById('filtro-tatuador-agenda').value;
+            const status = document.getElementById('filtro-status-agenda').value;
+            const data = document.getElementById('filtro-data-agenda').value;
+            let filtrados = todosAgendamentos;
+            if (tatuador) filtrados = filtrados.filter(a => a.tatuador_nome === tatuador);
+            if (status) filtrados = filtrados.filter(a => a.status === status);
+            if (data) filtrados = filtrados.filter(a => a.data_hora.split(' ')[0] === data);
+            
+            const tbody = document.querySelector('#tabela-agenda tbody');
+            tbody.innerHTML = '';
+            if (filtrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Nenhum agendamento</td></tr>';
+            } else {
+                filtrados.forEach(a => {
+                    const statusClass = { 'Agendado': 'status-warning', 'Confirmado': 'status-info', 'Concluído': 'status-success', 'Cancelado': 'status-danger' }[a.status] || 'status-warning';
+                    tbody.innerHTML += `<tr>
+                        <td>${new Date(a.data_hora).toLocaleString('pt-BR')}</td><td>${a.cliente}</td><td>${a.tatuador_nome}</td>
+                        <td>${a.tipo_servico}</td><td>R$ ${parseFloat(a.valor_estimado).toFixed(2)}</td>
+                        <td><span class="status-badge ${statusClass}">${a.status}</span></td><td>${a.observacoes || '-'}</td>
+                        <td class="btn-group"><button class="btn btn-warning" onclick="editarAgenda('${a.id}')">✏️</button><button class="btn btn-danger" onclick="excluirAgenda('${a.id}')">🗑️</button></td>
+                    </tr>`;
+                });
+            }
+            // Próximos no dashboard
+            const proximosDiv = document.getElementById('proximos-agendamentos');
+            if (proximosDiv) {
+                const hoje = new Date().toISOString().split('T')[0];
+                const proximos = todosAgendamentos.filter(a => a.data_hora.split(' ')[0] >= hoje && a.status !== 'Cancelado' && a.status !== 'Concluído').slice(0, 5);
+                proximosDiv.innerHTML = proximos.map(a => `<p>📅 ${new Date(a.data_hora).toLocaleString()} - ${a.cliente} (${a.tatuador_nome})</p>`).join('') || '<p>Nenhum agendamento</p>';
+            }
+        }
+
+        function filtrarAgendaHoje() {
+            document.getElementById('filtro-data-agenda').valueAsDate = new Date();
+            filtrarAgenda();
+        }
+
+        function limparFiltrosAgenda() {
+            document.getElementById('filtro-tatuador-agenda').value = '';
+            document.getElementById('filtro-status-agenda').value = '';
+            document.getElementById('filtro-data-agenda').value = '';
+            filtrarAgenda();
+        }
+
+        async function editarAgenda(id) {
+            const { data, error } = await supabase.from('agenda').select('*').eq('id', id).single();
+            if (error) { alert('Erro: ' + error.message); return; }
+            const [date, time] = data.data_hora.split(' ');
+            document.getElementById('agenda-data').value = date;
+            document.getElementById('agenda-horario').value = time || '';
+            document.getElementById('agenda-cliente').value = data.cliente;
+            document.getElementById('agenda-tatuador').value = data.tatuador_nome;
+            document.getElementById('agenda-tipo').value = data.tipo_servico;
+            document.getElementById('agenda-valor').value = data.valor_estimado;
+            document.getElementById('agenda-status').value = data.status;
+            document.getElementById('agenda-obs').value = data.observacoes || '';
+            editandoAgendaId = id;
+            document.getElementById('modal-agenda').style.display = 'block';
+        }
+
         async function salvarAgenda() {
             const dataHora = `${document.getElementById('agenda-data').value} ${document.getElementById('agenda-horario').value}`;
-            const data = {
+            const dados = {
                 data_hora: dataHora,
                 cliente: document.getElementById('agenda-cliente').value,
                 tatuador_nome: document.getElementById('agenda-tatuador').value,
@@ -941,56 +768,110 @@
                 status: document.getElementById('agenda-status').value,
                 observacoes: document.getElementById('agenda-obs').value
             };
-            
-            const { error } = await supabaseClient.from('agenda').insert([data]);
+            let error;
+            if (editandoAgendaId) {
+                const result = await supabase.from('agenda').update(dados).eq('id', editandoAgendaId);
+                error = result.error;
+                editandoAgendaId = null;
+            } else {
+                const result = await supabase.from('agenda').insert([dados]);
+                error = result.error;
+            }
             if (error) { alert('Erro: ' + error.message); return; }
-            
-            alert('✅ Agendamento registrado!');
+            alert('✅ Salvo!');
             fecharModal('modal-agenda');
             carregarAgenda();
         }
 
-        // FUNÇÕES AUXILIARES
-        function sincronizarAgora() {
-            location.reload();
-        }
-
-        function exportarBackup() {
-            alert('Funcionalidade de exportação em desenvolvimento');
-        }
-
-        function importarBackup(input) {
-            alert('Funcionalidade de importação em desenvolvimento');
-        }
-
-        function filtrarAgendaHoje() {
-            document.getElementById('filtro-data-agenda').valueAsDate = new Date();
-            carregarAgenda();
-        }
-
-        // Placeholder functions for edit (to be implemented)
-        function editarCaixa(id) { alert('Editar caixa: ' + id); }
-        function editarServico(id) { alert('Editar serviço: ' + id); }
-        function editarPiercing(id) { alert('Editar piercing: ' + id); }
-        function editarMaterial(id) { alert('Editar material: ' + id); }
-        function editarAgenda(id) { alert('Editar agenda: ' + id); }
-
-        // INICIALIZAÇÃO
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
+        async function excluirAgenda(id) {
+            if (confirm('Tem certeza?')) {
+                const { error } = await supabase.from('agenda').delete().eq('id', id);
+                if (error) alert('Erro: ' + error.message);
+                else { alert('Excluído!'); carregarAgenda(); }
             }
+        }
+
+        // RELATÓRIOS
+        async function carregarRelatorios() {
+            const { data: servicos } = await supabase.from('servicos').select('*');
+            const { data: piercings } = await supabase.from('piercings').select('*');
+            const { data: materiais } = await supabase.from('materiais').select('*');
+            
+            if (servicos) {
+                let fatFernando = 0, fatThalia = 0;
+                servicos.forEach(s => {
+                    if (s.tatuador_nome === 'Fernando Dark') fatFernando += parseFloat(s.valor_total) || 0;
+                    if (s.tatuador_nome === 'Thalia') fatThalia += parseFloat(s.valor_total) || 0;
+                });
+                document.getElementById('faturamento-tatuador').innerHTML = `<p>Fernando Dark: R$ ${fatFernando.toFixed(2)}</p><p>Thalia: R$ ${fatThalia.toFixed(2)}</p>`;
+                document.getElementById('relatorio-repasse').innerHTML = `<p>Repasse Thalia (70%): R$ ${(fatThalia * 0.7).toFixed(2)}</p>`;
+            }
+            if (piercings) {
+                let lucroPiercings = 0;
+                piercings.forEach(p => {
+                    const lucroUnit = (parseFloat(p.preco_venda) || 0) - (parseFloat(p.custo_unitario) || 0);
+                    lucroPiercings += lucroUnit * (parseFloat(p.vendido) || 0);
+                });
+                document.getElementById('relatorio-lucro-piercings').innerHTML = `<p>Lucro Total: R$ ${lucroPiercings.toFixed(2)}</p>`;
+            }
+            if (materiais) {
+                let gastoMateriais = 0;
+                materiais.forEach(m => {
+                    gastoMateriais += (parseFloat(m.comprado) || 0) * (parseFloat(m.custo_unitario) || 0);
+                });
+                document.getElementById('relatorio-gasto-materiais').innerHTML = `<p>Gasto Total: R$ ${gastoMateriais.toFixed(2)}</p>`;
+            }
+        }
+
+        // BACKUP
+        async function exportarBackup() {
+            const tables = ['caixa', 'servicos', 'piercings', 'materiais', 'agenda'];
+            const backup = {};
+            for (const table of tables) {
+                const { data } = await supabase.from(table).select('*');
+                backup[table] = data || [];
+            }
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `dark013_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            alert('✅ Backup exportado!');
+        }
+
+        async function importarBackup(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const backup = JSON.parse(e.target.result);
+                for (const [table, data] of Object.entries(backup)) {
+                    for (const item of data) {
+                        const { id, ...rest } = item;
+                        const { error } = await supabase.from(table).upsert(rest, { onConflict: 'id' });
+                        if (error) console.error(`Erro ao importar ${table}:`, error);
+                    }
+                }
+                alert('✅ Backup importado! Recarregando...');
+                location.reload();
+            };
+            reader.readAsText(file);
+        }
+
+        function sincronizarAgora() { location.reload(); }
+
+        // Inicialização
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) event.target.style.display = 'none';
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
             await testarConexao();
             await carregarDados('dashboard');
-            
-            // Set today's date in forms
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('caixa-data').value = today;
-            document.getElementById('servico-data').value = today;
-            document.getElementById('agenda-data').value = today;
+            ['caixa-data', 'servico-data', 'agenda-data'].forEach(id => {
+                if (document.getElementById(id)) document.getElementById(id).value = today;
+            });
         });
     </script>
 </body>
