@@ -24,7 +24,7 @@ const getEnv = (key, fallback = '') => {
 
 // 🔗 Configurações do Supabase
 export const SUPABASE = {
-  url: getEnv('VITE_SUPABASE_URL', 'https://seu-projeto.supabase.co'),
+  url: getEnv('VITE_SUPABASE_URL', 'https://bhymkxsgrghhpqgzqrni.supabase.co'),
   anonKey: getEnv('VITE_SUPABASE_ANON_KEY', 'sua-chave-anon-publica'),
   // ⚠️ NUNCA exponha a SERVICE_ROLE_KEY no frontend!
 };
