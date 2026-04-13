@@ -5,878 +5,992 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DARK013TATTOO - Gestão Profissional com Nuvem</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
-            color: #fff;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .nav-link {
-            padding: 12px 24px;
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            color: #1e1e2e;
-        }
-
-        .section {
-            display: none;
-            animation: fadeIn 0.5s;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 25px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .card h3 {
-            font-size: 0.9em;
-            color: #888;
-            margin-bottom: 10px;
-        }
-
-        .card .value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #feca57;
-        }
-
-        .card .value.positive { color: #2ecc71; }
-        .card .value.negative { color: #e74c3c; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        th {
-            background: rgba(255, 107, 107, 0.2);
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.85em;
-        }
-
-        tr:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-            margin: 5px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            color: #1e1e2e;
-        }
-
-        .btn-success { background: #2ecc71; color: #fff; }
-        .btn-danger { background: #e74c3c; color: #fff; }
-        .btn-warning { background: #f39c12; color: #fff; }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: #2d2d44;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            font-size: 1em;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #feca57;
-        }
-
-        .badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
-        }
-
-        .badge-tatuagem { background: #ff6b6b; }
-        .badge-piercing { background: #feca57; color: #1e1e2e; }
-        .badge-agendado { background: #3498db; }
-        .badge-confirmado { background: #9b59b6; }
-        .badge-concluido { background: #2ecc71; }
-        .badge-cancelado { background: #e74c3c; }
-
-        .text-studio { color: #feca57; font-weight: 600; }
-        .text-repasse { color: #2ecc71; font-weight: 600; }
-
-        .sync-status {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(46, 204, 113, 0.9);
-            padding: 15px 25px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: slideIn 0.5s;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(400px); }
-            to { transform: translateX(0); }
-        }
-
-        .filters {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .filters select, .filters input {
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-        }
-
-        footer {
-            text-align: center;
-            padding: 30px;
-            margin-top: 50px;
-            color: #888;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        @media (max-width: 768px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-            table { font-size: 0.85em; }
-            th, td { padding: 8px; }
-            .nav-tabs { justify-content: center; }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { background: rgba(0,0,0,0.9); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .nav button { flex: 1; min-width: 120px; padding: 15px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .nav button:hover { background: #764ba2; transform: translateY(-2px); }
+        .nav button.active { background: #764ba2; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .section { display: none; animation: fadeIn 0.5s; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card h2 { color: #667eea; margin-bottom: 15px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .stat { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; }
+        .stat h3 { font-size: 2em; margin: 10px 0; }
+        .stat p { opacity: 0.9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #667eea; color: white; }
+        tr:hover { background: #f5f5f5; }
+        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; transition: 0.3s; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: #000; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); }
+        .modal-content { background: white; margin: 5% auto; padding: 30px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .close { float: right; font-size: 28px; font-weight: bold; cursor: pointer; color: #aaa; }
+        .close:hover { color: #000; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .filters { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filters select, .filters input { padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+        .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+        .status-success { background: #28a745; color: white; }
+        .status-warning { background: #ffc107; color: #000; }
+        .status-danger { background: #dc3545; color: white; }
+        .status-info { background: #17a2b8; color: white; }
+        #status-nuvem { display: inline-block; padding: 5px 15px; border-radius: 20px; background: #ffc107; color: #000; font-weight: bold; margin: 10px 0; }
+        tfoot { font-weight: bold; background: #f8f9fa; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } table { font-size: 12px; } th, td { padding: 8px; } }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🎨 DARK013TATTOO</h1>
-            <p>Gestão profissional com sincronização na nuvem</p>
-            <div id="sync-status-text" style="margin-top: 10px; color: #2ecc71;">
-                ● Conectado à nuvem
-            </div>
+            <p>Gestão profissional com sincronização na nuvem ☁️</p>
+            <div id="status-nuvem">Conectando...</div>
         </header>
 
-        <!-- Navegação -->
-        <nav class="nav-tabs">
-            <a href="#" class="nav-link active" data-target="dashboard">Dashboard</a>
-            <a href="#" class="nav-link" data-target="caixa">Caixa</a>
-            <a href="#" class="nav-link" data-target="servicos">Serviços</a>
-            <a href="#" class="nav-link" data-target="piercings">Piercings</a>
-            <a href="#" class="nav-link" data-target="materiais">Materiais</a>
-            <a href="#" class="nav-link" data-target="agenda">Agenda</a>
-            <a href="#" class="nav-link" data-target="relatorios">Relatórios</a>
-            <a href="#" class="nav-link" data-target="backup">Backup</a>
+        <nav class="nav">
+            <button class="active" onclick="showSection('dashboard')">📊 Dashboard</button>
+            <button onclick="showSection('caixa')">💰 Caixa</button>
+            <button onclick="showSection('servicos')">✏️ Serviços</button>
+            <button onclick="showSection('piercings')">💎 Piercings</button>
+            <button onclick="showSection('materiais')">📦 Materiais</button>
+            <button onclick="showSection('agenda')">📅 Agenda</button>
+            <button onclick="showSection('relatorios')">📈 Relatórios</button>
+            <button onclick="showSection('backup')">💾 Backup</button>
         </nav>
 
         <!-- DASHBOARD -->
         <section id="dashboard" class="section active">
-            <div class="dashboard-grid">
+            <div class="card">
+                <h2>📊 Dashboard</h2>
+                <div class="grid">
+                    <div class="stat">
+                        <p>💰 Saldo Atual</p>
+                        <h3 id="saldo-atual">R$ 0,00</h3>
+                        <small>Sincronizado na nuvem</small>
+                    </div>
+                    <div class="stat">
+                        <p>📥 Total Entradas</p>
+                        <h3 id="total-entradas">R$ 0,00</h3>
+                    </div>
+                    <div class="stat">
+                        <p>📤 Total Saídas</p>
+                        <h3 id="total-saidas">R$ 0,00</h3>
+                    </div>
+                    <div class="stat">
+                        <p>✏️ Serviços Realizados</p>
+                        <h3 id="servicos-realizados">0</h3>
+                    </div>
+                    <div class="stat">
+                        <p>👤 Repasse Thalia (70%)</p>
+                        <h3 id="repasse-thalia">R$ 0,00</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid">
                 <div class="card">
-                    <h3>💰 Saldo Atual</h3>
-                    <div class="value" id="dash-saldo">R$ 0,00</div>
-                    <small>Sincronizado na nuvem</small>
+                    <h3>📈 Faturamento Mensal</h3>
+                    <canvas id="chart-faturamento"></canvas>
                 </div>
                 <div class="card">
-                    <h3>📥 Total Entradas</h3>
-                    <div class="value positive" id="dash-entradas">R$ 0,00</div>
-                </div>
-                <div class="card">
-                    <h3>📤 Total Saídas</h3>
-                    <div class="value negative" id="dash-saidas">R$ 0,00</div>
-                </div>
-                <div class="card">
-                    <h3>✂️ Serviços Realizados</h3>
-                    <div class="value" id="dash-servicos-qtd">0</div>
-                </div>
-                <div class="card">
-                    <h3>💵 Repasse Thalia (70%)</h3>
-                    <div class="value" id="dash-repasse">R$ 0,00</div>
-                </div>
-                <div class="card">
-                    <h3>📊 Faturamento Mensal</h3>
-                    <div class="value" id="dash-faturamento-mes">R$ 0,00</div>
+                    <h3>📊 Distribuição por Tipo</h3>
+                    <canvas id="chart-tipos"></canvas>
                 </div>
             </div>
 
+            <div class="grid">
+                <div class="card">
+                    <h3>🕐 Serviços Recentes</h3>
+                    <div id="servicos-recentes">Carregando...</div>
+                </div>
+                <div class="card">
+                    <h3>⚠️ Estoque Baixo</h3>
+                    <div id="estoque-baixo">Carregando...</div>
+                </div>
+                <div class="card">
+                    <h3>📅 Próximos Agendamentos</h3>
+                    <div id="proximos-agendamentos">Carregando...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CAIXA -->
+        <section id="caixa" class="section">
             <div class="card">
-                <h3>📈 Serviços Recentes</h3>
-                <table>
+                <h2>💰 Fluxo de Caixa</h2>
+                <button class="btn btn-primary" onclick="abrirModalCaixa()">+ Novo Lançamento</button>
+                
+                <table id="tabela-caixa">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Saldo Inicial</th>
+                            <th>Entradas</th>
+                            <th>Saídas</th>
+                            <th>Saldo Final</th>
+                            <th>Descrição</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="7" style="text-align:center;">Nenhum lançamento no caixa</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2">TOTAIS</td>
+                            <td id="caixa-total-entradas">R$ 0,00</td>
+                            <td id="caixa-total-saidas">R$ 0,00</td>
+                            <td id="caixa-saldo-final">R$ 0,00</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- SERVIÇOS -->
+        <section id="servicos" class="section">
+            <div class="card">
+                <h2>✏️ Serviços Realizados</h2>
+                <button class="btn btn-primary" onclick="abrirModalServico()">+ Novo Serviço</button>
+                
+                <div class="filters">
+                    <select id="filtro-tatuador-servico">
+                        <option value="">Tatuador: Todos</option>
+                        <option value="Fernando Dark">Fernando Dark</option>
+                        <option value="Thalia">Thalia</option>
+                    </select>
+                    <select id="filtro-tipo-servico">
+                        <option value="">Tipo: Todos</option>
+                        <option value="Tatuagem">Tatuagem</option>
+                        <option value="Piercing">Piercing</option>
+                    </select>
+                    <select id="filtro-pagamento">
+                        <option value="">Pagamento: Todas</option>
+                        <option value="PIX">PIX</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="Cartão">Cartão</option>
+                    </select>
+                </div>
+
+                <table id="tabela-servicos">
                     <thead>
                         <tr>
                             <th>Data</th>
                             <th>Cliente</th>
                             <th>Tatuador</th>
                             <th>Tipo</th>
+                            <th>Descrição</th>
                             <th>Valor</th>
                             <th>Estúdio (30%)</th>
                             <th>Repasse (70%)</th>
+                            <th>Pagamento</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
-                    <tbody id="table-servicos-recentes-body">
-                        <tr><td colspan="7">Nenhum serviço recente</td></tr>
+                    <tbody>
+                        <tr><td colspan="10" style="text-align:center;">Nenhum serviço registrado</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5">TOTAIS</td>
+                            <td id="servicos-total-valor">R$ 0,00</td>
+                            <td id="servicos-total-estudio">R$ 0,00</td>
+                            <td id="servicos-total-repasse">R$ 0,00</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- PIERCINGS -->
+        <section id="piercings" class="section">
+            <div class="card">
+                <h2>💎 Piercings - Revenda</h2>
+                <button class="btn btn-primary" onclick="abrirModalPiercing()">+ Novo Piercing</button>
+                
+                <div class="filters">
+                    <select id="filtro-piercing">
+                        <option value="">Todos os Piercings</option>
+                        <option value="estoque">Em Estoque</option>
+                        <option value="sem-estoque">Sem Estoque</option>
+                    </select>
+                </div>
+
+                <table id="tabela-piercings">
+                    <thead>
+                        <tr>
+                            <th>Modelo/Local</th>
+                            <th>Estoque Atual</th>
+                            <th>Comprado</th>
+                            <th>Vendido</th>
+                            <th>Custo Unit.</th>
+                            <th>Preço Venda</th>
+                            <th>Lucro Unit.</th>
+                            <th>Lucro Total</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="9" style="text-align:center;">Nenhum piercing cadastrado</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2">TOTAIS</td>
+                            <td id="piercings-total-comprado">0</td>
+                            <td id="piercings-total-vendido">0</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td id="piercings-total-lucro">R$ 0,00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- MATERIAIS -->
+        <section id="materiais" class="section">
+            <div class="card">
+                <h2>📦 Materiais de Consumo</h2>
+                <button class="btn btn-primary" onclick="abrirModalMaterial()">+ Novo Material</button>
+
+                <table id="tabela-materiais">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Estoque Atual</th>
+                            <th>Comprado</th>
+                            <th>Consumido</th>
+                            <th>Custo Unit.</th>
+                            <th>Valor em Estoque</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="7" style="text-align:center;">Nenhum material cadastrado</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2">TOTAIS</td>
+                            <td id="materiais-total-comprado">0</td>
+                            <td id="materiais-total-consumido">0</td>
+                            <td></td>
+                            <td id="materiais-total-valor">R$ 0,00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <!-- AGENDA -->
+        <section id="agenda" class="section">
+            <div class="card">
+                <h2>📅 Agenda de Atendimentos</h2>
+                <button class="btn btn-primary" onclick="abrirModalAgendamento()">+ Novo Agendamento</button>
+                
+                <div class="filters">
+                    <select id="filtro-tatuador-agenda">
+                        <option value="">Tatuador: Todos</option>
+                        <option value="Fernando Dark">Fernando Dark</option>
+                        <option value="Thalia">Thalia</option>
+                    </select>
+                    <select id="filtro-status-agenda">
+                        <option value="">Status: Todos</option>
+                        <option value="Agendado">Agendado</option>
+                        <option value="Confirmado">Confirmado</option>
+                        <option value="Concluído">Concluído</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                    <input type="date" id="filtro-data-agenda">
+                    <button class="btn btn-primary" onclick="filtrarAgendaHoje()">Hoje</button>
+                </div>
+
+                <table id="tabela-agenda">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Cliente</th>
+                            <th>Tatuador</th>
+                            <th>Tipo</th>
+                            <th>Valor</th>
+                            <th>Status</th>
+                            <th>Observações</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="8" style="text-align:center;">Nenhum agendamento</td></tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- CAIXA -->
-        <section id="caixa" class="section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>💰 Fluxo de Caixa</h2>
-                <button class="btn btn-primary" onclick="abrirModal('modal-caixa')">+ Novo Lançamento</button>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Saldo Inicial</th>
-                        <th>Entradas</th>
-                        <th>Saídas</th>
-                        <th>Saldo Final</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="table-caixa-body">
-                    <tr><td colspan="6">Nenhum lançamento no caixa</td></tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td><strong>TOTAIS</strong></td>
-                        <td>R$ 0,00</td>
-                        <td id="caixa-total-entradas">R$ 0,00</td>
-                        <td id="caixa-total-saidas">R$ 0,00</td>
-                        <td id="caixa-total-saldo">R$ 0,00</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </section>
-
-        <!-- SERVIÇOS -->
-        <section id="servicos" class="section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>✂️ Serviços Realizados</h2>
-                <button class="btn btn-primary" onclick="abrirModal('modal-servico')">+ Novo Serviço</button>
-            </div>
-
-            <div class="filters">
-                <select id="filtro-tatuador">
-                    <option value="">Tatuador: Todos</option>
-                    <option value="Fernando Dark">Fernando Dark</option>
-                    <option value="Thalia">Thalia</option>
-                </select>
-                <select id="filtro-tipo">
-                    <option value="">Tipo: Todos</option>
-                    <option value="Tatuagem">Tatuagem</option>
-                    <option value="Piercing">Piercing</option>
-                </select>
-                <select id="filtro-pagamento">
-                    <option value="">Pagamento: Todas</option>
-                    <option value="PIX">PIX</option>
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Cartão">Cartão</option>
-                </select>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Cliente</th>
-                        <th>Tatuador</th>
-                        <th>Tipo</th>
-                        <th>Descrição</th>
-                        <th>Valor</th>
-                        <th>Estúdio (30%)</th>
-                        <th>Repasse (70%)</th>
-                        <th>Pagamento</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="table-servicos-body">
-                    <tr><td colspan="10">Nenhum serviço registrado</td></tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="5"><strong>TOTAIS</strong></td>
-                        <td id="servicos-total-valor">R$ 0,00</td>
-                        <td id="servicos-total-estudio">R$ 0,00</td>
-                        <td id="servicos-total-repasse">R$ 0,00</td>
-                        <td colspan="2"></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </section>
-
-        <!-- PIERCINGS -->
-        <section id="piercings" class="section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>💎 Piercings - Revenda</h2>
-                <button class="btn btn-primary" onclick="abrirModal('modal-piercing')">+ Novo Piercing</button>
-            </div>
-
-            <div class="filters">
-                <select id="filtro-piercing-tipo">
-                    <option value="">Filtrar por: Todos os Piercings</option>
-                    <option value="em-estoque">Em Estoque</option>
-                    <option value="sem-estoque">Sem Estoque</option>
-                </select>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Modelo/Local</th>
-                        <th>Estoque Atual</th>
-                        <th>Comprado</th>
-                        <th>Vendido</th>
-                        <th>Custo Unit.</th>
-                        <th>Preço Venda</th>
-                        <th>Lucro Unit.</th>
-                        <th>Lucro Total</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="table-piercings-body">
-                    <tr><td colspan="9">Nenhum piercing cadastrado</td></tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="2"><strong>TOTAIS</strong></td>
-                        <td id="piercings-total-comprado">0</td>
-                        <td id="piercings-total-vendido">0</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td id="piercings-total-lucro">R$ 0,00</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </section>
-
-        <!-- MATERIAIS -->
-        <section id="materiais" class="section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>📦 Materiais de Consumo</h2>
-                <button class="btn btn-primary" onclick="abrirModal('modal-material')">+ Novo Material</button>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Material</th>
-                        <th>Estoque Atual</th>
-                        <th>Comprado</th>
-                        <th>Consumido</th>
-                        <th>Custo Unit.</th>
-                        <th>Valor em Estoque</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="table-materiais-body">
-                    <tr><td colspan="7">Nenhum material cadastrado</td></tr>
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="2"><strong>TOTAIS</strong></td>
-                        <td id="materiais-total-comprado">0</td>
-                        <td id="materiais-total-consumido">0</td>
-                        <td></td>
-                        <td id="materiais-total-valor">R$ 0,00</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </section>
-
-        <!-- AGENDA -->
-        <section id="agenda" class="section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>📅 Agenda de Atendimentos</h2>
-                <button class="btn btn-primary" onclick="abrirModal('modal-agendamento')">+ Novo Agendamento</button>
-            </div>
-
-            <div class="filters">
-                <select id="filtro-agenda-tatuador">
-                    <option value="">Tatuador: Todos</option>
-                    <option value="Fernando Dark">Fernando Dark</option>
-                    <option value="Thalia">Thalia</option>
-                </select>
-                <select id="filtro-agenda-status">
-                    <option value="">Status: Todos</option>
-                    <option value="Agendado">Agendado</option>
-                    <option value="Confirmado">Confirmado</option>
-                    <option value="Concluído">Concluído</option>
-                    <option value="Cancelado">Cancelado</option>
-                </select>
-                <input type="date" id="filtro-agenda-data" placeholder="Filtrar por data">
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Data/Hora</th>
-                        <th>Cliente</th>
-                        <th>Tatuador</th>
-                        <th>Tipo</th>
-                        <th>Valor</th>
-                        <th>Status</th>
-                        <th>Observações</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="table-agenda-body">
-                    <tr><td colspan="8">Nenhum agendamento</td></tr>
-                </tbody>
-            </table>
-        </section>
-
         <!-- RELATÓRIOS -->
         <section id="relatorios" class="section">
-            <h2>📊 Relatórios</h2>
-            <div class="dashboard-grid">
-                <div class="card">
-                    <h3>Faturamento por Tatuador</h3>
-                    <div id="relatorio-faturamento-tatuador">
-                        <p>Carregando...</p>
+            <div class="card">
+                <h2>📈 Relatórios</h2>
+                <div class="grid">
+                    <div class="stat">
+                        <p>💵 Faturamento por Tatuador</p>
+                        <div id="faturamento-tatuador"></div>
                     </div>
-                </div>
-                <div class="card">
-                    <h3>Repasses (Thalia - 70%)</h3>
-                    <div class="value" id="relatorio-repasse-total">R$ 0,00</div>
-                </div>
-                <div class="card">
-                    <h3>Lucro com Piercings</h3>
-                    <div class="value positive" id="relatorio-lucro-piercings">R$ 0,00</div>
-                </div>
-                <div class="card">
-                    <h3>Gastos com Materiais</h3>
-                    <div class="value negative" id="relatorio-gastos-materiais">R$ 0,00</div>
-                </div>
-                <div class="card">
-                    <h3>Lucro Líquido</h3>
-                    <div class="value" id="relatorio-lucro-liquido">R$ 0,00</div>
+                    <div class="stat">
+                        <p>👤 Repasses (Thalia - 70%)</p>
+                        <div id="relatorio-repasse"></div>
+                    </div>
+                    <div class="stat">
+                        <p>💰 Lucro com Piercings</p>
+                        <div id="relatorio-lucro-piercings"></div>
+                    </div>
+                    <div class="stat">
+                        <p>📦 Gastos com Materiais</p>
+                        <div id="relatorio-gasto-materiais"></div>
+                    </div>
+                    <div class="stat">
+                        <p>💎 Lucro Líquido</p>
+                        <div id="relatorio-lucro-liquido"></div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- BACKUP -->
         <section id="backup" class="section">
-            <h2>💾 Backup e Sincronização</h2>
-            
-            <div class="card" style="margin-bottom: 20px;">
-                <h3>Status da Nuvem</h3>
-                <p>Seus dados estão sincronizados automaticamente com o Supabase. Todas as alterações são salvas instantaneamente na nuvem.</p>
-                <div style="margin-top: 15px;">
-                    <span style="color: #2ecc71;">● Sincronização automática</span>
-                    <button class="btn btn-success" onclick="sincronizarAgora()">Sincronizar agora</button>
-                </div>
-            </div>
-
-            <div class="card" style="margin-bottom: 20px;">
-                <h3>Exportar Backup Local</h3>
-                <p>Baixe um arquivo de backup com todos os dados do sistema.</p>
-                <button class="btn btn-primary" onclick="exportarBackup()">Exportar Backup (.json)</button>
-            </div>
-
             <div class="card">
-                <h3>Importar Backup Local</h3>
-                <p>Restaure um backup salvo anteriormente.</p>
-                <input type="file" id="import-backup-file" accept=".json" style="margin: 10px 0;">
-                <button class="btn btn-warning" onclick="importarBackup()">Importar Backup</button>
+                <h2>💾 Backup e Sincronização</h2>
+                <div class="form-group">
+                    <h3>Status da Nuvem</h3>
+                    <p>Seus dados estão sincronizados automaticamente com o Supabase. Todas as alterações são salvas instantaneamente na nuvem.</p>
+                    <button class="btn btn-primary" onclick="sincronizarAgora()">🔄 Sincronizar agora</button>
+                </div>
+                
+                <div class="form-group">
+                    <h3>Exportar Backup Local</h3>
+                    <p>Baixe um arquivo de backup com todos os dados do sistema.</p>
+                    <button class="btn btn-success" onclick="exportarBackup()">📥 Exportar Backup (.json)</button>
+                </div>
+                
+                <div class="form-group">
+                    <h3>Importar Backup Local</h3>
+                    <p>Restaure um backup salvo anteriormente.</p>
+                    <input type="file" id="import-backup" accept=".json" style="display:none" onchange="importarBackup(this)">
+                    <button class="btn btn-warning" onclick="document.getElementById('import-backup').click()">📤 Importar Backup</button>
+                </div>
+                
+                <div class="form-group">
+                    <h3>Sobre a Sincronização</h3>
+                    <p><strong>DARK013TATTOO Cloud</strong> - Dados sincronizados com Supabase</p>
+                    <ul>
+                        <li>✅ Sincronização em tempo real</li>
+                        <li>✅ Backup automático na nuvem</li>
+                        <li>✅ Acesso de qualquer dispositivo</li>
+                    </ul>
+                </div>
             </div>
         </section>
-
-        <footer>
-            <p>🎨 DARK013TATTOO - Sistema de Gestão com Nuvem</p>
-            <p>© 2024 - Sincronizado com Supabase</p>
-        </footer>
     </div>
 
-    <!-- MODAL CAIXA -->
+    <!-- MODAIS -->
+    <!-- Modal Caixa -->
     <div id="modal-caixa" class="modal">
         <div class="modal-content">
+            <span class="close" onclick="fecharModal('modal-caixa')">&times;</span>
             <h2>Novo Lançamento</h2>
-            <form id="form-caixa">
-                <div class="form-group">
-                    <label>Data</label>
-                    <input type="date" name="data" required>
-                </div>
-                <div class="form-group">
-                    <label>Saldo Inicial</label>
-                    <input type="number" step="0.01" name="saldo_inicial" value="0">
-                </div>
-                <div class="form-group">
-                    <label>Entradas</label>
-                    <input type="number" step="0.01" name="entradas" value="0">
-                </div>
-                <div class="form-group">
-                    <label>Saídas</label>
-                    <input type="number" step="0.01" name="saidas" value="0">
-                </div>
-                <div class="form-group">
-                    <label>Descrição</label>
-                    <input type="text" name="descricao">
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="btn btn-danger" onclick="fecharModal('modal-caixa')">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Salvar</button>
-                </div>
-            </form>
+            <div class="form-group">
+                <label>Data</label>
+                <input type="date" id="caixa-data">
+            </div>
+            <div class="form-group">
+                <label>Saldo Inicial</label>
+                <input type="number" step="0.01" id="caixa-saldo-inicial" value="0">
+            </div>
+            <div class="form-group">
+                <label>Entradas</label>
+                <input type="number" step="0.01" id="caixa-entradas" value="0">
+            </div>
+            <div class="form-group">
+                <label>Saídas</label>
+                <input type="number" step="0.01" id="caixa-saidas" value="0">
+            </div>
+            <div class="form-group">
+                <label>Descrição</label>
+                <input type="text" id="caixa-descricao">
+            </div>
+            <button class="btn btn-success" onclick="salvarCaixa()">💾 Salvar</button>
+            <button class="btn btn-danger" onclick="fecharModal('modal-caixa')">❌ Cancelar</button>
         </div>
     </div>
 
-    <!-- MODAL SERVIÇO -->
+    <!-- Modal Serviço -->
     <div id="modal-servico" class="modal">
         <div class="modal-content">
+            <span class="close" onclick="fecharModal('modal-servico')">&times;</span>
             <h2>Novo Serviço</h2>
-            <form id="form-servico">
-                <div class="form-group">
-                    <label>Data</label>
-                    <input type="date" name="data" required>
-                </div>
-                <div class="form-group">
-                    <label>Cliente</label>
-                    <input type="text" name="cliente" required>
-                </div>
-                <div class="form-group">
-                    <label>Tatuador</label>
-                    <select name="tatuador" required>
-                        <option value="Fernando Dark">Fernando Dark</option>
-                        <option value="Thalia">Thalia</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Tipo</label>
-                    <select name="tipo" required>
-                        <option value="Tatuagem">Tatuagem</option>
-                        <option value="Piercing">Piercing</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Descrição</label>
-                    <input type="text" name="descricao">
-                </div>
-                <div class="form-group">
-                    <label>Valor (R$)</label>
-                    <input type="number" step="0.01" name="valor" required>
-                </div>
-                <div class="form-group">
-                    <label>Pagamento</label>
-                    <select name="pagamento" required>
-                        <option value="PIX">PIX</option>
-                        <option value="Dinheiro">Dinheiro</option>
-                        <option value="Cartão">Cartão</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="btn btn-danger" onclick="fecharModal('modal-servico')">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Salvar</button>
-                </div>
-            </form>
+            <div class="form-group">
+                <label>Data</label>
+                <input type="date" id="servico-data">
+            </div>
+            <div class="form-group">
+                <label>Cliente</label>
+                <input type="text" id="servico-cliente">
+            </div>
+            <div class="form-group">
+                <label>Tatuador</label>
+                <select id="servico-tatuador">
+                    <option value="Fernando Dark">Fernando Dark</option>
+                    <option value="Thalia">Thalia</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tipo</label>
+                <select id="servico-tipo">
+                    <option value="Tatuagem">Tatuagem</option>
+                    <option value="Piercing">Piercing</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Descrição</label>
+                <input type="text" id="servico-descricao">
+            </div>
+            <div class="form-group">
+                <label>Valor (R$)</label>
+                <input type="number" step="0.01" id="servico-valor">
+            </div>
+            <div class="form-group">
+                <label>Pagamento</label>
+                <select id="servico-pagamento">
+                    <option value="PIX">PIX</option>
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Cartão">Cartão</option>
+                </select>
+            </div>
+            <button class="btn btn-success" onclick="salvarServico()">💾 Salvar</button>
+            <button class="btn btn-danger" onclick="fecharModal('modal-servico')">❌ Cancelar</button>
         </div>
     </div>
 
-    <!-- MODAL PIERCING -->
+    <!-- Modal Piercing -->
     <div id="modal-piercing" class="modal">
         <div class="modal-content">
+            <span class="close" onclick="fecharModal('modal-piercing')">&times;</span>
             <h2>Novo Piercing</h2>
-            <form id="form-piercing">
-                <div class="form-group">
-                    <label>Modelo / Local / Tipo</label>
-                    <input type="text" name="modelo" required>
-                </div>
-                <div class="form-group">
-                    <label>Local/Tipo</label>
-                    <input type="text" name="local_tipo" placeholder="Ex: Orelha, Nariz, Umbigo">
-                </div>
-                <div class="form-group">
-                    <label>Estoque Inicial</label>
-                    <input type="number" name="estoque_inicial" required>
-                </div>
-                <div class="form-group">
-                    <label>Custo Unitário (R$)</label>
-                    <input type="number" step="0.01" name="custo_unitario" required>
-                </div>
-                <div class="form-group">
-                    <label>Preço Venda (R$)</label>
-                    <input type="number" step="0.01" name="preco_venda" required>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="btn btn-danger" onclick="fecharModal('modal-piercing')">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Salvar</button>
-                </div>
-            </form>
+            <div class="form-group">
+                <label>Modelo / Local / Tipo</label>
+                <input type="text" id="piercing-modelo">
+            </div>
+            <div class="form-group">
+                <label>Compra (Entrada)</label>
+                <input type="number" id="piercing-comprado" value="0">
+            </div>
+            <div class="form-group">
+                <label>Estoque Inicial</label>
+                <input type="number" id="piercing-estoque" value="0">
+            </div>
+            <div class="form-group">
+                <label>Custo Unitário (R$)</label>
+                <input type="number" step="0.01" id="piercing-custo">
+            </div>
+            <div class="form-group">
+                <label>Preço Venda (R$)</label>
+                <input type="number" step="0.01" id="piercing-venda">
+            </div>
+            <button class="btn btn-success" onclick="salvarPiercing()">💾 Salvar</button>
+            <button class="btn btn-danger" onclick="fecharModal('modal-piercing')">❌ Cancelar</button>
         </div>
     </div>
 
-    <!-- MODAL MATERIAL -->
+    <!-- Modal Material -->
     <div id="modal-material" class="modal">
         <div class="modal-content">
+            <span class="close" onclick="fecharModal('modal-material')">&times;</span>
             <h2>Novo Material</h2>
-            <form id="form-material">
-                <div class="form-group">
-                    <label>Nome do Material</label>
-                    <input type="text" name="nome" required>
-                </div>
-                <div class="form-group">
-                    <label>Estoque Inicial</label>
-                    <input type="number" name="estoque_inicial" required>
-                </div>
-                <div class="form-group">
-                    <label>Custo Unitário (R$)</label>
-                    <input type="number" step="0.01" name="custo_unitario" required>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="btn btn-danger" onclick="fecharModal('modal-material')">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Salvar</button>
-                </div>
-            </form>
+            <div class="form-group">
+                <label>Nome do Material</label>
+                <input type="text" id="material-nome">
+            </div>
+            <div class="form-group">
+                <label>Compra (Entrada)</label>
+                <input type="number" id="material-comprado" value="0">
+            </div>
+            <div class="form-group">
+                <label>Estoque Inicial</label>
+                <input type="number" id="material-estoque" value="0">
+            </div>
+            <div class="form-group">
+                <label>Custo Unitário (R$)</label>
+                <input type="number" step="0.01" id="material-custo">
+            </div>
+            <button class="btn btn-success" onclick="salvarMaterial()">💾 Salvar</button>
+            <button class="btn btn-danger" onclick="fecharModal('modal-material')">❌ Cancelar</button>
         </div>
     </div>
 
-    <!-- MODAL AGENDAMENTO -->
-    <div id="modal-agendamento" class="modal">
+    <!-- Modal Agendamento -->
+    <div id="modal-agenda" class="modal">
         <div class="modal-content">
+            <span class="close" onclick="fecharModal('modal-agenda')">&times;</span>
             <h2>Novo Agendamento</h2>
-            <form id="form-agendamento">
-                <div class="form-group">
-                    <label>Data</label>
-                    <input type="date" name="data" required>
-                </div>
-                <div class="form-group">
-                    <label>Horário</label>
-                    <input type="time" name="hora" required>
-                </div>
-                <div class="form-group">
-                    <label>Cliente</label>
-                    <input type="text" name="cliente" required>
-                </div>
-                <div class="form-group">
-                    <label>Tatuador</label>
-                    <select name="tatuador" required>
-                        <option value="Fernando Dark">Fernando Dark</option>
-                        <option value="Thalia">Thalia</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Tipo de Serviço</label>
-                    <select name="tipo">
-                        <option value="Tatuagem">Tatuagem</option>
-                        <option value="Piercing">Piercing</option>
-                        <option value="Avaliação">Avaliação</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Valor (R$)</label>
-                    <input type="number" step="0.01" name="valor">
-                </div>
-                <div class="form-group">
-                    <label>Status</label>
-                    <select name="status">
-                        <option value="Agendado">Agendado</option>
-                        <option value="Confirmado">Confirmado</option>
-                        <option value="Concluído">Concluído</option>
-                        <option value="Cancelado">Cancelado</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Observações</label>
-                    <textarea name="observacoes" rows="3"></textarea>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="btn btn-danger" onclick="fecharModal('modal-agendamento')">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Salvar</button>
-                </div>
-            </form>
+            <div class="form-group">
+                <label>Data</label>
+                <input type="date" id="agenda-data">
+            </div>
+            <div class="form-group">
+                <label>Horário</label>
+                <input type="time" id="agenda-horario">
+            </div>
+            <div class="form-group">
+                <label>Cliente</label>
+                <input type="text" id="agenda-cliente">
+            </div>
+            <div class="form-group">
+                <label>Tatuador</label>
+                <select id="agenda-tatuador">
+                    <option value="Fernando Dark">Fernando Dark</option>
+                    <option value="Thalia">Thalia</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tipo de Serviço</label>
+                <select id="agenda-tipo">
+                    <option value="Tatuagem">Tatuagem</option>
+                    <option value="Piercing">Piercing</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Valor (R$)</label>
+                <input type="number" step="0.01" id="agenda-valor">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="agenda-status">
+                    <option value="Agendado">Agendado</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Concluído">Concluído</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Observações</label>
+                <textarea id="agenda-obs"></textarea>
+            </div>
+            <button class="btn btn-success" onclick="salvarAgenda()">💾 Salvar</button>
+            <button class="btn btn-danger" onclick="fecharModal('modal-agenda')">❌ Cancelar</button>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script type="module" src="js/config.js"></script>
-    <script type="module" src="js/app.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
-        // Funções auxiliares globais para os modais
-        function abrirModal(modalId) {
-            document.getElementById(modalId).classList.add('active');
+        // CONFIGURAÇÃO SUPABASE
+        const SUPABASE_URL = 'https://bhymkxsgrghhpqgzqrni.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeW1reHNncmdoaHBxZ3pxcm5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzEyOTYsImV4cCI6MjA5MTYwNzI5Nn0.GuY32wg63pzCz5aZtGUJBXcb9zicwhsJSzH-czX3Ly4';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // NAVEGAÇÃO
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            event.target.classList.add('active');
+            carregarDados(sectionId);
         }
 
-        function fecharModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
+        // MODAIS
+        function abrirModalCaixa() { document.getElementById('modal-caixa').style.display = 'block'; }
+        function abrirModalServico() { document.getElementById('modal-servico').style.display = 'block'; }
+        function abrirModalPiercing() { document.getElementById('modal-piercing').style.display = 'block'; }
+        function abrirModalMaterial() { document.getElementById('modal-material').style.display = 'block'; }
+        function abrirModalAgendamento() { document.getElementById('modal-agenda').style.display = 'block'; }
+        function fecharModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+
+        // TESTAR CONEXÃO
+        async function testarConexao() {
+            try {
+                const { data, error } = await supabaseClient.from('caixa').select('id').limit(1);
+                if (error) throw error;
+                document.getElementById('status-nuvem').innerHTML = '✅ Conectado';
+                document.getElementById('status-nuvem').style.background = '#28a745';
+                document.getElementById('status-nuvem').style.color = 'white';
+                return true;
+            } catch (err) {
+                console.error('Erro:', err);
+                document.getElementById('status-nuvem').innerHTML = '❌ Erro';
+                document.getElementById('status-nuvem').style.background = '#dc3545';
+                return false;
+            }
         }
 
+        // CARREGAR DADOS
+        async function carregarDados(section) {
+            if (section === 'caixa' || section === 'dashboard') await carregarCaixa();
+            if (section === 'servicos' || section === 'dashboard') await carregarServicos();
+            if (section === 'piercings') await carregarPiercings();
+            if (section === 'materiais') await carregarMateriais();
+            if (section === 'agenda' || section === 'dashboard') await carregarAgenda();
+            if (section === 'relatorios') await carregarRelatorios();
+        }
+
+        async function carregarCaixa() {
+            const { data, error } = await supabaseClient.from('caixa').select('*').order('data', { ascending: false });
+            if (error) { console.error('Erro caixa:', error); return; }
+
+            const tbody = document.querySelector('#tabela-caixa tbody');
+            tbody.innerHTML = '';
+            
+            let totalEntradas = 0, totalSaidas = 0, saldoFinal = 0;
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum lançamento no caixa</td></tr>';
+            } else {
+                data.forEach(lanc => {
+                    totalEntradas += parseFloat(lanc.entradas) || 0;
+                    totalSaidas += parseFloat(lanc.saidas) || 0;
+                    saldoFinal = parseFloat(lanc.saldo_final) || 0;
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${new Date(lanc.data).toLocaleDateString('pt-BR')}</td>
+                            <td>R$ ${parseFloat(lanc.saldo_inicial).toFixed(2)}</td>
+                            <td style="color:green">R$ ${parseFloat(lanc.entradas).toFixed(2)}</td>
+                            <td style="color:red">R$ ${parseFloat(lanc.saidas).toFixed(2)}</td>
+                            <td><strong>R$ ${parseFloat(lanc.saldo_final).toFixed(2)}</strong></td>
+                            <td>${lanc.descricao || '-'}</td>
+                            <td>
+                                <button class="btn btn-warning" onclick="editarCaixa('${lanc.id}')">✏️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            document.getElementById('caixa-total-entradas').innerText = `R$ ${totalEntradas.toFixed(2)}`;
+            document.getElementById('caixa-total-saidas').innerText = `R$ ${totalSaidas.toFixed(2)}`;
+            document.getElementById('caixa-saldo-final').innerText = `R$ ${saldoFinal.toFixed(2)}`;
+            document.getElementById('saldo-atual').innerText = `R$ ${saldoFinal.toFixed(2)}`;
+            document.getElementById('total-entradas').innerText = `R$ ${totalEntradas.toFixed(2)}`;
+            document.getElementById('total-saidas').innerText = `R$ ${totalSaidas.toFixed(2)}`;
+        }
+
+        async function carregarServicos() {
+            const { data, error } = await supabaseClient.from('servicos').select('*').order('data', { ascending: false });
+            if (error) { console.error('Erro servicos:', error); return; }
+
+            const tbody = document.querySelector('#tabela-servicos tbody');
+            tbody.innerHTML = '';
+            
+            let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Nenhum serviço registrado</td></tr>';
+            } else {
+                data.forEach(serv => {
+                    const valor = parseFloat(serv.valor_total) || 0;
+                    const estudio = valor * 0.30;
+                    const repasse = valor * 0.70;
+                    
+                    totalValor += valor;
+                    totalEstudio += estudio;
+                    totalRepasse += repasse;
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${new Date(serv.data).toLocaleDateString('pt-BR')}</td>
+                            <td>${serv.cliente}</td>
+                            <td>${serv.tatuador_nome}</td>
+                            <td>${serv.tipo}</td>
+                            <td>${serv.descricao || '-'}</td>
+                            <td>R$ ${valor.toFixed(2)}</td>
+                            <td>R$ ${estudio.toFixed(2)}</td>
+                            <td>R$ ${repasse.toFixed(2)}</td>
+                            <td>${serv.forma_pagamento || '-'}</td>
+                            <td>
+                                <button class="btn btn-warning" onclick="editarServico('${serv.id}')">✏️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            document.getElementById('servicos-total-valor').innerText = `R$ ${totalValor.toFixed(2)}`;
+            document.getElementById('servicos-total-estudio').innerText = `R$ ${totalEstudio.toFixed(2)}`;
+            document.getElementById('servicos-total-repasse').innerText = `R$ ${totalRepasse.toFixed(2)}`;
+            document.getElementById('servicos-realizados').innerText = data.length;
+            document.getElementById('repasse-thalia').innerText = `R$ ${totalRepasse.toFixed(2)}`;
+        }
+
+        async function carregarPiercings() {
+            const { data, error } = await supabaseClient.from('piercings').select('*');
+            if (error) { console.error('Erro piercings:', error); return; }
+
+            const tbody = document.querySelector('#tabela-piercings tbody');
+            tbody.innerHTML = '';
+            
+            let totalComprado = 0, totalVendido = 0, totalLucro = 0;
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Nenhum piercing cadastrado</td></tr>';
+            } else {
+                data.forEach(p => {
+                    const lucroUnit = (parseFloat(p.preco_venda) || 0) - (parseFloat(p.custo_unitario) || 0);
+                    const lucroTotal = lucroUnit * (parseFloat(p.vendido) || 0);
+                    
+                    totalComprado += parseInt(p.comprado) || 0;
+                    totalVendido += parseInt(p.vendido) || 0;
+                    totalLucro += lucroTotal;
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${p.modelo}</td>
+                            <td>${p.estoque_atual}</td>
+                            <td>${p.comprado}</td>
+                            <td>${p.vendido}</td>
+                            <td>R$ ${parseFloat(p.custo_unitario).toFixed(2)}</td>
+                            <td>R$ ${parseFloat(p.preco_venda).toFixed(2)}</td>
+                            <td>R$ ${lucroUnit.toFixed(2)}</td>
+                            <td>R$ ${lucroTotal.toFixed(2)}</td>
+                            <td>
+                                <button class="btn btn-warning" onclick="editarPiercing('${p.id}')">✏️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            document.getElementById('piercings-total-comprado').innerText = totalComprado;
+            document.getElementById('piercings-total-vendido').innerText = totalVendido;
+            document.getElementById('piercings-total-lucro').innerText = `R$ ${totalLucro.toFixed(2)}`;
+        }
+
+        async function carregarMateriais() {
+            const { data, error } = await supabaseClient.from('materiais').select('*');
+            if (error) { console.error('Erro materiais:', error); return; }
+
+            const tbody = document.querySelector('#tabela-materiais tbody');
+            tbody.innerHTML = '';
+            
+            let totalComprado = 0, totalConsumido = 0, totalValor = 0;
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum material cadastrado</td></tr>';
+            } else {
+                data.forEach(m => {
+                    const valorEstoque = (parseFloat(m.estoque_atual) || 0) * (parseFloat(m.custo_unitario) || 0);
+                    
+                    totalComprado += parseInt(m.comprado) || 0;
+                    totalConsumido += parseInt(m.consumido) || 0;
+                    totalValor += valorEstoque;
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${m.nome}</td>
+                            <td>${m.estoque_atual}</td>
+                            <td>${m.comprado}</td>
+                            <td>${m.consumido}</td>
+                            <td>R$ ${parseFloat(m.custo_unitario).toFixed(2)}</td>
+                            <td>R$ ${valorEstoque.toFixed(2)}</td>
+                            <td>
+                                <button class="btn btn-warning" onclick="editarMaterial('${m.id}')">✏️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            document.getElementById('materiais-total-comprado').innerText = totalComprado;
+            document.getElementById('materiais-total-consumido').innerText = totalConsumido;
+            document.getElementById('materiais-total-valor').innerText = `R$ ${totalValor.toFixed(2)}`;
+        }
+
+        async function carregarAgenda() {
+            const { data, error } = await supabaseClient.from('agenda').select('*').order('data_hora', { ascending: true });
+            if (error) { console.error('Erro agenda:', error); return; }
+
+            const tbody = document.querySelector('#tabela-agenda tbody');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Nenhum agendamento</td></tr>';
+            } else {
+                data.forEach(a => {
+                    const statusClass = {
+                        'Agendado': 'status-warning',
+                        'Confirmado': 'status-info',
+                        'Concluído': 'status-success',
+                        'Cancelado': 'status-danger'
+                    }[a.status] || 'status-warning';
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${new Date(a.data_hora).toLocaleString('pt-BR')}</td>
+                            <td>${a.cliente}</td>
+                            <td>${a.tatuador_nome}</td>
+                            <td>${a.tipo_servico}</td>
+                            <td>R$ ${parseFloat(a.valor_estimado).toFixed(2)}</td>
+                            <td><span class="status-badge ${statusClass}">${a.status}</span></td>
+                            <td>${a.observacoes || '-'}</td>
+                            <td>
+                                <button class="btn btn-warning" onclick="editarAgenda('${a.id}')">✏️</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        async function carregarRelatorios() {
+            // Implementar relatórios
+        }
+
+        // SALVAR DADOS
+        async function salvarCaixa() {
+            const data = {
+                data: document.getElementById('caixa-data').value,
+                saldo_inicial: parseFloat(document.getElementById('caixa-saldo-inicial').value) || 0,
+                entradas: parseFloat(document.getElementById('caixa-entradas').value) || 0,
+                saidas: parseFloat(document.getElementById('caixa-saidas').value) || 0,
+                descricao: document.getElementById('caixa-descricao').value
+            };
+            
+            const { error } = await supabaseClient.from('caixa').insert([data]);
+            if (error) { alert('Erro: ' + error.message); return; }
+            
+            alert('✅ Lançamento salvo!');
+            fecharModal('modal-caixa');
+            carregarCaixa();
+        }
+
+        async function salvarServico() {
+            const data = {
+                data: document.getElementById('servico-data').value,
+                cliente: document.getElementById('servico-cliente').value,
+                tatuador_nome: document.getElementById('servico-tatuador').value,
+                tipo: document.getElementById('servico-tipo').value,
+                descricao: document.getElementById('servico-descricao').value,
+                valor_total: parseFloat(document.getElementById('servico-valor').value) || 0,
+                forma_pagamento: document.getElementById('servico-pagamento').value
+            };
+            
+            const { error } = await supabaseClient.from('servicos').insert([data]);
+            if (error) { alert('Erro: ' + error.message); return; }
+            
+            alert('✅ Serviço registrado!');
+            fecharModal('modal-servico');
+            carregarServicos();
+        }
+
+        async function salvarPiercing() {
+            const data = {
+                modelo: document.getElementById('piercing-modelo').value,
+                comprado: parseInt(document.getElementById('piercing-comprado').value) || 0,
+                estoque_atual: parseInt(document.getElementById('piercing-estoque').value) || 0,
+                custo_unitario: parseFloat(document.getElementById('piercing-custo').value) || 0,
+                preco_venda: parseFloat(document.getElementById('piercing-venda').value) || 0
+            };
+            
+            const { error } = await supabaseClient.from('piercings').insert([data]);
+            if (error) { alert('Erro: ' + error.message); return; }
+            
+            alert('✅ Piercing cadastrado!');
+            fecharModal('modal-piercing');
+            carregarPiercings();
+        }
+
+        async function salvarMaterial() {
+            const data = {
+                nome: document.getElementById('material-nome').value,
+                comprado: parseInt(document.getElementById('material-comprado').value) || 0,
+                estoque_atual: parseInt(document.getElementById('material-estoque').value) || 0,
+                custo_unitario: parseFloat(document.getElementById('material-custo').value) || 0
+            };
+            
+            const { error } = await supabaseClient.from('materiais').insert([data]);
+            if (error) { alert('Erro: ' + error.message); return; }
+            
+            alert('✅ Material cadastrado!');
+            fecharModal('modal-material');
+            carregarMateriais();
+        }
+
+        async function salvarAgenda() {
+            const dataHora = `${document.getElementById('agenda-data').value} ${document.getElementById('agenda-horario').value}`;
+            const data = {
+                data_hora: dataHora,
+                cliente: document.getElementById('agenda-cliente').value,
+                tatuador_nome: document.getElementById('agenda-tatuador').value,
+                tipo_servico: document.getElementById('agenda-tipo').value,
+                valor_estimado: parseFloat(document.getElementById('agenda-valor').value) || 0,
+                status: document.getElementById('agenda-status').value,
+                observacoes: document.getElementById('agenda-obs').value
+            };
+            
+            const { error } = await supabaseClient.from('agenda').insert([data]);
+            if (error) { alert('Erro: ' + error.message); return; }
+            
+            alert('✅ Agendamento registrado!');
+            fecharModal('modal-agenda');
+            carregarAgenda();
+        }
+
+        // FUNÇÕES AUXILIARES
         function sincronizarAgora() {
-            alert('🔄 Sincronizando com a nuvem...');
             location.reload();
         }
 
-        async function exportarBackup() {
-            alert('📥 Exportando backup... (funcionalidade será implementada no app.js)');
+        function exportarBackup() {
+            alert('Funcionalidade de exportação em desenvolvimento');
         }
 
-        async function importarBackup() {
-            alert('📤 Importando backup... (funcionalidade será implementada no app.js)');
+        function importarBackup(input) {
+            alert('Funcionalidade de importação em desenvolvimento');
         }
 
-        // Navegação entre abas
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = e.target.getAttribute('data-target');
-                
-                // Remove active de todos
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-                
-                // Adiciona active no atual
-                e.target.classList.add('active');
-                document.getElementById(targetId).classList.add('active');
-            });
-        });
+        function filtrarAgendaHoje() {
+            document.getElementById('filtro-data-agenda').valueAsDate = new Date();
+            carregarAgenda();
+        }
 
-        // Fechar modal ao clicar fora
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.remove('active');
-                }
-            });
+        // Placeholder functions for edit (to be implemented)
+        function editarCaixa(id) { alert('Editar caixa: ' + id); }
+        function editarServico(id) { alert('Editar serviço: ' + id); }
+        function editarPiercing(id) { alert('Editar piercing: ' + id); }
+        function editarMaterial(id) { alert('Editar material: ' + id); }
+        function editarAgenda(id) { alert('Editar agenda: ' + id); }
+
+        // INICIALIZAÇÃO
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await testarConexao();
+            await carregarDados('dashboard');
+            
+            // Set today's date in forms
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('caixa-data').value = today;
+            document.getElementById('servico-data').value = today;
+            document.getElementById('agenda-data').value = today;
         });
     </script>
 </body>
