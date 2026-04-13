@@ -1,0 +1,46 @@
+// Adicione no início do dashboard.html (dentro da tag script)
+
+// Verificar autenticação
+async function verificarAutenticacao() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+        window.location.href = 'index.html';
+        return null;
+    }
+    
+    // Mostrar nome do usuário logado
+    const userEmail = session.user.email;
+    const userName = session.user.user_metadata?.nome || userEmail.split('@')[0];
+    
+    // Adicionar info do usuário no header
+    const header = document.querySelector('header');
+    if (header && !document.getElementById('user-info')) {
+        const userInfo = document.createElement('div');
+        userInfo.id = 'user-info';
+        userInfo.style.cssText = 'margin-top: 15px; font-size: 0.9em; opacity: 0.9;';
+        userInfo.innerHTML = `
+            👤 ${userName} | 
+            <a href="#" onclick="fazerLogout()" style="color: white; text-decoration: underline;">Sair</a>
+        `;
+        header.appendChild(userInfo);
+    }
+    
+    return session;
+}
+
+async function fazerLogout() {
+    const { error } = await supabaseClient.auth.signOut();
+    if (!error) {
+        window.location.href = 'index.html';
+    }
+}
+
+// Chamar verificação ao carregar
+document.addEventListener('DOMContentLoaded', async () => {
+    const session = await verificarAutenticacao();
+    if (session) {
+        // Continuar com o carregamento normal do dashboard
+        await testarConexao();
+        await carregarDadosSeccao('dashboard');
+    }
+});
