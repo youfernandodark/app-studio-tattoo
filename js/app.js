@@ -1,7 +1,9 @@
 import utils from './utils.js';
+import { supabase } from '../config/supabase.js';
 
 window.app = {
     utils,
+    supabase,
     modais: {},
     dados: {
         caixa: [],
@@ -11,11 +13,31 @@ window.app = {
         agenda: []
     },
 
-    init() {
+    async init() {
+        // Limpa localStorage para evitar conflitos
+        localStorage.removeItem('dark013tattoo_dados');
+        
+        // Testa conexão
+        await this.testarConexao();
+        
         this.setupNavigation();
         this.setupModals();
-        this.carregarDados();
-        console.log('✅ Aplicação inicializada');
+        await this.carregarTodosDados();
+        
+        console.log('✅ Aplicação inicializada com Supabase');
+    },
+
+    async testarConexao() {
+        try {
+            const { error } = await supabase.from('caixa').select('count').limit(1);
+            if (error) throw error;
+            console.log('✅ Conectado ao Supabase');
+            document.querySelector('.subtitle').textContent = '✓ Conectado à nuvem | Dark Mode Studio';
+        } catch (error) {
+            console.error('❌ Erro na conexão:', error);
+            document.querySelector('.subtitle').textContent = '❌ Erro de conexão | Dark Mode Studio';
+            utils.mostrarMensagem('erro', 'Erro ao conectar com a nuvem!');
+        }
     },
 
     setupNavigation() {
@@ -34,13 +56,14 @@ window.app = {
         document.getElementById(sectionId).classList.add('active');
         document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
         
+        // Carrega dados da seção específica
         if (window.app[sectionId] && window.app[sectionId].carregar) {
             window.app[sectionId].carregar();
         }
     },
 
     setupModals() {
-        window.app.modals = {
+        window.app.modais = {
             open(modalId) {
                 document.getElementById(modalId).classList.add('active');
             },
@@ -50,23 +73,14 @@ window.app = {
         };
     },
 
-    async carregarDados() {
-        const dadosSalvos = localStorage.getItem('dark013tattoo_dados');
-        if (dadosSalvos) {
-            this.dados = JSON.parse(dadosSalvos);
-        }
-        this.atualizarDashboard();
+    async carregarTodosDados() {
+        // Carrega todos os módulos inicialmente
+        if (window.app.dashboard) window.app.dashboard.atualizar();
     },
 
     salvarDados() {
-        localStorage.setItem('dark013tattoo_dados', JSON.stringify(this.dados));
-        this.atualizarDashboard();
-    },
-
-    atualizarDashboard() {
-        if (window.app.dashboard && window.app.dashboard.atualizar) {
-            window.app.dashboard.atualizar();
-        }
+        // Mantém cache local para performance (opcional)
+        localStorage.setItem('dark013tattoo_cache', JSON.stringify(this.dados));
     }
 };
 
