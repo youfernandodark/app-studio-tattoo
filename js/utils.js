@@ -21,8 +21,12 @@ export const utils = {
     },
 
     mostrarMensagem(tipo, mensagem) {
+        // Remove mensagens antigas
+        const mensagensExistentes = document.querySelectorAll('.mensagem-toast');
+        mensagensExistentes.forEach(m => m.remove());
+
         const div = document.createElement('div');
-        div.className = `mensagem ${tipo}`;
+        div.className = `mensagem-toast`;
         div.textContent = mensagem;
         div.style.cssText = `
             position: fixed;
@@ -35,9 +39,14 @@ export const utils = {
             font-weight: bold;
             z-index: 10000;
             animation: slideInRight 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         `;
+        
         document.body.appendChild(div);
-        setTimeout(() => div.remove(), 3000);
+        setTimeout(() => {
+            div.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => div.remove(), 300);
+        }, 3000);
     },
 
     confirmarAcao(mensagem) {
