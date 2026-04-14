@@ -223,7 +223,11 @@ function renderizarServicos(data){
             <td>${formatMoney(estudio)}</td>
             <td style="color:#34D399">${formatMoney(repasse)}</td>
             <td>${s.forma_pagamento}</td>
-            <td><button class="btn btn-warning btn-sm" onclick="editarServico('${s.id}')">Editar</button> <button class="btn btn-danger btn-sm" onclick="excluirServico('${s.id}')">Excluir</button></td>
+            <td>
+                <button class="btn btn-success btn-sm" onclick="finalizarServico('${s.id}')">✅ Finalizar Trabalho</button>
+                <button class="btn btn-warning btn-sm" onclick="editarServico('${s.id}')">Editar</button>
+                <button class="btn btn-danger btn-sm" onclick="excluirServico('${s.id}')">Excluir</button>
+            </td>
         </tr>
     `; });
     document.getElementById('servicos-total-valor').innerText=formatMoney(totalV);
@@ -305,7 +309,105 @@ async function carregarRelatorios(){
     document.getElementById('relatorio-lucro-liquido').innerHTML=`<strong>Lucro Líquido (Estúdio):</strong> ${formatMoney(lucroLiq)}`;
 }
 
-// ==================== CRUD: CAIXA ====================
+// ==================== CAIXA: ADICIONAR ENTRADA AUTOMÁTICA ====================
+async function adicionarEntradaCaixa(data, valor, descricao) {
+    try {
+        // Buscar último saldo final
+        const { data: ultimo, error: ultimoError } = await supabaseClient
+            .from('caixa')
+            .select('saldo_final')
+            .order('data', { ascending: false })
+            .limit(1);
+        if (ultimoError) throw ultimoError;
+        const saldoInicial = ultimo && ultimo.length ? ultimo[0].saldo_final : 0;
+        const saldoFinal = saldoInicial + valor;
+
+        const novoLancamento = {
+            data: data,
+            saldo_inicial: saldoInicial,
+            entradas: valor,
+            saidas: 0,
+            saldo_final: saldoFinal,
+            descricao: descricao
+        };
+        const { error: insertError } = await supabaseClient.from('caixa').insert([novoLancamento]);
+        if (insertError) throw insertError;
+        await carregarCaixa();
+        return true;
+    } catch (e) {
+        showAlert('Erro ao lançar entrada no caixa: ' + e.message, 'error');
+        return false;
+    }
+}
+
+// ==================== AGENDA: CONFIRMAR + CRIAR SERVIÇO ====================
+async function criarServicoDoAgendamento(agendaId) {
+    try {
+        const { data: agenda, error } = await supabaseClient
+            .from('agenda')
+            .select('*')
+            .eq('id', agendaId)
+            .single();
+        if (error) throw error;
+
+        const novoServico = {
+            data: agenda.data_hora.split('T')[0],
+            cliente: agenda.cliente,
+            tatuador_nome: agenda.tatuador_nome,
+            tipo: agenda.tipo_servico,
+            descricao: agenda.observacoes || `Agendamento confirmado em ${new Date().toLocaleDateString()}`,
+            valor_total: agenda.valor_estimado || 0,
+            forma_pagamento: 'A definir'
+        };
+        const { error: insertError } = await supabaseClient.from('servicos').insert([novoServico]);
+        if (insertError) throw insertError;
+        showAlert(`Serviço para ${agenda.cliente} criado automaticamente!`, 'success');
+        await carregarServicos();
+        atualizarDashboard();
+    } catch (e) {
+        showAlert('Erro ao criar serviço a partir do agendamento: ' + e.message, 'error');
+    }
+}
+
+window.confirmarAgendamento = async (id) => {
+    if (confirm('Confirmar este agendamento? Um serviço será criado automaticamente.')) {
+        try {
+            // Atualiza status do agendamento
+            await supabaseClient.from('agenda').update({ status: 'Confirmado' }).eq('id', id);
+            await carregarAgenda();
+            // Cria serviço correspondente
+            await criarServicoDoAgendamento(id);
+            atualizarDashboard();
+            showAlert('Agendamento confirmado e serviço criado!', 'success');
+        } catch (e) {
+            showAlert('Erro ao confirmar: ' + e.message, 'error');
+        }
+    }
+};
+
+// ==================== SERVIÇOS: FINALIZAR TRABALHO (LANÇA NO CAIXA) ====================
+window.finalizarServico = async (servicoId) => {
+    const servico = currentData.servicos.find(s => s.id === servicoId);
+    if (!servico) {
+        showAlert('Serviço não encontrado', 'error');
+        return;
+    }
+    if (!servico.valor_total || servico.valor_total <= 0) {
+        showAlert('Este serviço tem valor R$ 0,00. Defina um valor antes de finalizar.', 'warning');
+        return;
+    }
+    if (confirm(`Finalizar trabalho para ${servico.cliente} no valor de ${formatMoney(servico.valor_total)}? Isso lançará o valor no caixa como entrada.`)) {
+        const descricaoCaixa = `Serviço finalizado: ${servico.cliente} - ${servico.descricao || servico.tipo}`;
+        const sucesso = await adicionarEntradaCaixa(servico.data, servico.valor_total, descricaoCaixa);
+        if (sucesso) {
+            showAlert(`Trabalho finalizado! Valor de ${formatMoney(servico.valor_total)} lançado no caixa.`, 'success');
+            await carregarRelatorios();
+            atualizarDashboard();
+        }
+    }
+};
+
+// ==================== CRUD: CAIXA (sem alterações) ====================
 window.abrirModalCaixa = async () => {
     const { data } = await supabaseClient.from('caixa').select('saldo_final').order('data', { ascending: false }).limit(1);
     const ultimoSaldo = data?.length ? data[0].saldo_final : 0;
@@ -368,7 +470,7 @@ window.filtrarCaixa = () => {
     renderizarCaixa(filtered);
 };
 
-// ==================== CRUD: SERVIÇOS ====================
+// ==================== CRUD: SERVIÇOS (sem alterações, exceto já temos finalizarServico) ====================
 window.abrirModalServico = () => {
     document.getElementById('servico-id').value = '';
     document.getElementById('servico-data').value = new Date().toISOString().split('T')[0];
@@ -457,7 +559,7 @@ window.limparFiltrosServicos = () => {
     renderizarServicos(currentData.servicos);
 };
 
-// ==================== CRUD: AGENDA ====================
+// ==================== CRUD: AGENDA (demais funções já existem) ====================
 window.abrirModalAgendamento = () => {
     document.getElementById('agenda-id').value = '';
     document.getElementById('agenda-data').value = new Date().toISOString().split('T')[0];
@@ -515,16 +617,6 @@ window.excluirAgenda = async (id) => {
         } catch (e) { showAlert('Erro ao excluir', 'error'); }
     }
 };
-window.confirmarAgendamento = async (id) => {
-    if (confirm('Confirmar este agendamento?')) {
-        try {
-            await supabaseClient.from('agenda').update({ status: 'Confirmado' }).eq('id', id);
-            await carregarAgenda();
-            atualizarDashboard();
-            showAlert('Status alterado para Confirmado', 'success');
-        } catch (e) { showAlert('Erro ao confirmar', 'error'); }
-    }
-};
 window.filtrarAgenda = () => {
     let filtered = [...currentData.agenda];
     const tat = document.getElementById('filtro-tatuador-agenda').value;
@@ -546,7 +638,7 @@ window.limparFiltrosAgenda = () => {
     renderizarAgenda(currentData.agenda);
 };
 
-// ==================== PIERCING ====================
+// ==================== PIERCING (sem alterações) ====================
 window.abrirModalPiercing = (id = null) => {
     document.getElementById('piercing-id').value = '';
     document.getElementById('piercing-nome').value = '';
@@ -612,7 +704,7 @@ window.registrarVendaPiercing = async () => {
     } catch (e) { showAlert('Erro na venda: ' + e.message, 'error'); }
 };
 
-// ==================== MATERIAIS ====================
+// ==================== MATERIAIS (sem alterações) ====================
 window.abrirModalMaterial = (id = null) => {
     document.getElementById('material-id').value = '';
     document.getElementById('material-nome').value = '';
@@ -677,7 +769,7 @@ window.registrarUsoMaterial = async () => {
     } catch (e) { showAlert('Erro ao registrar uso: ' + e.message, 'error'); }
 };
 
-// ==================== BACKUP ====================
+// ==================== BACKUP (sem alterações) ====================
 window.exportarBackup = async () => {
     try {
         const { data: servicos } = await supabaseClient.from('servicos').select('*');
@@ -720,7 +812,7 @@ window.importarBackup = async (input) => {
     input.value = '';
 };
 
-// ==================== EXEMPLOS ====================
+// ==================== EXEMPLOS (sem alterações) ====================
 window.popularPiercingsExemplo = async () => {
     if (!confirm('Isso irá adicionar piercings de exemplo (não remove os existentes). Continuar?')) return;
     const exemplos = [
