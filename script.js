@@ -193,7 +193,7 @@ async function carregarUsosMateriais() {
 // ==================== RENDER FUNCTIONS ====================
 function renderizarCaixa(data){
     let totalE=0,totalS=0; const tbody=document.getElementById('caixa-tbody'); tbody.innerHTML='';
-    if(data.length===0) tbody.innerHTML='<tr><td colspan="7">Nenhum lançamento</td>'   ;
+    if(data.length===0) tbody.innerHTML='<tr><td colspan="7">Nenhum lançamento</td></tr>';
     else data.forEach(l=>{ const ent=+l.entradas||0, sai=+l.saidas||0; totalE+=ent; totalS+=sai; tbody.innerHTML+=`
         <tr>
             <td>${formatDate(l.data)}</td>
@@ -211,6 +211,7 @@ function renderizarCaixa(data){
     document.getElementById('caixa-saldo-final').innerText=formatMoney(ultimoSaldo);
 }
 
+// RENDER SERVIÇOS (sem botão Editar)
 function renderizarServicos(data){
     let totalV=0,totalE=0,totalR=0; const tbody=document.getElementById('servicos-tbody'); tbody.innerHTML='';
     data.forEach(s=>{ const val=+s.valor_total||0; const estudio = s.tatuador_nome==='Thalia'?val*0.3:0; const repasse = s.tatuador_nome==='Thalia'?val*0.7:val; totalV+=val; totalE+=estudio; totalR+=repasse; tbody.innerHTML+=`
@@ -227,7 +228,6 @@ function renderizarServicos(data){
             <td>
                 <button class="btn btn-success btn-sm" onclick="finalizarServico('${s.id}')">✅ Finalizar Trabalho</button>
                 <button class="btn btn-info btn-sm" onclick="remarcarServico('${s.id}')">📅 Remarcar</button>
-                <button class="btn btn-warning btn-sm" onclick="editarServico('${s.id}')">Editar</button>
                 <button class="btn btn-danger btn-sm" onclick="excluirServico('${s.id}')">Excluir</button>
             </td>
         </tr>
@@ -239,7 +239,7 @@ function renderizarServicos(data){
 
 function renderizarAgenda(data){
     const tbody=document.getElementById('agenda-tbody'); tbody.innerHTML='';
-    if(data.length===0) tbody.innerHTML='<tr><td colspan="8">Nenhum agendamento</td>'   ;
+    if(data.length===0) tbody.innerHTML='<tr><td colspan="8">Nenhum agendamento</td></tr>';
     else data.forEach(a=>{ const statusClass={Agendado:'status-warning',Confirmado:'status-info',Concluído:'status-success',Cancelado:'status-danger'}[a.status]; let confirmBtn = (a.status === 'Agendado') ? `<button class="btn btn-success btn-sm" onclick="confirmarAgendamento('${a.id}')"><i class="fas fa-check"></i> Confirmar</button> ` : ''; tbody.innerHTML+=`
         <tr>
             <td>${formatDateTime(a.data_hora)}</td>
@@ -347,7 +347,7 @@ async function adicionarEntradaCaixa(data, valor, descricao) {
     }
 }
 
-// ==================== REMARCAR SERVIÇO (NOVA DATA/HORA) ====================
+// ==================== REMARCAR SERVIÇO (CORRIGIDO: recria modal a cada chamada) ====================
 window.remarcarServico = async (servicoId) => {
     const servico = currentData.servicos.find(s => s.id === servicoId);
     if (!servico) {
@@ -355,61 +355,66 @@ window.remarcarServico = async (servicoId) => {
         return;
     }
 
+    // Remove modal existente para evitar conflito de serviços
+    const modalExistente = document.getElementById('modal-remarcar');
+    if (modalExistente) modalExistente.remove();
+
     // Criar modal dinâmico
     const modalId = 'modal-remarcar';
-    let modal = document.getElementById(modalId);
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = modalId;
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close" onclick="fecharModal('${modalId}')">&times;</span>
-                <h2><i class="fas fa-calendar-alt"></i> Remarcar Serviço</h2>
-                <div class="form-group">
-                    <label>Nova Data</label>
-                    <input type="date" id="nova-data" required>
-                </div>
-                <div class="form-group">
-                    <label>Novo Horário (opcional)</label>
-                    <input type="time" id="nova-hora">
-                    <small>Se informado, será registrado na descrição do serviço.</small>
-                </div>
-                <button class="btn btn-primary" id="btn-confirmar-remarcacao">Confirmar Remarcação</button>
+    const modal = document.createElement('div');
+    modal.id = modalId;
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="fecharModal('${modalId}')">&times;</span>
+            <h2><i class="fas fa-calendar-alt"></i> Remarcar Serviço</h2>
+            <div class="form-group">
+                <label>Nova Data</label>
+                <input type="date" id="nova-data" required>
             </div>
-        `;
-        document.body.appendChild(modal);
-        document.getElementById('btn-confirmar-remarcacao').addEventListener('click', async () => {
-            const novaData = document.getElementById('nova-data').value;
-            const novaHora = document.getElementById('nova-hora').value;
-            if (!novaData) {
-                showAlert('Informe a nova data', 'error');
-                return;
-            }
-            const dataAntiga = formatDate(servico.data);
-            let descricaoExtra = `[Remarcado de ${dataAntiga}`;
-            if (novaHora) descricaoExtra += ` às ${novaHora}`;
-            descricaoExtra += `] `;
-            const novaDescricao = descricaoExtra + (servico.descricao || '');
-            
-            try {
-                const { error } = await supabaseClient
-                    .from('servicos')
-                    .update({ data: novaData, descricao: novaDescricao })
-                    .eq('id', servicoId);
-                if (error) throw error;
-                showAlert(`Serviço remarcado para ${formatDate(novaData)}${novaHora ? ` às ${novaHora}` : ''}`, 'success');
-                fecharModal(modalId);
-                await carregarServicos();
-                atualizarDashboard();
-            } catch (e) {
-                showAlert('Erro ao remarcar: ' + e.message, 'error');
-            }
-        });
-    }
+            <div class="form-group">
+                <label>Novo Horário (opcional)</label>
+                <input type="time" id="nova-hora">
+                <small>Se informado, será registrado na descrição do serviço.</small>
+            </div>
+            <button class="btn btn-primary" id="btn-confirmar-remarcacao">Confirmar Remarcação</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
     // Preencher com data atual do serviço
     document.getElementById('nova-data').value = servico.data;
     document.getElementById('nova-hora').value = '';
+
+    // Evento do botão confirmar (usa o servicoId diretamente)
+    document.getElementById('btn-confirmar-remarcacao').addEventListener('click', async () => {
+        const novaData = document.getElementById('nova-data').value;
+        const novaHora = document.getElementById('nova-hora').value;
+        if (!novaData) {
+            showAlert('Informe a nova data', 'error');
+            return;
+        }
+        const dataAntiga = formatDate(servico.data);
+        let descricaoExtra = `[Remarcado de ${dataAntiga}`;
+        if (novaHora) descricaoExtra += ` às ${novaHora}`;
+        descricaoExtra += `] `;
+        const novaDescricao = descricaoExtra + (servico.descricao || '');
+        
+        try {
+            const { error } = await supabaseClient
+                .from('servicos')
+                .update({ data: novaData, descricao: novaDescricao })
+                .eq('id', servicoId);
+            if (error) throw error;
+            showAlert(`Serviço remarcado para ${formatDate(novaData)}${novaHora ? ` às ${novaHora}` : ''}`, 'success');
+            fecharModal(modalId);
+            await carregarServicos();
+            atualizarDashboard();
+        } catch (e) {
+            showAlert('Erro ao remarcar: ' + e.message, 'error');
+        }
+    });
+
     modal.style.display = 'block';
 };
 
@@ -469,11 +474,14 @@ window.finalizarServico = async (servicoId) => {
     }
     if (confirm(`Finalizar trabalho para ${servico.cliente} no valor de ${formatMoney(servico.valor_total)}? Isso lançará o valor no caixa como entrada.`)) {
         const descricaoCaixa = `Serviço finalizado: ${servico.cliente} - ${servico.descricao || servico.tipo}`;
+        console.log('Finalizando serviço:', servico.id, 'Valor:', servico.valor_total); // log de depuração
         const sucesso = await adicionarEntradaCaixa(servico.data, servico.valor_total, descricaoCaixa);
         if (sucesso) {
             showAlert(`Trabalho finalizado! Valor de ${formatMoney(servico.valor_total)} lançado no caixa.`, 'success');
             await carregarRelatorios();
             atualizarDashboard();
+        } else {
+            console.error('Falha ao adicionar entrada no caixa');
         }
     }
 };
