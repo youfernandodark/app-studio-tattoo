@@ -75,7 +75,8 @@
                 <button class="btn btn-info btn-sm" onclick="limparFiltrosServicos()">Limpar</button>
             </div>
             <input type="text" id="search-servicos" placeholder="Buscar serviços..." onkeyup="filtrarServicos()" style="width:100%; padding:12px; margin-bottom:15px; background:#0A0A12; border-radius:44px;">
-            <table><thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30% Thalia)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead><tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody><tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
+            <table><thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30% Thalia)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead><tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody>
+            <tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
         </div>
     </section>
 
@@ -90,7 +91,7 @@
                 <button class="btn btn-info btn-sm" onclick="filtrarAgendaHoje()">Hoje</button>
                 <button class="btn btn-warning btn-sm" onclick="limparFiltrosAgenda()">Limpar</button>
             </div>
-            <table><thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody></table>
+            <table><thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
         </div>
     </section>
 
@@ -99,7 +100,7 @@
         <div class="card"><h2><i class="fas fa-gem"></i> Piercings - Estoque e Vendas</h2>
             <button class="btn btn-primary" onclick="abrirModalPiercing()">+ Adicionar ao Estoque</button>
             <h3>Estoque de Piercings</h3>
-            <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda (R$)</th><th>Ações</th></tr></thead><tbody id="estoque-piercing-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody></table>
+            <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda (R$)</th><th>Ações</th></tr></thead><tbody id="estoque-piercing-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
             <h3>Registrar Venda</h3>
             <div class="form-row">
                 <div class="form-group"><label>Piercing</label><select id="venda-piercing-id"></select></div>
@@ -154,13 +155,104 @@
     </section>
 </div>
 
-<!-- MODAIS -->
-<div id="modal-caixa" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-caixa')">&times;</span><h2>Lançamento</h2><input type="hidden" id="caixa-id"><div class="form-group"><label>Data</label><input type="date" id="caixa-data"></div><div class="form-row"><div class="form-group"><label>Saldo Inicial</label><input type="number" id="caixa-saldo-inicial" value="0"></div><div class="form-group"><label>Entradas</label><input type="number" id="caixa-entradas" value="0"></div><div class="form-group"><label>Saídas</label><input type="number" id="caixa-saidas" value="0"></div></div><div class="form-group"><label>Descrição</label><input type="text" id="caixa-descricao"></div><button class="btn btn-success" onclick="salvarCaixa()">Salvar</button></div></div>
-<div id="modal-servico" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-servico')">&times;</span><h2>Serviço</h2><input type="hidden" id="servico-id"><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="servico-data"></div><div class="form-group"><label>Cliente</label><input type="text" id="servico-cliente"></div></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="servico-tatuador" onchange="calcularRepasse()"><option>Fernando Dark</option><option>Thalia</option></select></div><div class="form-group"><label>Tipo</label><select id="servico-tipo"><option>Tatuagem</option><option>Piercing</option></select></div></div><div class="form-group"><label>Descrição</label><input type="text" id="servico-descricao"></div><div class="form-row"><div class="form-group"><label>Valor Total</label><input type="number" id="servico-valor" oninput="calcularRepasse()"></div><div class="form-group"><label>Pagamento</label><select id="servico-pagamento"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select></div></div><div id="repasse-info" style="background:#14141E; padding:12px; border-radius:20px;"><p><strong>Estúdio (30%):</strong> <span id="valor-estudio">R$0,00</span> <span id="aviso-thalia" style="color:#F59E0B;">(apenas Thalia)</span></p><p><strong>Repasse:</strong> <span id="valor-repasse">R$0,00</span></p></div><button class="btn btn-success" onclick="salvarServico()">Salvar</button></div></div>
-<div id="modal-agenda" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-agenda')">&times;</span><h2>Agendamento</h2><input type="hidden" id="agenda-id"><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="agenda-data"></div><div class="form-group"><label>Horário</label><input type="time" id="agenda-horario"></div></div><div class="form-group"><label>Cliente</label><input type="text" id="agenda-cliente"></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="agenda-tatuador"><option>Fernando Dark</option><option>Thalia</option></select></div><div class="form-group"><label>Tipo</label><select id="agenda-tipo"><option>Tatuagem</option><option>Piercing</option></select></div></div><div class="form-row"><div class="form-group"><label>Valor Estimado</label><input type="number" id="agenda-valor" value="0"></div><div class="form-group"><label>Status</label><select id="agenda-status"><option>Agendado</option><option>Confirmado</option><option>Concluído</option><option>Cancelado</option></select></div></div><div class="form-group"><label>Observações</label><textarea id="agenda-obs" rows="3"></textarea></div><button class="btn btn-success" onclick="salvarAgenda()">Salvar</button></div></div>
-<div id="modal-piercing" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-piercing')">&times;</span><h2>Piercing</h2><input type="hidden" id="piercing-id"><div class="form-group"><label>Nome</label><input id="piercing-nome"></div><div class="form-row"><div class="form-group"><label>Quantidade</label><input type="number" id="piercing-qtd"></div><div class="form-group"><label>Preço Venda (R$)</label><input type="number" id="piercing-preco" step="0.01"></div></div><button class="btn btn-success" onclick="salvarPiercing()">Salvar</button></div></div>
-<div id="modal-material" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-material')">&times;</span><h2>Material</h2><input type="hidden" id="material-id"><div class="form-group"><label>Nome</label><input id="material-nome"></div><div class="form-row"><div class="form-group"><label>Quantidade</label><input type="number" id="material-qtd"></div><div class="form-group"><label>Valor Unitário (R$)</label><input type="number" id="material-preco" step="0.01"></div></div><button class="btn btn-success" onclick="salvarMaterial()">Salvar</button></div></div>
+<!-- MODAL CAIXA -->
+<div id="modal-caixa" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal('modal-caixa')">&times;</span>
+        <h2>Lançamento</h2>
+        <input type="hidden" id="caixa-id">
+        <div class="form-group"><label>Data</label><input type="date" id="caixa-data"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Saldo Inicial</label><input type="number" id="caixa-saldo-inicial" value="0"></div>
+            <div class="form-group"><label>Entradas</label><input type="number" id="caixa-entradas" value="0"></div>
+            <div class="form-group"><label>Saídas</label><input type="number" id="caixa-saidas" value="0"></div>
+        </div>
+        <div class="form-group"><label>Descrição</label><input type="text" id="caixa-descricao"></div>
+        <button class="btn btn-success" onclick="salvarCaixa()">Salvar</button>
+    </div>
+</div>
+
+<!-- MODAL SERVIÇO (CORRIGIDO) -->
+<div id="modal-servico" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal('modal-servico')">&times;</span>
+        <h2>Serviço</h2>
+        <input type="hidden" id="servico-id">
+        <div class="form-row">
+            <div class="form-group"><label>Data</label><input type="date" id="servico-data"></div>
+            <div class="form-group"><label>Cliente</label><input type="text" id="servico-cliente"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Tatuador</label><select id="servico-tatuador" onchange="calcularRepasse()"><option>Fernando Dark</option><option>Thalia</option></select></div>
+            <div class="form-group"><label>Tipo</label><select id="servico-tipo"><option>Tatuagem</option><option>Piercing</option></select></div>
+        </div>
+        <div class="form-group"><label>Descrição</label><input type="text" id="servico-descricao"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Valor Total</label><input type="number" id="servico-valor" oninput="calcularRepasse()"></div>
+            <div class="form-group"><label>Pagamento</label><select id="servico-pagamento"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select></div>
+        </div>
+        <div id="repasse-info" style="background:#14141E; padding:12px; border-radius:20px;">
+            <p><strong>Estúdio (30%):</strong> <span id="valor-estudio">R$0,00</span> <span style="color:#F59E0B;">(apenas Thalia)</span></p>
+            <p><strong>Repasse:</strong> <span id="valor-repasse">R$0,00</span></p>
+        </div>
+        <button class="btn btn-success" onclick="salvarServico()">Salvar</button>
+    </div>
+</div>
+
+<!-- MODAL AGENDA -->
+<div id="modal-agenda" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal('modal-agenda')">&times;</span>
+        <h2>Agendamento</h2>
+        <input type="hidden" id="agenda-id">
+        <div class="form-row">
+            <div class="form-group"><label>Data</label><input type="date" id="agenda-data"></div>
+            <div class="form-group"><label>Horário</label><input type="time" id="agenda-horario"></div>
+        </div>
+        <div class="form-group"><label>Cliente</label><input type="text" id="agenda-cliente"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Tatuador</label><select id="agenda-tatuador"><option>Fernando Dark</option><option>Thalia</option></select></div>
+            <div class="form-group"><label>Tipo</label><select id="agenda-tipo"><option>Tatuagem</option><option>Piercing</option></select></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Valor Estimado</label><input type="number" id="agenda-valor" value="0"></div>
+            <div class="form-group"><label>Status</label><select id="agenda-status"><option>Agendado</option><option>Confirmado</option><option>Concluído</option><option>Cancelado</option></select></div>
+        </div>
+        <div class="form-group"><label>Observações</label><textarea id="agenda-obs" rows="3"></textarea></div>
+        <button class="btn btn-success" onclick="salvarAgenda()">Salvar</button>
+    </div>
+</div>
+
+<!-- MODAL PIERCING -->
+<div id="modal-piercing" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal('modal-piercing')">&times;</span>
+        <h2>Piercing</h2>
+        <input type="hidden" id="piercing-id">
+        <div class="form-group"><label>Nome</label><input id="piercing-nome"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Quantidade</label><input type="number" id="piercing-qtd"></div>
+            <div class="form-group"><label>Preço Venda (R$)</label><input type="number" id="piercing-preco" step="0.01"></div>
+        </div>
+        <button class="btn btn-success" onclick="salvarPiercing()">Salvar</button>
+    </div>
+</div>
+
+<!-- MODAL MATERIAL -->
+<div id="modal-material" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal('modal-material')">&times;</span>
+        <h2>Material</h2>
+        <input type="hidden" id="material-id">
+        <div class="form-group"><label>Nome</label><input id="material-nome"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Quantidade</label><input type="number" id="material-qtd"></div>
+            <div class="form-group"><label>Valor Unitário (R$)</label><input type="number" id="material-preco" step="0.01"></div>
+        </div>
+        <button class="btn btn-success" onclick="salvarMaterial()">Salvar</button>
+    </div>
+</div>
 
 <script src="script.js"></script>
 </body>
-                   </html>
+</html>
