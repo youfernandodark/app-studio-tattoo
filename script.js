@@ -193,7 +193,7 @@ async function carregarUsosMateriais() {
 // ==================== RENDER FUNCTIONS ====================
 function renderizarCaixa(data){
     let totalE=0,totalS=0; const tbody=document.getElementById('caixa-tbody'); tbody.innerHTML='';
-    if(data.length===0) tbody.innerHTML='<tr><td colspan="7">Nenhum lançamento</td></tr>';
+    if(data.length===0) tbody.innerHTML='<tr><td colspan="7">Nenhum lançamento</td>'   ;
     else data.forEach(l=>{ const ent=+l.entradas||0, sai=+l.saidas||0; totalE+=ent; totalS+=sai; tbody.innerHTML+=`
         <tr>
             <td>${formatDate(l.data)}</td>
@@ -210,6 +210,7 @@ function renderizarCaixa(data){
     const ultimoSaldo = data.length ? data[0].saldo_final : 0;
     document.getElementById('caixa-saldo-final').innerText=formatMoney(ultimoSaldo);
 }
+
 function renderizarServicos(data){
     let totalV=0,totalE=0,totalR=0; const tbody=document.getElementById('servicos-tbody'); tbody.innerHTML='';
     data.forEach(s=>{ const val=+s.valor_total||0; const estudio = s.tatuador_nome==='Thalia'?val*0.3:0; const repasse = s.tatuador_nome==='Thalia'?val*0.7:val; totalV+=val; totalE+=estudio; totalR+=repasse; tbody.innerHTML+=`
@@ -225,6 +226,7 @@ function renderizarServicos(data){
             <td>${s.forma_pagamento}</td>
             <td>
                 <button class="btn btn-success btn-sm" onclick="finalizarServico('${s.id}')">✅ Finalizar Trabalho</button>
+                <button class="btn btn-info btn-sm" onclick="remarcarServico('${s.id}')">📅 Remarcar</button>
                 <button class="btn btn-warning btn-sm" onclick="editarServico('${s.id}')">Editar</button>
                 <button class="btn btn-danger btn-sm" onclick="excluirServico('${s.id}')">Excluir</button>
             </td>
@@ -234,9 +236,10 @@ function renderizarServicos(data){
     document.getElementById('servicos-total-estudio').innerText=formatMoney(totalE);
     document.getElementById('servicos-total-repasse').innerText=formatMoney(totalR);
 }
+
 function renderizarAgenda(data){
     const tbody=document.getElementById('agenda-tbody'); tbody.innerHTML='';
-    if(data.length===0) tbody.innerHTML='<tr><td colspan="8">Nenhum agendamento</td></tr>';
+    if(data.length===0) tbody.innerHTML='<tr><td colspan="8">Nenhum agendamento</td>'   ;
     else data.forEach(a=>{ const statusClass={Agendado:'status-warning',Confirmado:'status-info',Concluído:'status-success',Cancelado:'status-danger'}[a.status]; let confirmBtn = (a.status === 'Agendado') ? `<button class="btn btn-success btn-sm" onclick="confirmarAgendamento('${a.id}')"><i class="fas fa-check"></i> Confirmar</button> ` : ''; tbody.innerHTML+=`
         <tr>
             <td>${formatDateTime(a.data_hora)}</td>
@@ -250,22 +253,26 @@ function renderizarAgenda(data){
         </tr>
     `; });
 }
+
 function renderizarEstoquePiercing(piercings) {
     let html=''; piercings.forEach(p=>{ html+=`<tr><td>${p.nome}</td><td>${p.quantidade}</td><td>${formatMoney(p.preco_venda)}</td><td><button class="btn btn-warning btn-sm" onclick="editarPiercing(${p.id})">Editar</button> <button class="btn btn-danger btn-sm" onclick="excluirPiercing(${p.id})">Excluir</button></td></tr>`; });
     document.getElementById('estoque-piercing-tbody').innerHTML=html||'<tr><td colspan="4">Nenhum piercing</td></tr>';
     let opts='<option value="">Selecione</option>'; piercings.forEach(p=>{ if(p.quantidade>0) opts+=`<option value="${p.id}" data-preco="${p.preco_venda}">${p.nome} - ${formatMoney(p.preco_venda)} (Estoque: ${p.quantidade})</option>`; });
     document.getElementById('venda-piercing-id').innerHTML=opts;
 }
+
 function renderizarVendasPiercing(vendas) {
     let html=''; vendas.forEach(v=>{ html+=`<tr><td>${formatDate(v.data)}</td><td>${v.piercing?.nome||'?'}</td><td>${v.quantidade}</td><td>${formatMoney(v.valor_total)}</td><td>${v.cliente||'-'}</td></tr>`; });
     document.getElementById('vendas-piercing-tbody').innerHTML=html||'<tr><td colspan="5">Nenhuma venda</td></tr>';
 }
+
 function renderizarEstoqueMaterial(materiais) {
     let html=''; materiais.forEach(m=>{ html+=`<tr><td>${m.nome}</td><td>${m.quantidade}</td><td>${formatMoney(m.valor_unitario)}</td><td><button class="btn btn-warning btn-sm" onclick="editarMaterial(${m.id})">Editar</button> <button class="btn btn-danger btn-sm" onclick="excluirMaterial(${m.id})">Excluir</button></td></tr>`; });
     document.getElementById('estoque-material-tbody').innerHTML=html||'<tr><td colspan="4">Nenhum material</td></tr>';
     let opts='<option value="">Selecione</option>'; materiais.forEach(m=>{ if(m.quantidade>0) opts+=`<option value="${m.id}">${m.nome} (${m.quantidade} un.)</option>`; });
     document.getElementById('uso-material-id').innerHTML=opts;
 }
+
 function renderizarUsosMateriais(usos) {
     let html=''; usos.forEach(u=>{ html+=`<tr><td>${formatDate(u.data)}</td><td>${u.material?.nome||'?'}</td><td>${u.quantidade}</td><td>${u.observacao||'-'}</td></tr>`; });
     document.getElementById('usos-materiais-tbody').innerHTML=html||'<tr><td colspan="4">Nenhum uso</td></tr>';
@@ -298,6 +305,7 @@ function atualizarDashboard(){
     const piercingsServ=currentData.servicos.filter(s=>s.tipo==='Piercing').length;
     chartTipos=new Chart(document.getElementById('chart-tipos').getContext('2d'),{type:'doughnut',data:{labels:['Tatuagens','Piercings'],datasets:[{data:[tatuagens,piercingsServ],backgroundColor:['#818CF8','#C084FC']}]}});
 }
+
 async function carregarRelatorios(){
     const fat={}; currentData.servicos.forEach(s=>{fat[s.tatuador_nome]=(fat[s.tatuador_nome]||0)+(+s.valor_total||0);});
     document.getElementById('faturamento-tatuador').innerHTML=Object.entries(fat).map(([k,v])=>`<div><strong>${k}:</strong> ${formatMoney(v)}</div>`).join('')||'Sem dados';
@@ -312,7 +320,6 @@ async function carregarRelatorios(){
 // ==================== CAIXA: ADICIONAR ENTRADA AUTOMÁTICA ====================
 async function adicionarEntradaCaixa(data, valor, descricao) {
     try {
-        // Buscar último saldo final
         const { data: ultimo, error: ultimoError } = await supabaseClient
             .from('caixa')
             .select('saldo_final')
@@ -339,6 +346,72 @@ async function adicionarEntradaCaixa(data, valor, descricao) {
         return false;
     }
 }
+
+// ==================== REMARCAR SERVIÇO (NOVA DATA/HORA) ====================
+window.remarcarServico = async (servicoId) => {
+    const servico = currentData.servicos.find(s => s.id === servicoId);
+    if (!servico) {
+        showAlert('Serviço não encontrado', 'error');
+        return;
+    }
+
+    // Criar modal dinâmico
+    const modalId = 'modal-remarcar';
+    let modal = document.getElementById(modalId);
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = modalId;
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="fecharModal('${modalId}')">&times;</span>
+                <h2><i class="fas fa-calendar-alt"></i> Remarcar Serviço</h2>
+                <div class="form-group">
+                    <label>Nova Data</label>
+                    <input type="date" id="nova-data" required>
+                </div>
+                <div class="form-group">
+                    <label>Novo Horário (opcional)</label>
+                    <input type="time" id="nova-hora">
+                    <small>Se informado, será registrado na descrição do serviço.</small>
+                </div>
+                <button class="btn btn-primary" id="btn-confirmar-remarcacao">Confirmar Remarcação</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('btn-confirmar-remarcacao').addEventListener('click', async () => {
+            const novaData = document.getElementById('nova-data').value;
+            const novaHora = document.getElementById('nova-hora').value;
+            if (!novaData) {
+                showAlert('Informe a nova data', 'error');
+                return;
+            }
+            const dataAntiga = formatDate(servico.data);
+            let descricaoExtra = `[Remarcado de ${dataAntiga}`;
+            if (novaHora) descricaoExtra += ` às ${novaHora}`;
+            descricaoExtra += `] `;
+            const novaDescricao = descricaoExtra + (servico.descricao || '');
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('servicos')
+                    .update({ data: novaData, descricao: novaDescricao })
+                    .eq('id', servicoId);
+                if (error) throw error;
+                showAlert(`Serviço remarcado para ${formatDate(novaData)}${novaHora ? ` às ${novaHora}` : ''}`, 'success');
+                fecharModal(modalId);
+                await carregarServicos();
+                atualizarDashboard();
+            } catch (e) {
+                showAlert('Erro ao remarcar: ' + e.message, 'error');
+            }
+        });
+    }
+    // Preencher com data atual do serviço
+    document.getElementById('nova-data').value = servico.data;
+    document.getElementById('nova-hora').value = '';
+    modal.style.display = 'block';
+};
 
 // ==================== AGENDA: CONFIRMAR + CRIAR SERVIÇO ====================
 async function criarServicoDoAgendamento(agendaId) {
@@ -372,10 +445,8 @@ async function criarServicoDoAgendamento(agendaId) {
 window.confirmarAgendamento = async (id) => {
     if (confirm('Confirmar este agendamento? Um serviço será criado automaticamente.')) {
         try {
-            // Atualiza status do agendamento
             await supabaseClient.from('agenda').update({ status: 'Confirmado' }).eq('id', id);
             await carregarAgenda();
-            // Cria serviço correspondente
             await criarServicoDoAgendamento(id);
             atualizarDashboard();
             showAlert('Agendamento confirmado e serviço criado!', 'success');
@@ -407,7 +478,7 @@ window.finalizarServico = async (servicoId) => {
     }
 };
 
-// ==================== CRUD: CAIXA (sem alterações) ====================
+// ==================== CRUD: CAIXA ====================
 window.abrirModalCaixa = async () => {
     const { data } = await supabaseClient.from('caixa').select('saldo_final').order('data', { ascending: false }).limit(1);
     const ultimoSaldo = data?.length ? data[0].saldo_final : 0;
@@ -470,7 +541,7 @@ window.filtrarCaixa = () => {
     renderizarCaixa(filtered);
 };
 
-// ==================== CRUD: SERVIÇOS (sem alterações, exceto já temos finalizarServico) ====================
+// ==================== CRUD: SERVIÇOS ====================
 window.abrirModalServico = () => {
     document.getElementById('servico-id').value = '';
     document.getElementById('servico-data').value = new Date().toISOString().split('T')[0];
@@ -559,7 +630,7 @@ window.limparFiltrosServicos = () => {
     renderizarServicos(currentData.servicos);
 };
 
-// ==================== CRUD: AGENDA (demais funções já existem) ====================
+// ==================== CRUD: AGENDA ====================
 window.abrirModalAgendamento = () => {
     document.getElementById('agenda-id').value = '';
     document.getElementById('agenda-data').value = new Date().toISOString().split('T')[0];
@@ -638,7 +709,7 @@ window.limparFiltrosAgenda = () => {
     renderizarAgenda(currentData.agenda);
 };
 
-// ==================== PIERCING (sem alterações) ====================
+// ==================== PIERCING ====================
 window.abrirModalPiercing = (id = null) => {
     document.getElementById('piercing-id').value = '';
     document.getElementById('piercing-nome').value = '';
@@ -704,7 +775,7 @@ window.registrarVendaPiercing = async () => {
     } catch (e) { showAlert('Erro na venda: ' + e.message, 'error'); }
 };
 
-// ==================== MATERIAIS (sem alterações) ====================
+// ==================== MATERIAIS ====================
 window.abrirModalMaterial = (id = null) => {
     document.getElementById('material-id').value = '';
     document.getElementById('material-nome').value = '';
@@ -769,7 +840,7 @@ window.registrarUsoMaterial = async () => {
     } catch (e) { showAlert('Erro ao registrar uso: ' + e.message, 'error'); }
 };
 
-// ==================== BACKUP (sem alterações) ====================
+// ==================== BACKUP ====================
 window.exportarBackup = async () => {
     try {
         const { data: servicos } = await supabaseClient.from('servicos').select('*');
@@ -812,7 +883,7 @@ window.importarBackup = async (input) => {
     input.value = '';
 };
 
-// ==================== EXEMPLOS (sem alterações) ====================
+// ==================== EXEMPLOS ====================
 window.popularPiercingsExemplo = async () => {
     if (!confirm('Isso irá adicionar piercings de exemplo (não remove os existentes). Continuar?')) return;
     const exemplos = [
