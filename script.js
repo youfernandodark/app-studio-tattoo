@@ -211,27 +211,35 @@ function renderizarCaixa(data){
     document.getElementById('caixa-saldo-final').innerText=formatMoney(ultimoSaldo);
 }
 
-// RENDER SERVIÇOS (sem botão Editar)
+// RENDER SERVIÇOS - agora com verificação de finalizado
 function renderizarServicos(data){
     let totalV=0,totalE=0,totalR=0; const tbody=document.getElementById('servicos-tbody'); tbody.innerHTML='';
-    data.forEach(s=>{ const val=+s.valor_total||0; const estudio = s.tatuador_nome==='Thalia'?val*0.3:0; const repasse = s.tatuador_nome==='Thalia'?val*0.7:val; totalV+=val; totalE+=estudio; totalR+=repasse; tbody.innerHTML+=`
-        <tr>
-            <td>${formatDate(s.data)}</td>
-            <td>${s.cliente}</td>
-            <td>${s.tatuador_nome}</td>
-            <td>${s.tipo}</td>
-            <td>${s.descricao||'-'}</td>
-            <td>${formatMoney(val)}</td>
-            <td>${formatMoney(estudio)}</td>
-            <td style="color:#34D399">${formatMoney(repasse)}</td>
-            <td>${s.forma_pagamento}</td>
-            <td>
-                <button class="btn btn-success btn-sm" onclick="finalizarServico('${s.id}')">✅ Finalizar Trabalho</button>
-                <button class="btn btn-info btn-sm" onclick="remarcarServico('${s.id}')">📅 Remarcar</button>
-                <button class="btn btn-danger btn-sm" onclick="excluirServico('${s.id}')">Excluir</button>
-            </td>
-        </tr>
-    `; });
+    data.forEach(s=>{ 
+        const val=+s.valor_total||0; 
+        const estudio = s.tatuador_nome==='Thalia'?val*0.3:0; 
+        const repasse = s.tatuador_nome==='Thalia'?val*0.7:val; 
+        totalV+=val; totalE+=estudio; totalR+=repasse; 
+        const isFinalizado = s.finalizado === true;
+        const acoes = isFinalizado 
+            ? '<span class="badge status-success">Finalizado</span>'
+            : `<button class="btn btn-success btn-sm" onclick="finalizarServico('${s.id}')">✅ Finalizar Trabalho</button>
+               <button class="btn btn-info btn-sm" onclick="remarcarServico('${s.id}')">📅 Remarcar</button>
+               <button class="btn btn-danger btn-sm" onclick="excluirServico('${s.id}')">Excluir</button>`;
+        tbody.innerHTML+=`
+            <tr>
+                <td>${formatDate(s.data)}</td>
+                <td>${s.cliente}</td>
+                <td>${s.tatuador_nome}</td>
+                <td>${s.tipo}</td>
+                <td>${s.descricao||'-'}</td>
+                <td>${formatMoney(val)}</td>
+                <td>${formatMoney(estudio)}</td>
+                <td style="color:#34D399">${formatMoney(repasse)}</td>
+                <td>${s.forma_pagamento}</td>
+                <td>${acoes}</td>
+            </tr>
+        `;
+    });
     document.getElementById('servicos-total-valor').innerText=formatMoney(totalV);
     document.getElementById('servicos-total-estudio').innerText=formatMoney(totalE);
     document.getElementById('servicos-total-repasse').innerText=formatMoney(totalR);
@@ -286,11 +294,11 @@ function atualizarDashboard(){
     document.getElementById('saldo-atual').innerText=formatMoney(saldo);
     document.getElementById('total-entradas').innerText=formatMoney(totalEnt);
     document.getElementById('total-saidas').innerText=formatMoney(totalSai);
-    document.getElementById('servicos-realizados').innerText=currentData.servicos.length;
+    document.getElementById('servicos-realizados').innerText=currentData.servicos.filter(s=>s.finalizado).length;
     const repasseThalia = currentData.servicos.reduce((s,sv)=> s + (sv.tatuador_nome==='Thalia'?(+sv.valor_total||0)*0.7:0),0);
     document.getElementById('repasse-thalia').innerText=formatMoney(repasseThalia);
     
-    const recentes=currentData.servicos.slice(0,5);
+    const recentes=currentData.servicos.filter(s=>!s.finalizado).slice(0,5);
     document.getElementById('servicos-recentes').innerHTML=recentes.length?`<ul>${recentes.map(s=>`<li>${formatDate(s.data)} - ${s.cliente}: ${formatMoney(s.valor_total)}</li>`).join('')}</ul>`:'Nenhum';
     const prox=currentData.agenda.filter(a=>new Date(a.data_hora)>=new Date()&&a.status!=='Cancelado').slice(0,5);
     document.getElementById('proximos-agendamentos').innerHTML=prox.length?`<ul>${prox.map(a=>`<li>${formatDateTime(a.data_hora)} - ${a.cliente}</li>`).join('')}</ul>`:'Nenhum';
@@ -347,15 +355,19 @@ async function adicionarEntradaCaixa(data, valor, descricao) {
     }
 }
 
-// ==================== REMARCAR SERVIÇO (CORRIGIDO: recria modal a cada chamada) ====================
+// ==================== REMARCAR SERVIÇO (CORRIGIDO) ====================
 window.remarcarServico = async (servicoId) => {
     const servico = currentData.servicos.find(s => s.id === servicoId);
     if (!servico) {
         showAlert('Serviço não encontrado', 'error');
         return;
     }
+    if (servico.finalizado) {
+        showAlert('Serviço já finalizado. Não é possível remarcar.', 'warning');
+        return;
+    }
 
-    // Remove modal existente para evitar conflito de serviços
+    // Remove modal existente
     const modalExistente = document.getElementById('modal-remarcar');
     if (modalExistente) modalExistente.remove();
 
@@ -383,11 +395,16 @@ window.remarcarServico = async (servicoId) => {
     document.body.appendChild(modal);
 
     // Preencher com data atual do serviço
-    document.getElementById('nova-data').value = servico.data;
+    const dataAtual = servico.data.split('T')[0];
+    document.getElementById('nova-data').value = dataAtual;
     document.getElementById('nova-hora').value = '';
 
-    // Evento do botão confirmar (usa o servicoId diretamente)
-    document.getElementById('btn-confirmar-remarcacao').addEventListener('click', async () => {
+    // Evento do botão confirmar
+    const btnConfirmar = document.getElementById('btn-confirmar-remarcacao');
+    // Remove event listener antigo se existir
+    const newBtn = btnConfirmar.cloneNode(true);
+    btnConfirmar.parentNode.replaceChild(newBtn, btnConfirmar);
+    newBtn.addEventListener('click', async () => {
         const novaData = document.getElementById('nova-data').value;
         const novaHora = document.getElementById('nova-hora').value;
         if (!novaData) {
@@ -435,7 +452,8 @@ async function criarServicoDoAgendamento(agendaId) {
             tipo: agenda.tipo_servico,
             descricao: agenda.observacoes || `Agendamento confirmado em ${new Date().toLocaleDateString()}`,
             valor_total: agenda.valor_estimado || 0,
-            forma_pagamento: 'A definir'
+            forma_pagamento: 'A definir',
+            finalizado: false
         };
         const { error: insertError } = await supabaseClient.from('servicos').insert([novoServico]);
         if (insertError) throw insertError;
@@ -461,11 +479,15 @@ window.confirmarAgendamento = async (id) => {
     }
 };
 
-// ==================== SERVIÇOS: FINALIZAR TRABALHO (LANÇA NO CAIXA) ====================
+// ==================== SERVIÇOS: FINALIZAR TRABALHO (LANÇA NO CAIXA E MARCA COMO FINALIZADO) ====================
 window.finalizarServico = async (servicoId) => {
     const servico = currentData.servicos.find(s => s.id === servicoId);
     if (!servico) {
         showAlert('Serviço não encontrado', 'error');
+        return;
+    }
+    if (servico.finalizado) {
+        showAlert('Este serviço já foi finalizado.', 'warning');
         return;
     }
     if (!servico.valor_total || servico.valor_total <= 0) {
@@ -474,12 +496,22 @@ window.finalizarServico = async (servicoId) => {
     }
     if (confirm(`Finalizar trabalho para ${servico.cliente} no valor de ${formatMoney(servico.valor_total)}? Isso lançará o valor no caixa como entrada.`)) {
         const descricaoCaixa = `Serviço finalizado: ${servico.cliente} - ${servico.descricao || servico.tipo}`;
-        console.log('Finalizando serviço:', servico.id, 'Valor:', servico.valor_total); // log de depuração
         const sucesso = await adicionarEntradaCaixa(servico.data, servico.valor_total, descricaoCaixa);
         if (sucesso) {
-            showAlert(`Trabalho finalizado! Valor de ${formatMoney(servico.valor_total)} lançado no caixa.`, 'success');
-            await carregarRelatorios();
-            atualizarDashboard();
+            // Marcar serviço como finalizado no banco de dados
+            try {
+                const { error } = await supabaseClient
+                    .from('servicos')
+                    .update({ finalizado: true })
+                    .eq('id', servicoId);
+                if (error) throw error;
+                showAlert(`Trabalho finalizado! Valor de ${formatMoney(servico.valor_total)} lançado no caixa.`, 'success');
+                await carregarServicos(); // recarrega para esconder os botões
+                await carregarRelatorios();
+                atualizarDashboard();
+            } catch (e) {
+                showAlert('Erro ao marcar serviço como finalizado: ' + e.message, 'error');
+            }
         } else {
             console.error('Falha ao adicionar entrada no caixa');
         }
@@ -575,7 +607,8 @@ window.salvarServico = async () => {
         tipo: document.getElementById('servico-tipo').value,
         descricao: document.getElementById('servico-descricao').value,
         valor_total: +document.getElementById('servico-valor').value || 0,
-        forma_pagamento: document.getElementById('servico-pagamento').value
+        forma_pagamento: document.getElementById('servico-pagamento').value,
+        finalizado: false
     };
     if (!data.data || !data.cliente) return showAlert('Data e cliente são obrigatórios', 'error');
     try {
@@ -594,6 +627,10 @@ window.salvarServico = async () => {
 window.editarServico = async (id) => {
     const item = currentData.servicos.find(s => s.id === id);
     if (!item) return showAlert('Serviço não encontrado', 'error');
+    if (item.finalizado) {
+        showAlert('Serviço finalizado não pode ser editado.', 'warning');
+        return;
+    }
     document.getElementById('servico-id').value = item.id;
     document.getElementById('servico-data').value = item.data;
     document.getElementById('servico-cliente').value = item.cliente;
@@ -606,6 +643,11 @@ window.editarServico = async (id) => {
     calcularRepasse();
 };
 window.excluirServico = async (id) => {
+    const servico = currentData.servicos.find(s => s.id === id);
+    if (servico && servico.finalizado) {
+        showAlert('Serviço finalizado não pode ser excluído.', 'warning');
+        return;
+    }
     if (confirm('Excluir serviço?')) {
         try {
             await supabaseClient.from('servicos').delete().eq('id', id);
