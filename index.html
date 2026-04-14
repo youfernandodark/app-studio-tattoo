@@ -57,7 +57,7 @@
         <div class="card"><h2><i class="fas fa-exchange-alt"></i> Fluxo de Caixa</h2>
             <button class="btn btn-primary" onclick="window.abrirModalCaixa()">+ Novo Lançamento</button>
             <div><input type="text" id="search-caixa" placeholder="Buscar..." onkeyup="window.filtrarCaixa()" style="width:100%; padding:12px; margin:15px 0; background:#0A0A12; border-radius:44px; border:1px solid #2C2C3E; color:white;"></div>
-            <table><thead>运转<th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo Final</th><th>Descrição</th><th>Ações</th></tr></thead><tbody id="caixa-tbody"><tr><td colspan="7">Carregando...</td></tr></tbody><tfoot><tr><td colspan="2"><strong>TOTAIS</strong></td><td id="caixa-total-entradas">R$0</td><td id="caixa-total-saidas">R$0</td><td id="caixa-saldo-final">R$0</td><td colspan="2"></td></tr></tfoot>
+            <table><thead><tr><th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo Final</th><th>Descrição</th><th>Ações</th></tr></thead><tbody id="caixa-tbody"><tr><td colspan="7">Carregando...</td></tr></tbody><tfoot><tr><td colspan="2"><strong>TOTAIS</strong></td><td id="caixa-total-entradas">R$0</td><td id="caixa-total-saidas">R$0</td><td id="caixa-saldo-final">R$0</td><td colspan="2"></td></tr></tfoot>
         </div>
     </section>
 
@@ -73,7 +73,7 @@
                 <button class="btn btn-info btn-sm" onclick="window.limparFiltrosServicos()">Limpar</button>
             </div>
             <input type="text" id="search-servicos" placeholder="Buscar serviços..." onkeyup="window.filtrarServicos()" style="width:100%; padding:12px; margin-bottom:15px; background:#0A0A12; border-radius:44px;">
-            <table><thead>运转<th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30% Thalia)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead><tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody><tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
+            <table><thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30% Thalia)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead><tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody><tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
         </div>
     </section>
 
@@ -88,7 +88,7 @@
                 <button class="btn btn-info btn-sm" onclick="window.filtrarAgendaHoje()">Hoje</button>
                 <button class="btn btn-warning btn-sm" onclick="window.limparFiltrosAgenda()">Limpar</button>
             </div>
-            <table><thead>运转<th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
+            <table><thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
         </div>
     </section>
 
@@ -97,7 +97,7 @@
         <div class="card"><h2><i class="fas fa-gem"></i> Piercings - Estoque e Vendas</h2>
             <button class="btn btn-primary" onclick="window.abrirModalPiercing()">+ Adicionar ao Estoque</button>
             <h3>Estoque de Piercings</h3>
-            <table><thead>运转<th>Nome</th><th>Quantidade</th><th>Preço Venda (R$)</th><th>Ações</th></tr></thead><tbody id="estoque-piercing-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
+            <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda (R$)</th><th>Ações</th></tr></thead><tbody id="estoque-piercing-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
             <h3>Registrar Venda</h3>
             <div class="form-row">
                 <div class="form-group"><label>Piercing</label><select id="venda-piercing-id"></select></div>
@@ -106,7 +106,7 @@
             </div>
             <button class="btn btn-success" onclick="window.registrarVendaPiercing()">Finalizar Venda</button>
             <h3>Histórico de Vendas</h3>
-            <table><thead>运转<th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead><tbody id="vendas-piercing-tbody"><tr><td colspan="5">Nenhuma venda</td></tr></tbody>
+            <table><thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead><tbody id="vendas-piercing-tbody"><tr><td colspan="5">Nenhuma venda</td></tr></tbody>
         </div>
     </section>
 
@@ -115,7 +115,7 @@
         <div class="card"><h2><i class="fas fa-boxes"></i> Materiais - Estoque e Consumo</h2>
             <button class="btn btn-primary" onclick="window.abrirModalMaterial()">+ Adicionar Material</button>
             <h3>Estoque de Materiais</h3>
-            <table><thead>运转<th>Nome</th><th>Quantidade</th><th>Valor Unitário (R$)</th><th>Ações</th></tr></thead><tbody id="estoque-material-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
+            <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitário (R$)</th><th>Ações</th></tr></thead><tbody id="estoque-material-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
             <h3>Registrar Uso de Material</h3>
             <div class="form-row">
                 <div class="form-group"><label>Material</label><select id="uso-material-id"></select></div>
@@ -124,7 +124,7 @@
             </div>
             <button class="btn btn-warning" onclick="window.registrarUsoMaterial()">Usar Material</button>
             <h3>Histórico de Usos</h3>
-            <table><thead>运转<th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead><tbody id="usos-materiais-tbody"><tr><td colspan="4">Nenhum uso</td></tr></tbody>
+            <table><thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead><tbody id="usos-materiais-tbody"><tr><td colspan="4">Nenhum uso</td></tr></tbody>
         </div>
     </section>
 
@@ -163,9 +163,9 @@
 
 <div id="modal-material" class="modal"><div class="modal-content"><span class="close" onclick="window.fecharModal('modal-material')">&times;</span><h2>Material</h2><input type="hidden" id="material-id"><div class="form-group"><label>Nome</label><input id="material-nome"></div><div class="form-row"><div class="form-group"><label>Quantidade</label><input type="number" id="material-qtd"></div><div class="form-group"><label>Valor Unitário (R$)</label><input type="number" id="material-preco" step="0.01"></div></div><button class="btn btn-success" onclick="window.salvarMaterial()">Salvar</button></div></div>
 
-<!-- Scripts -->
+<!-- Scripts CORRETOS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>
-</html>
+</html>            
