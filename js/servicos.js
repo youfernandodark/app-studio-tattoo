@@ -2,25 +2,41 @@ import app from './app.js';
 import utils from './utils.js';
 
 export const servicos = {
-    carregar() {
-        this.renderizarTabela();
+    async carregar() {
+        await this.carregarDados();
         this.aplicarFiltros();
     },
 
-    renderizarTabela(servicos = app.dados.servicos) {
+    async carregarDados() {
+        const { data, error } = await app.supabase
+            .from('servicos')
+            .select('*')
+            .order('data', { ascending: false });
+
+        if (error) {
+            console.error('Erro ao carregar serviços:', error);
+            utils.mostrarMensagem('erro', 'Erro ao carregar serviços');
+            return;
+        }
+
+        app.dados.servicos = data || [];
+        this.renderizarTabela(app.dados.servicos);
+    },
+
+    renderizarTabela(servicos) {
         const tbody = document.getElementById('servicos-table-body');
-        const dados = servicos.sort((a, b) => new Date(b.data) - new Date(a.data));
-        
+        const dados = servicos || [];
+
         if (dados.length === 0) {
             tbody.innerHTML = '<tr><td colspan="10" class="loading">Nenhum serviço registrado</td></tr>';
             return;
         }
-        
+
         const html = dados.map(item => {
             const valor = parseFloat(item.valor) || 0;
             const estudio = valor * 0.3;
             const repasse = valor * 0.7;
-            
+
             return `
                 <tr>
                     <td>${utils.formatarDataHora(item.data)}</td>
@@ -38,7 +54,7 @@ export const servicos = {
                 </tr>
             `;
         }).join('');
-        
+
         tbody.innerHTML = html;
         this.atualizarTotais(dados);
     },
@@ -47,7 +63,7 @@ export const servicos = {
         const totalValor = servicos.reduce((sum, s) => sum + (parseFloat(s.valor) || 0), 0);
         const totalEstudio = totalValor * 0.3;
         const totalRepasse = totalValor * 0.7;
-        
+
         document.getElementById('servicos-total-valor').textContent = utils.formatarMoeda(totalValor);
         document.getElementById('servicos-total-estudio').textContent = utils.formatarMoeda(totalEstudio);
         document.getElementById('servicos-total-repasse').textContent = utils.formatarMoeda(totalRepasse);
@@ -57,13 +73,13 @@ export const servicos = {
         const filtroTatuador = document.getElementById('filtro-tatuador')?.value;
         const filtroTipo = document.getElementById('filtro-tipo')?.value;
         const filtroPagamento = document.getElementById('filtro-pagamento')?.value;
-        
+
         let filtrados = [...app.dados.servicos];
-        
+
         if (filtroTatuador) filtrados = filtrados.filter(s => s.tatuador === filtroTatuador);
         if (filtroTipo) filtrados = filtrados.filter(s => s.tipo === filtroTipo);
         if (filtroPagamento) filtrados = filtrados.filter(s => s.pagamento === filtroPagamento);
-        
+
         this.renderizarTabela(filtrados);
     },
 
@@ -80,11 +96,10 @@ export const servicos = {
         document.getElementById('servico-repasse').textContent = utils.formatarMoeda(valor * 0.7);
     },
 
-    salvar(event) {
+    async salvar(event) {
         event.preventDefault();
-        
+
         const servico = {
-            id: utils.gerarId(),
             data: document.getElementById('servico-data').value,
             cliente: document.getElementById('servico-cliente').value,
             tatuador: document.getElementById('servico-tatuador').value,
@@ -93,25 +108,40 @@ export const servicos = {
             valor: parseFloat(document.getElementById('servico-valor').value) || 0,
             pagamento: document.getElementById('servico-pagamento').value
         };
-        
-        app.dados.servicos.push(servico);
-        app.salvarDados();
-        this.carregar();
-        app.modals.close('modal-servico');
-        utils.mostrarMensagem('sucesso', 'Serviço registrado com sucesso!');
-        
-        event.target.reset();
+
+        const { error } = await app.supabase
+            .from('servicos')
+            .insert([servico]);
+
+        if (error) {
+            console.error(error);
+            utils.mostrarMensagem('erro', 'Erro ao salvar serviço!');
+        } else {
+            utils.mostrarMensagem('sucesso', 'Serviço salvo com sucesso!');
+            app.modals.close('modal-servico');
+            event.target.reset();
+            await this.carregarDados();
+            app.atualizarDashboard();
+        }
     },
 
-    excluir(id) {
+    async excluir(id) {
         if (!utils.confirmarAcao('Deseja realmente excluir este serviço?')) return;
-        
-        app.dados.servicos = app.dados.servicos.filter(item => item.id !== id);
-        app.salvarDados();
-        this.carregar();
-        utils.mostrarMensagem('sucesso', 'Serviço excluído!');
+
+        const { error } = await app.supabase
+            .from('servicos')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            utils.mostrarMensagem('erro', 'Erro ao excluir!');
+        } else {
+            utils.mostrarMensagem('sucesso', 'Serviço excluído!');
+            await this.carregarDados();
+            app.atualizarDashboard();
+        }
     }
 };
 
 app.servicos = servicos;
-export default servicos;
+export default servicos;        
