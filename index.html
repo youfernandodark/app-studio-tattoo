@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARK013TATTOO - Gestão Profissional (Cloud)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1><i class="fas fa-skull"></i> DARK013TATTOO</h1>
+        <p>Gestão profissional com sincronização na nuvem | Dark Mode Studio</p>
+        <div class="status-bar">
+            <span id="status-nuvem" class="status-badge status-warning"><i class="fas fa-spinner fa-pulse"></i> Conectando...</span>
+            <span id="last-sync"></span>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <button class="active" data-section="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+        <button data-section="caixa"><i class="fas fa-wallet"></i> Caixa</button>
+        <button data-section="servicos"><i class="fas fa-paint-brush"></i> Serviços</button>
+        <button data-section="agenda"><i class="fas fa-calendar-alt"></i> Agenda</button>
+        <button data-section="piercing"><i class="fas fa-gem"></i> Piercing</button>
+        <button data-section="materiais"><i class="fas fa-boxes"></i> Materiais</button>
+        <button data-section="relatorios"><i class="fas fa-chart-bar"></i> Relatórios</button>
+        <button data-section="backup"><i class="fas fa-database"></i> Backup</button>
+    </nav>
+
+    <div id="alert-container"></div>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="section active">
+        <div class="card"><h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+            <div class="grid">
+                <div class="stat"><p>Saldo Atual</p><h3 id="saldo-atual">R$ 0,00</h3></div>
+                <div class="stat"><p>Total Entradas</p><h3 id="total-entradas">R$ 0,00</h3></div>
+                <div class="stat"><p>Total Saídas</p><h3 id="total-saidas">R$ 0,00</h3></div>
+                <div class="stat"><p>Serviços Realizados</p><h3 id="servicos-realizados">0</h3></div>
+                <div class="stat"><p>Repasse Thalia (70%)</p><h3 id="repasse-thalia">R$ 0,00</h3></div>
+            </div>
+        </div>
+        <div class="grid">
+            <div class="card"><h3>Faturamento Mensal</h3><canvas id="chart-faturamento" style="max-height:300px"></canvas></div>
+            <div class="card"><h3>Distribuição por Tipo</h3><canvas id="chart-tipos" style="max-height:300px"></canvas></div>
+        </div>
+        <div class="grid">
+            <div class="card"><h3>Últimos Serviços</h3><div id="servicos-recentes"></div></div>
+            <div class="card"><h3>Próximos Agendamentos</h3><div id="proximos-agendamentos"></div></div>
+        </div>
+    </section>
+
+    <!-- CAIXA -->
+    <section id="caixa" class="section">
+        <div class="card"><h2><i class="fas fa-exchange-alt"></i> Fluxo de Caixa</h2>
+            <button class="btn btn-primary" onclick="abrirModalCaixa()">+ Novo Lançamento</button>
+            <div><input type="text" id="search-caixa" placeholder="Buscar..." onkeyup="filtrarCaixa()" style="width:100%; padding:12px; margin:15px 0; background:#0A0A12; border-radius:44px; border:1px solid #2C2C3E; color:white;"></div>
+            <table><thead><tr><th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo Final</th><th>Descrição</th><th>Ações</th></tr></thead><tbody id="caixa-tbody"><tr><td colspan="7">Carregando...</td></tr></tbody><tfoot><tr><td colspan="2"><strong>TOTAIS</strong></td><td id="caixa-total-entradas">R$0</td><td id="caixa-total-saidas">R$0</td><td id="caixa-saldo-final">R$0</td><td colspan="2"></td></tr></tfoot>
+        </div>
+    </section>
+
+    <!-- SERVIÇOS -->
+    <section id="servicos" class="section">
+        <div class="card"><h2><i class="fas fa-paint-brush"></i> Serviços Realizados</h2>
+            <button class="btn btn-primary" onclick="abrirModalServico()">+ Novo Serviço</button>
+            <div class="filters">
+                <select id="filtro-tatuador-servico" onchange="filtrarServicos()"><option value="">Tatuador: Todos</option><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select>
+                <select id="filtro-tipo-servico" onchange="filtrarServicos()"><option value="">Tipo: Todos</option><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select>
+                <select id="filtro-pagamento" onchange="filtrarServicos()"><option value="">Pagamento: Todas</option><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartão">Cartão</option></select>
+                <input type="date" id="filtro-data-servico" onchange="filtrarServicos()">
+                <button class="btn btn-info btn-sm" onclick="limparFiltrosServicos()">Limpar</button>
+            </div>
+            <input type="text" id="search-servicos" placeholder="Buscar serviços..." onkeyup="filtrarServicos()" style="width:100%; padding:12px; margin-bottom:15px; background:#0A0A12; border-radius:44px;">
+            <table><thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30% Thalia)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead><tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody><tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
+        </div>
+    </section>
+
+    <!-- AGENDA -->
+    <section id="agenda" class="section">
+        <div class="card"><h2><i class="fas fa-calendar-alt"></i> Agenda de Atendimentos</h2>
+            <button class="btn btn-primary" onclick="abrirModalAgendamento()">+ Novo Agendamento</button>
+            <div class="filters">
+                <select id="filtro-tatuador-agenda" onchange="filtrarAgenda()"><option value="">Tatuador: Todos</option><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select>
+                <select id="filtro-status-agenda" onchange="filtrarAgenda()"><option value="">Status: Todos</option><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluído">Concluído</option><option value="Cancelado">Cancelado</option></select>
+                <input type="date" id="filtro-data-agenda" onchange="filtrarAgenda()">
+                <button class="btn btn-info btn-sm" onclick="filtrarAgendaHoje()">Hoje</button>
+                <button class="btn btn-warning btn-sm" onclick="limparFiltrosAgenda()">Limpar</button>
+            </div>
+            <table><thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead><tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody></table>
+        </div>
+    </section>
+
+    <!-- PIERCING -->
+    <section id="piercing" class="section">
+        <div class="card"><h2><i class="fas fa-gem"></i> Piercings - Estoque e Vendas</h2>
+            <button class="btn btn-primary" onclick="abrirModalPiercing()">+ Adicionar ao Estoque</button>
+            <h3>Estoque de Piercings</h3>
+            <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda (R$)</th><th>Ações</th></tr></thead><tbody id="estoque-piercing-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody></table>
+            <h3>Registrar Venda</h3>
+            <div class="form-row">
+                <div class="form-group"><label>Piercing</label><select id="venda-piercing-id"></select></div>
+                <div class="form-group"><label>Quantidade</label><input type="number" id="venda-qtd" value="1" min="1"></div>
+                <div class="form-group"><label>Cliente</label><input type="text" id="venda-cliente" placeholder="Cliente (opcional)"></div>
+            </div>
+            <button class="btn btn-success" onclick="registrarVendaPiercing()">Finalizar Venda</button>
+            <h3>Histórico de Vendas</h3>
+            <table><thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead><tbody id="vendas-piercing-tbody"><tr><td colspan="5">Nenhuma venda</td></tr></tbody>
+        </div>
+    </section>
+
+    <!-- MATERIAIS -->
+    <section id="materiais" class="section">
+        <div class="card"><h2><i class="fas fa-boxes"></i> Materiais - Estoque e Consumo</h2>
+            <button class="btn btn-primary" onclick="abrirModalMaterial()">+ Adicionar Material</button>
+            <h3>Estoque de Materiais</h3>
+            <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitário (R$)</th><th>Ações</th></tr></thead><tbody id="estoque-material-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
+            <h3>Registrar Uso de Material</h3>
+            <div class="form-row">
+                <div class="form-group"><label>Material</label><select id="uso-material-id"></select></div>
+                <div class="form-group"><label>Quantidade Usada</label><input type="number" id="uso-qtd" value="1" min="1"></div>
+                <div class="form-group"><label>Observação</label><input type="text" id="uso-obs" placeholder="Ex: Tatuagem cliente X"></div>
+            </div>
+            <button class="btn btn-warning" onclick="registrarUsoMaterial()">Usar Material</button>
+            <h3>Histórico de Usos</h3>
+            <table><thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead><tbody id="usos-materiais-tbody"><tr><td colspan="4">Nenhum uso</td></tr></tbody>
+        </div>
+    </section>
+
+    <!-- RELATÓRIOS -->
+    <section id="relatorios" class="section">
+        <div class="card"><h2><i class="fas fa-chart-bar"></i> Relatórios Gerenciais</h2>
+            <div class="grid">
+                <div class="stat"><p>Faturamento por Tatuador</p><div id="faturamento-tatuador"></div></div>
+                <div class="stat"><p>Repasses Thalia 70%</p><div id="relatorio-repasse"></div></div>
+                <div class="stat"><p>Lucro Líquido Estúdio</p><div id="relatorio-lucro-liquido"></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BACKUP -->
+    <section id="backup" class="section">
+        <div class="card"><h2><i class="fas fa-database"></i> Backup e Sincronização</h2>
+            <div style="padding:20px; background:#0F0F18; border-radius:24px;"><button class="btn btn-primary" onclick="sincronizarAgora()">Sincronizar agora</button></div>
+            <div style="padding:20px; background:#0F0F18; border-radius:24px; margin-top:20px;">
+                <button class="btn btn-success" onclick="exportarBackup()">Exportar Backup (.json)</button>
+                <input type="file" id="import-backup" accept=".json" style="display:none" onchange="importarBackup(this)">
+                <button class="btn btn-warning" onclick="document.getElementById('import-backup').click()">Importar Backup</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- MODAIS -->
+<div id="modal-caixa" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-caixa')">&times;</span><h2>Lançamento</h2><input type="hidden" id="caixa-id"><div class="form-group"><label>Data</label><input type="date" id="caixa-data"></div><div class="form-row"><div class="form-group"><label>Saldo Inicial</label><input type="number" id="caixa-saldo-inicial" value="0"></div><div class="form-group"><label>Entradas</label><input type="number" id="caixa-entradas" value="0"></div><div class="form-group"><label>Saídas</label><input type="number" id="caixa-saidas" value="0"></div></div><div class="form-group"><label>Descrição</label><input type="text" id="caixa-descricao"></div><button class="btn btn-success" onclick="salvarCaixa()">Salvar</button></div></div>
+<div id="modal-servico" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-servico')">&times;</span><h2>Serviço</h2><input type="hidden" id="servico-id"><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="servico-data"></div><div class="form-group"><label>Cliente</label><input type="text" id="servico-cliente"></div></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="servico-tatuador" onchange="calcularRepasse()"><option>Fernando Dark</option><option>Thalia</option></select></div><div class="form-group"><label>Tipo</label><select id="servico-tipo"><option>Tatuagem</option><option>Piercing</option></select></div></div><div class="form-group"><label>Descrição</label><input type="text" id="servico-descricao"></div><div class="form-row"><div class="form-group"><label>Valor Total</label><input type="number" id="servico-valor" oninput="calcularRepasse()"></div><div class="form-group"><label>Pagamento</label><select id="servico-pagamento"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select></div></div><div id="repasse-info" style="background:#14141E; padding:12px; border-radius:20px;"><p><strong>Estúdio (30%):</strong> <span id="valor-estudio">R$0,00</span> <span id="aviso-thalia" style="color:#F59E0B;">(apenas Thalia)</span></p><p><strong>Repasse:</strong> <span id="valor-repasse">R$0,00</span></p></div><button class="btn btn-success" onclick="salvarServico()">Salvar</button></div></div>
+<div id="modal-agenda" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-agenda')">&times;</span><h2>Agendamento</h2><input type="hidden" id="agenda-id"><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="agenda-data"></div><div class="form-group"><label>Horário</label><input type="time" id="agenda-horario"></div></div><div class="form-group"><label>Cliente</label><input type="text" id="agenda-cliente"></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="agenda-tatuador"><option>Fernando Dark</option><option>Thalia</option></select></div><div class="form-group"><label>Tipo</label><select id="agenda-tipo"><option>Tatuagem</option><option>Piercing</option></select></div></div><div class="form-row"><div class="form-group"><label>Valor Estimado</label><input type="number" id="agenda-valor" value="0"></div><div class="form-group"><label>Status</label><select id="agenda-status"><option>Agendado</option><option>Confirmado</option><option>Concluído</option><option>Cancelado</option></select></div></div><div class="form-group"><label>Observações</label><textarea id="agenda-obs" rows="3"></textarea></div><button class="btn btn-success" onclick="salvarAgenda()">Salvar</button></div></div>
+<div id="modal-piercing" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-piercing')">&times;</span><h2>Piercing</h2><input type="hidden" id="piercing-id"><div class="form-group"><label>Nome</label><input id="piercing-nome"></div><div class="form-row"><div class="form-group"><label>Quantidade</label><input type="number" id="piercing-qtd"></div><div class="form-group"><label>Preço Venda (R$)</label><input type="number" id="piercing-preco" step="0.01"></div></div><button class="btn btn-success" onclick="salvarPiercing()">Salvar</button></div></div>
+<div id="modal-material" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-material')">&times;</span><h2>Material</h2><input type="hidden" id="material-id"><div class="form-group"><label>Nome</label><input id="material-nome"></div><div class="form-row"><div class="form-group"><label>Quantidade</label><input type="number" id="material-qtd"></div><div class="form-group"><label>Valor Unitário (R$)</label><input type="number" id="material-preco" step="0.01"></div></div><button class="btn btn-success" onclick="salvarMaterial()">Salvar</button></div></div>
+
+<script src="script.js"></script>
+</body>
+                   </html>
