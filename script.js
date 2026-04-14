@@ -211,13 +211,13 @@ function renderizarCaixa(data){
     document.getElementById('caixa-saldo-final').innerText=formatMoney(ultimoSaldo);
 }
 
-// RENDER SERVIÇOS - agora com verificação de finalizado
+// RENDER SERVIÇOS
 function renderizarServicos(data){
     let totalV=0,totalE=0,totalR=0; const tbody=document.getElementById('servicos-tbody'); tbody.innerHTML='';
     data.forEach(s=>{ 
         const val=+s.valor_total||0; 
-        const estudio = s.tatuador_nome==='Thalia'?val*0.3:0; 
-        const repasse = s.tatuador_nome==='Thalia'?val*0.7:val; 
+        const estudio = s.tatuador_nome==='Thalia' ? val*0.3 : 0; 
+        const repasse = s.tatuador_nome==='Thalia' ? val*0.7 : val; 
         totalV+=val; totalE+=estudio; totalR+=repasse; 
         const isFinalizado = s.finalizado === true;
         const acoes = isFinalizado 
@@ -355,7 +355,7 @@ async function adicionarEntradaCaixa(data, valor, descricao) {
     }
 }
 
-// ==================== REMARCAR SERVIÇO (CORRIGIDO) ====================
+// ==================== REMARCAR SERVIÇO ====================
 window.remarcarServico = async (servicoId) => {
     const servico = currentData.servicos.find(s => s.id === servicoId);
     if (!servico) {
@@ -367,11 +367,9 @@ window.remarcarServico = async (servicoId) => {
         return;
     }
 
-    // Remove modal existente
     const modalExistente = document.getElementById('modal-remarcar');
     if (modalExistente) modalExistente.remove();
 
-    // Criar modal dinâmico
     const modalId = 'modal-remarcar';
     const modal = document.createElement('div');
     modal.id = modalId;
@@ -394,14 +392,11 @@ window.remarcarServico = async (servicoId) => {
     `;
     document.body.appendChild(modal);
 
-    // Preencher com data atual do serviço
     const dataAtual = servico.data.split('T')[0];
     document.getElementById('nova-data').value = dataAtual;
     document.getElementById('nova-hora').value = '';
 
-    // Evento do botão confirmar
     const btnConfirmar = document.getElementById('btn-confirmar-remarcacao');
-    // Remove event listener antigo se existir
     const newBtn = btnConfirmar.cloneNode(true);
     btnConfirmar.parentNode.replaceChild(newBtn, btnConfirmar);
     newBtn.addEventListener('click', async () => {
@@ -479,7 +474,7 @@ window.confirmarAgendamento = async (id) => {
     }
 };
 
-// ==================== SERVIÇOS: FINALIZAR TRABALHO (LANÇA NO CAIXA E MARCA COMO FINALIZADO) ====================
+// ==================== SERVIÇOS: FINALIZAR TRABALHO ====================
 window.finalizarServico = async (servicoId) => {
     const servico = currentData.servicos.find(s => s.id === servicoId);
     if (!servico) {
@@ -495,10 +490,11 @@ window.finalizarServico = async (servicoId) => {
         return;
     }
     if (confirm(`Finalizar trabalho para ${servico.cliente} no valor de ${formatMoney(servico.valor_total)}? Isso lançará o valor no caixa como entrada.`)) {
+        // CORREÇÃO: usar a data atual para o lançamento no caixa
+        const dataAtual = new Date().toISOString().split('T')[0];
         const descricaoCaixa = `Serviço finalizado: ${servico.cliente} - ${servico.descricao || servico.tipo}`;
-        const sucesso = await adicionarEntradaCaixa(servico.data, servico.valor_total, descricaoCaixa);
+        const sucesso = await adicionarEntradaCaixa(dataAtual, servico.valor_total, descricaoCaixa);
         if (sucesso) {
-            // Marcar serviço como finalizado no banco de dados
             try {
                 const { error } = await supabaseClient
                     .from('servicos')
@@ -506,7 +502,9 @@ window.finalizarServico = async (servicoId) => {
                     .eq('id', servicoId);
                 if (error) throw error;
                 showAlert(`Trabalho finalizado! Valor de ${formatMoney(servico.valor_total)} lançado no caixa.`, 'success');
-                await carregarServicos(); // recarrega para esconder os botões
+                // Recarregar dados na ordem correta
+                await carregarServicos();
+                await carregarCaixa();   // recarrega o caixa para ter os novos lançamentos
                 await carregarRelatorios();
                 atualizarDashboard();
             } catch (e) {
@@ -582,15 +580,41 @@ window.filtrarCaixa = () => {
 };
 
 // ==================== CRUD: SERVIÇOS ====================
+// Função auxiliar para configurar os listeners de cálculo no modal de serviço
+function configurarCalculoRepasse() {
+    const valorInput = document.getElementById('servico-valor');
+    const tatuadorSelect = document.getElementById('servico-tatuador');
+    if (valorInput && tatuadorSelect) {
+        const calcular = () => {
+            const val = +valorInput.value || 0;
+            const tatuador = tatuadorSelect.value;
+            const estudio = tatuador === 'Thalia' ? val * 0.3 : 0;
+            const repasse = tatuador === 'Thalia' ? val * 0.7 : val;
+            document.getElementById('valor-estudio').innerText = formatMoney(estudio);
+            document.getElementById('valor-repasse').innerText = formatMoney(repasse);
+        };
+        valorInput.removeEventListener('input', calcular);
+        tatuadorSelect.removeEventListener('change', calcular);
+        valorInput.addEventListener('input', calcular);
+        tatuadorSelect.addEventListener('change', calcular);
+        calcular(); // executa uma vez
+    }
+}
+
 window.abrirModalServico = () => {
     document.getElementById('servico-id').value = '';
     document.getElementById('servico-data').value = new Date().toISOString().split('T')[0];
     document.getElementById('servico-cliente').value = '';
     document.getElementById('servico-valor').value = '';
+    document.getElementById('servico-tatuador').value = 'Thalia'; // valor padrão
+    document.getElementById('servico-tipo').value = 'Tatuagem';
+    document.getElementById('servico-descricao').value = '';
+    document.getElementById('servico-pagamento').value = 'Dinheiro';
     document.getElementById('modal-servico').style.display = 'block';
-    calcularRepasse();
+    configurarCalculoRepasse();
 };
 window.calcularRepasse = () => {
+    // Mantido por compatibilidade, mas o listener já faz o trabalho
     const val = +document.getElementById('servico-valor').value || 0;
     const tatuador = document.getElementById('servico-tatuador').value;
     const estudio = tatuador === 'Thalia' ? val * 0.3 : 0;
@@ -640,7 +664,7 @@ window.editarServico = async (id) => {
     document.getElementById('servico-valor').value = item.valor_total;
     document.getElementById('servico-pagamento').value = item.forma_pagamento;
     document.getElementById('modal-servico').style.display = 'block';
-    calcularRepasse();
+    configurarCalculoRepasse();
 };
 window.excluirServico = async (id) => {
     const servico = currentData.servicos.find(s => s.id === id);
