@@ -2,11 +2,12 @@
 const SUPABASE_URL = 'https://bhymkxsgrghhpqgzqrni.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeW1reHNncmdoaHBxZ3pxcm5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzEyOTYsImV4cCI6MjA5MTYwNzI5Nn0.GuY32wg63pzCz5aZtGUJBXcb9zicwhsJSzH-czX3Ly4';
 
-if (typeof supabase === 'undefined') {
+let supabaseClient = null;
+if (typeof supabase !== 'undefined') {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} else {
     console.error('Supabase não carregou. Verifique a tag script.');
     document.getElementById('status-nuvem').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro: Supabase não carregou';
-} else {
-    var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 }
 
 // ==================== GLOBAL STATE ====================
@@ -25,6 +26,10 @@ function showAlert(msg,type) {
 }
 
 async function testarConexao() {
+    if (!supabaseClient) {
+        document.getElementById('status-nuvem').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Cliente Supabase não inicializado';
+        return false;
+    }
     const statusEl = document.getElementById('status-nuvem');
     try {
         const { error } = await supabaseClient.from('caixa').select('id').limit(1);
@@ -42,23 +47,69 @@ async function testarConexao() {
 }
 
 // ==================== DATA LOADING ====================
-async function carregarCaixa() { const {data}=await supabaseClient.from('caixa').select('*').order('data',{ascending:false}); if(data) currentData.caixa=data; renderizarCaixa(currentData.caixa); }
-async function carregarServicos() { const {data}=await supabaseClient.from('servicos').select('*').order('data',{ascending:false}); if(data) currentData.servicos=data; renderizarServicos(currentData.servicos); }
-async function carregarAgenda() { const {data}=await supabaseClient.from('agenda').select('*').order('data_hora'); if(data) currentData.agenda=data; renderizarAgenda(currentData.agenda); }
+async function carregarCaixa() { 
+    try {
+        const {data, error} = await supabaseClient.from('caixa').select('*').order('data',{ascending:false});
+        if (error) throw error;
+        currentData.caixa = data || [];
+        renderizarCaixa(currentData.caixa);
+    } catch(e) { showAlert('Erro ao carregar caixa: '+e.message, 'error'); }
+}
+async function carregarServicos() { 
+    try {
+        const {data, error} = await supabaseClient.from('servicos').select('*').order('data',{ascending:false});
+        if (error) throw error;
+        currentData.servicos = data || [];
+        renderizarServicos(currentData.servicos);
+    } catch(e) { showAlert('Erro ao carregar serviços: '+e.message, 'error'); }
+}
+async function carregarAgenda() { 
+    try {
+        const {data, error} = await supabaseClient.from('agenda').select('*').order('data_hora');
+        if (error) throw error;
+        currentData.agenda = data || [];
+        renderizarAgenda(currentData.agenda);
+    } catch(e) { showAlert('Erro ao carregar agenda: '+e.message, 'error'); }
+}
 
-async function carregarPiercings() { const {data}=await supabaseClient.from('piercings_estoque').select('*').order('nome'); if(data) renderizarEstoquePiercing(data); }
-async function carregarVendasPiercing() { const {data}=await supabaseClient.from('vendas_piercing').select('*, piercing:piercings_estoque(nome)').order('data',{ascending:false}); if(data) renderizarVendasPiercing(data); }
-async function carregarMateriais() { const {data}=await supabaseClient.from('materiais_estoque').select('*').order('nome'); if(data) renderizarEstoqueMaterial(data); }
-async function carregarUsosMateriais() { const {data}=await supabaseClient.from('usos_materiais').select('*, material:materiais_estoque(nome)').order('data',{ascending:false}); if(data) renderizarUsosMateriais(data); }
+async function carregarPiercings() { 
+    try {
+        const {data, error} = await supabaseClient.from('piercings_estoque').select('*').order('nome');
+        if (error) throw error;
+        renderizarEstoquePiercing(data || []);
+    } catch(e) { showAlert('Erro ao carregar piercings: '+e.message, 'error'); }
+}
+async function carregarVendasPiercing() { 
+    try {
+        const {data, error} = await supabaseClient.from('vendas_piercing').select('*, piercing:piercings_estoque(nome)').order('data',{ascending:false});
+        if (error) throw error;
+        renderizarVendasPiercing(data || []);
+    } catch(e) { showAlert('Erro ao carregar vendas: '+e.message, 'error'); }
+}
+async function carregarMateriais() { 
+    try {
+        const {data, error} = await supabaseClient.from('materiais_estoque').select('*').order('nome');
+        if (error) throw error;
+        renderizarEstoqueMaterial(data || []);
+    } catch(e) { showAlert('Erro ao carregar materiais: '+e.message, 'error'); }
+}
+async function carregarUsosMateriais() { 
+    try {
+        const {data, error} = await supabaseClient.from('usos_materiais').select('*, material:materiais_estoque(nome)').order('data',{ascending:false});
+        if (error) throw error;
+        renderizarUsosMateriais(data || []);
+    } catch(e) { showAlert('Erro ao carregar usos: '+e.message, 'error'); }
+}
 
-// ==================== RENDER FUNCTIONS (mesmas do original, apenas com os IDs corretos) ====================
+// ==================== RENDER FUNCTIONS ====================
 function renderizarCaixa(data){
     let totalE=0,totalS=0; const tbody=document.getElementById('caixa-tbody'); tbody.innerHTML='';
     if(data.length===0) tbody.innerHTML='<tr><td colspan="7">Nenhum lançamento</td></tr>';
     else data.forEach(l=>{ const ent=+l.entradas||0, sai=+l.saidas||0; totalE+=ent; totalS+=sai; tbody.innerHTML+=`<tr><td>${formatDate(l.data)}</td><td>${formatMoney(l.saldo_inicial)}</td><td style="color:#34D399">+${formatMoney(ent)}</td><td style="color:#F87171">-${formatMoney(sai)}</td><td>${formatMoney(l.saldo_final)}</td><td>${l.descricao||'-'}</td><td><button class="btn btn-warning btn-sm" onclick="editarCaixa('${l.id}')">Editar</button> <button class="btn btn-danger btn-sm" onclick="excluirCaixa('${l.id}')">Excluir</button></td></tr>`; });
     document.getElementById('caixa-total-entradas').innerText=formatMoney(totalE);
     document.getElementById('caixa-total-saidas').innerText=formatMoney(totalS);
-    document.getElementById('caixa-saldo-final').innerText=formatMoney(data[0]?.saldo_final||0);
+    const ultimoSaldo = data.length ? data[0].saldo_final : 0;
+    document.getElementById('caixa-saldo-final').innerText=formatMoney(ultimoSaldo);
 }
 
 function renderizarServicos(data){
@@ -140,47 +191,224 @@ async function carregarRelatorios(){
 
 // ==================== CRUD: CAIXA ====================
 window.abrirModalCaixa=()=>{ document.getElementById('caixa-id').value=''; document.getElementById('caixa-data').value=new Date().toISOString().split('T')[0]; document.getElementById('modal-caixa').style.display='block'; };
-window.salvarCaixa=async()=>{ const id = document.getElementById('caixa-id').value; const data={data:document.getElementById('caixa-data').value, saldo_inicial:+document.getElementById('caixa-saldo-inicial').value||0, entradas:+document.getElementById('caixa-entradas').value||0, saidas:+document.getElementById('caixa-saidas').value||0, descricao:document.getElementById('caixa-descricao').value}; data.saldo_final=data.saldo_inicial+data.entradas-data.saidas; let error; if(id) error=(await supabaseClient.from('caixa').update(data).eq('id',id)).error; else error=(await supabaseClient.from('caixa').insert([data])).error; if(error){ showAlert('Erro ao salvar','error'); return; } fecharModal('modal-caixa'); await carregarCaixa(); atualizarDashboard(); showAlert(id?'Atualizado':'Salvo','success'); };
+window.salvarCaixa=async()=>{ 
+    const id = document.getElementById('caixa-id').value; 
+    const data={data:document.getElementById('caixa-data').value, saldo_inicial:+document.getElementById('caixa-saldo-inicial').value||0, entradas:+document.getElementById('caixa-entradas').value||0, saidas:+document.getElementById('caixa-saidas').value||0, descricao:document.getElementById('caixa-descricao').value};
+    data.saldo_final=data.saldo_inicial+data.entradas-data.saidas; 
+    let error; 
+    try {
+        if(id) error=(await supabaseClient.from('caixa').update(data).eq('id',id)).error;
+        else error=(await supabaseClient.from('caixa').insert([data])).error;
+        if(error) throw error;
+        fecharModal('modal-caixa'); 
+        await carregarCaixa(); 
+        atualizarDashboard(); 
+        showAlert(id?'Atualizado':'Salvo','success');
+    } catch(e) { showAlert('Erro ao salvar: '+e.message, 'error'); }
+};
 window.editarCaixa=async(id)=>{ const item=currentData.caixa.find(c=>c.id===id); if(item){ document.getElementById('caixa-id').value=item.id; document.getElementById('caixa-data').value=item.data; document.getElementById('caixa-saldo-inicial').value=item.saldo_inicial; document.getElementById('caixa-entradas').value=item.entradas; document.getElementById('caixa-saidas').value=item.saidas; document.getElementById('caixa-descricao').value=item.descricao||''; document.getElementById('modal-caixa').style.display='block';}};
-window.excluirCaixa=async(id)=>{ if(confirm('Excluir?')){ await supabaseClient.from('caixa').delete().eq('id',id); await carregarCaixa(); atualizarDashboard(); showAlert('Excluído','success');}};
+window.excluirCaixa=async(id)=>{ if(confirm('Excluir?')){ try { await supabaseClient.from('caixa').delete().eq('id',id); await carregarCaixa(); atualizarDashboard(); showAlert('Excluído','success'); } catch(e) { showAlert('Erro ao excluir','error'); } }};
 window.filtrarCaixa=()=>{ const search=document.getElementById('search-caixa').value.toLowerCase(); const filtered=currentData.caixa.filter(i=>(i.descricao||'').toLowerCase().includes(search)); renderizarCaixa(filtered);};
 
 // ==================== CRUD: SERVIÇOS ====================
 window.abrirModalServico=()=>{ document.getElementById('servico-id').value=''; document.getElementById('servico-data').value=new Date().toISOString().split('T')[0]; document.getElementById('servico-cliente').value=''; document.getElementById('servico-valor').value=''; document.getElementById('modal-servico').style.display='block'; calcularRepasse();};
 window.calcularRepasse=()=>{ const val=+document.getElementById('servico-valor').value||0; const tatuador = document.getElementById('servico-tatuador').value; const estudio = tatuador==='Thalia'?val*0.3:0; const repasse = tatuador==='Thalia'?val*0.7:val; document.getElementById('valor-estudio').innerText=formatMoney(estudio); document.getElementById('valor-repasse').innerText=formatMoney(repasse); };
-window.salvarServico=async()=>{ const id=document.getElementById('servico-id').value; const data={data:document.getElementById('servico-data').value, cliente:document.getElementById('servico-cliente').value, tatuador_nome:document.getElementById('servico-tatuador').value, tipo:document.getElementById('servico-tipo').value, descricao:document.getElementById('servico-descricao').value, valor_total:+document.getElementById('servico-valor').value||0, forma_pagamento:document.getElementById('servico-pagamento').value}; let error; if(id) error=(await supabaseClient.from('servicos').update(data).eq('id',id)).error; else error=(await supabaseClient.from('servicos').insert([data])).error; if(error){ showAlert('Erro ao salvar','error'); return; } fecharModal('modal-servico'); await carregarServicos(); atualizarDashboard(); showAlert(id?'Atualizado':'Salvo','success'); };
+window.salvarServico=async()=>{ 
+    const id=document.getElementById('servico-id').value; 
+    const data={data:document.getElementById('servico-data').value, cliente:document.getElementById('servico-cliente').value, tatuador_nome:document.getElementById('servico-tatuador').value, tipo:document.getElementById('servico-tipo').value, descricao:document.getElementById('servico-descricao').value, valor_total:+document.getElementById('servico-valor').value||0, forma_pagamento:document.getElementById('servico-pagamento').value}; 
+    let error; 
+    try {
+        if(id) error=(await supabaseClient.from('servicos').update(data).eq('id',id)).error;
+        else error=(await supabaseClient.from('servicos').insert([data])).error;
+        if(error) throw error;
+        fecharModal('modal-servico'); 
+        await carregarServicos(); 
+        atualizarDashboard(); 
+        showAlert(id?'Atualizado':'Salvo','success');
+    } catch(e) { showAlert('Erro ao salvar serviço: '+e.message, 'error'); }
+};
 window.editarServico=async(id)=>{ const item=currentData.servicos.find(s=>s.id===id); if(item){ document.getElementById('servico-id').value=item.id; document.getElementById('servico-data').value=item.data; document.getElementById('servico-cliente').value=item.cliente; document.getElementById('servico-tatuador').value=item.tatuador_nome; document.getElementById('servico-tipo').value=item.tipo; document.getElementById('servico-descricao').value=item.descricao||''; document.getElementById('servico-valor').value=item.valor_total; document.getElementById('servico-pagamento').value=item.forma_pagamento; document.getElementById('modal-servico').style.display='block'; calcularRepasse();}};
-window.excluirServico=async(id)=>{ if(confirm('Excluir serviço?')){ await supabaseClient.from('servicos').delete().eq('id',id); await carregarServicos(); atualizarDashboard(); showAlert('Serviço excluído','success');}};
+window.excluirServico=async(id)=>{ if(confirm('Excluir serviço?')){ try { await supabaseClient.from('servicos').delete().eq('id',id); await carregarServicos(); atualizarDashboard(); showAlert('Serviço excluído','success'); } catch(e) { showAlert('Erro ao excluir','error'); } }};
 window.filtrarServicos=()=>{ let f=[...currentData.servicos]; const t=document.getElementById('filtro-tatuador-servico').value; if(t) f=f.filter(s=>s.tatuador_nome===t); const tp=document.getElementById('filtro-tipo-servico').value; if(tp) f=f.filter(s=>s.tipo===tp); const pg=document.getElementById('filtro-pagamento').value; if(pg) f=f.filter(s=>s.forma_pagamento===pg); const dt=document.getElementById('filtro-data-servico').value; if(dt) f=f.filter(s=>s.data===dt); const src=document.getElementById('search-servicos').value.toLowerCase(); if(src) f=f.filter(s=>s.cliente.toLowerCase().includes(src)||(s.descricao||'').toLowerCase().includes(src)); renderizarServicos(f);};
 window.limparFiltrosServicos=()=>{ document.getElementById('filtro-tatuador-servico').value=''; document.getElementById('filtro-tipo-servico').value=''; document.getElementById('filtro-pagamento').value=''; document.getElementById('filtro-data-servico').value=''; document.getElementById('search-servicos').value=''; renderizarServicos(currentData.servicos);};
 
 // ==================== CRUD: AGENDA ====================
 window.abrirModalAgendamento=()=>{ document.getElementById('agenda-id').value=''; document.getElementById('agenda-data').value=new Date().toISOString().split('T')[0]; document.getElementById('modal-agenda').style.display='block';};
-window.salvarAgenda=async()=>{ const id=document.getElementById('agenda-id').value; const dataHora=`${document.getElementById('agenda-data').value} ${document.getElementById('agenda-horario').value}`; const data={data_hora:dataHora, cliente:document.getElementById('agenda-cliente').value, tatuador_nome:document.getElementById('agenda-tatuador').value, tipo_servico:document.getElementById('agenda-tipo').value, valor_estimado:+document.getElementById('agenda-valor').value||0, status:document.getElementById('agenda-status').value, observacoes:document.getElementById('agenda-obs').value}; let error; if(id) error=(await supabaseClient.from('agenda').update(data).eq('id',id)).error; else error=(await supabaseClient.from('agenda').insert([data])).error; if(error){ showAlert('Erro ao salvar','error'); return; } fecharModal('modal-agenda'); await carregarAgenda(); atualizarDashboard(); showAlert(id?'Atualizado':'Salvo','success'); };
+window.salvarAgenda=async()=>{ 
+    const id=document.getElementById('agenda-id').value; 
+    const dataHora=`${document.getElementById('agenda-data').value} ${document.getElementById('agenda-horario').value}`; 
+    const data={data_hora:dataHora, cliente:document.getElementById('agenda-cliente').value, tatuador_nome:document.getElementById('agenda-tatuador').value, tipo_servico:document.getElementById('agenda-tipo').value, valor_estimado:+document.getElementById('agenda-valor').value||0, status:document.getElementById('agenda-status').value, observacoes:document.getElementById('agenda-obs').value}; 
+    let error; 
+    try {
+        if(id) error=(await supabaseClient.from('agenda').update(data).eq('id',id)).error;
+        else error=(await supabaseClient.from('agenda').insert([data])).error;
+        if(error) throw error;
+        fecharModal('modal-agenda'); 
+        await carregarAgenda(); 
+        atualizarDashboard(); 
+        showAlert(id?'Atualizado':'Salvo','success');
+    } catch(e) { showAlert('Erro ao salvar agenda: '+e.message, 'error'); }
+};
 window.editarAgenda=async(id)=>{ const item=currentData.agenda.find(a=>a.id===id); if(item){ document.getElementById('agenda-id').value=item.id; const dt=new Date(item.data_hora); document.getElementById('agenda-data').value=dt.toISOString().split('T')[0]; document.getElementById('agenda-horario').value=dt.toTimeString().slice(0,5); document.getElementById('agenda-cliente').value=item.cliente; document.getElementById('agenda-tatuador').value=item.tatuador_nome; document.getElementById('agenda-tipo').value=item.tipo_servico; document.getElementById('agenda-valor').value=item.valor_estimado; document.getElementById('agenda-status').value=item.status; document.getElementById('agenda-obs').value=item.observacoes||''; document.getElementById('modal-agenda').style.display='block';}};
-window.excluirAgenda=async(id)=>{ if(confirm('Excluir agendamento?')){ await supabaseClient.from('agenda').delete().eq('id',id); await carregarAgenda(); atualizarDashboard(); showAlert('Agendamento excluído','success');}};
-window.confirmarAgendamento=async(id)=>{ if(confirm('Confirmar este agendamento?')){ await supabaseClient.from('agenda').update({status:'Confirmado'}).eq('id',id); await carregarAgenda(); atualizarDashboard(); showAlert('Status alterado para Confirmado','success'); } };
-window.filtrarAgenda=()=>{ let filtered=[...currentData.agenda]; const tat=document.getElementById('filtro-tatuador-agenda').value; const stat=document.getElementById('filtro-status-agenda').value; const data=document.getElementById('filtro-data-agenda').value; if(tat) filtered=filtered.filter(a=>a.tatuador_nome===tat); if(stat) filtered=filtered.filter(a=>a.status===stat); if(data) filtered=filtered.filter(a=>new Date(a.data_hora).toISOString().split('T')[0]===data); renderizarAgenda(filtered);};
+window.excluirAgenda=async(id)=>{ if(confirm('Excluir agendamento?')){ try { await supabaseClient.from('agenda').delete().eq('id',id); await carregarAgenda(); atualizarDashboard(); showAlert('Agendamento excluído','success'); } catch(e) { showAlert('Erro ao excluir','error'); } }};
+window.confirmarAgendamento=async(id)=>{ if(confirm('Confirmar este agendamento?')){ try { await supabaseClient.from('agenda').update({status:'Confirmado'}).eq('id',id); await carregarAgenda(); atualizarDashboard(); showAlert('Status alterado para Confirmado','success'); } catch(e) { showAlert('Erro ao confirmar','error'); } } };
+window.filtrarAgenda=()=>{ let filtered=[...currentData.agenda]; const tat=document.getElementById('filtro-tatuador-agenda').value; const stat=document.getElementById('filtro-status-agenda').value; const data=document.getElementById('filtro-data-agenda').value; if(tat) filtered=filtered.filter(a=>a.tatuador_nome===tat); if(stat) filtered=filtered.filter(a=>a.status===stat); if(data) filtered=filtered.filter(a=>a.data_hora.startsWith(data)); renderizarAgenda(filtered);};
 window.filtrarAgendaHoje=()=>{ document.getElementById('filtro-data-agenda').valueAsDate=new Date(); filtrarAgenda();};
 window.limparFiltrosAgenda=()=>{ document.getElementById('filtro-tatuador-agenda').value=''; document.getElementById('filtro-status-agenda').value=''; document.getElementById('filtro-data-agenda').value=''; renderizarAgenda(currentData.agenda);};
 
 // ==================== PIERCING ====================
-window.abrirModalPiercing = (id=null) => { document.getElementById('piercing-id').value=''; document.getElementById('piercing-nome').value=''; document.getElementById('piercing-qtd').value=''; document.getElementById('piercing-preco').value=''; if(id){ supabaseClient.from('piercings_estoque').select('*').eq('id',id).single().then(({data})=>{ if(data){ document.getElementById('piercing-id').value=data.id; document.getElementById('piercing-nome').value=data.nome; document.getElementById('piercing-qtd').value=data.quantidade; document.getElementById('piercing-preco').value=data.preco_venda; document.getElementById('modal-piercing').style.display='block'; } }); } else document.getElementById('modal-piercing').style.display='block'; };
-window.salvarPiercing = async () => { const id = document.getElementById('piercing-id').value; const nome = document.getElementById('piercing-nome').value; const quantidade = parseInt(document.getElementById('piercing-qtd').value)||0; const preco_venda = parseFloat(document.getElementById('piercing-preco').value)||0; if(!nome) return showAlert('Nome obrigatório','error'); if(id) await supabaseClient.from('piercings_estoque').update({nome,quantidade,preco_venda}).eq('id',id); else await supabaseClient.from('piercings_estoque').insert([{nome,quantidade,preco_venda}]); fecharModal('modal-piercing'); await carregarPiercings(); await carregarVendasPiercing(); showAlert('Piercing salvo','success'); };
+window.abrirModalPiercing = (id=null) => { 
+    document.getElementById('piercing-id').value=''; 
+    document.getElementById('piercing-nome').value=''; 
+    document.getElementById('piercing-qtd').value=''; 
+    document.getElementById('piercing-preco').value=''; 
+    if(id){ 
+        supabaseClient.from('piercings_estoque').select('*').eq('id',id).single().then(({data})=>{ 
+            if(data){ 
+                document.getElementById('piercing-id').value=data.id; 
+                document.getElementById('piercing-nome').value=data.nome; 
+                document.getElementById('piercing-qtd').value=data.quantidade; 
+                document.getElementById('piercing-preco').value=data.preco_venda; 
+                document.getElementById('modal-piercing').style.display='block'; 
+            } 
+        }).catch(e=>showAlert('Erro ao carregar piercing','error')); 
+    } else document.getElementById('modal-piercing').style.display='block'; 
+};
+window.salvarPiercing = async () => { 
+    const id = document.getElementById('piercing-id').value; 
+    const nome = document.getElementById('piercing-nome').value; 
+    const quantidade = parseInt(document.getElementById('piercing-qtd').value)||0; 
+    const preco_venda = parseFloat(document.getElementById('piercing-preco').value)||0; 
+    if(!nome) return showAlert('Nome obrigatório','error'); 
+    try {
+        if(id) await supabaseClient.from('piercings_estoque').update({nome,quantidade,preco_venda}).eq('id',id);
+        else await supabaseClient.from('piercings_estoque').insert([{nome,quantidade,preco_venda}]);
+        fecharModal('modal-piercing'); 
+        await carregarPiercings(); 
+        await carregarVendasPiercing(); 
+        showAlert('Piercing salvo','success');
+    } catch(e) { showAlert('Erro ao salvar piercing','error'); }
+};
 window.editarPiercing = (id) => window.abrirModalPiercing(id);
-window.excluirPiercing = async (id) => { if(confirm('Excluir piercing?')){ await supabaseClient.from('piercings_estoque').delete().eq('id',id); await carregarPiercings(); await carregarVendasPiercing(); showAlert('Excluído','success'); } };
-window.registrarVendaPiercing = async () => { const piercingId = document.getElementById('venda-piercing-id').value; const qtd = parseInt(document.getElementById('venda-qtd').value); const cliente = document.getElementById('venda-cliente').value; if(!piercingId) return showAlert('Selecione um piercing','error'); const {data:piercing} = await supabaseClient.from('piercings_estoque').select('*').eq('id',piercingId).single(); if(!piercing || piercing.quantidade < qtd) return showAlert('Estoque insuficiente','error'); const valorTotal = qtd * piercing.preco_venda; const {error:upd} = await supabaseClient.from('piercings_estoque').update({quantidade: piercing.quantidade - qtd}).eq('id',piercingId); if(upd) return showAlert('Erro ao atualizar estoque','error'); await supabaseClient.from('vendas_piercing').insert([{piercing_id:piercingId, quantidade:qtd, valor_total:valorTotal, cliente:cliente||null}]); await carregarPiercings(); await carregarVendasPiercing(); document.getElementById('venda-qtd').value=1; document.getElementById('venda-cliente').value=''; showAlert(`Venda registrada: ${formatMoney(valorTotal)}`,'success'); };
+window.excluirPiercing = async (id) => { if(confirm('Excluir piercing?')){ try { await supabaseClient.from('piercings_estoque').delete().eq('id',id); await carregarPiercings(); await carregarVendasPiercing(); showAlert('Excluído','success'); } catch(e) { showAlert('Erro ao excluir','error'); } } };
+window.registrarVendaPiercing = async () => { 
+    const piercingId = document.getElementById('venda-piercing-id').value; 
+    const qtd = parseInt(document.getElementById('venda-qtd').value); 
+    const cliente = document.getElementById('venda-cliente').value; 
+    if(!piercingId) return showAlert('Selecione um piercing','error'); 
+    try {
+        const {data:piercing, error:fetchError} = await supabaseClient.from('piercings_estoque').select('*').eq('id',piercingId).single();
+        if(fetchError) throw fetchError;
+        if(!piercing || piercing.quantidade < qtd) return showAlert('Estoque insuficiente','error');
+        if(qtd <= 0) return showAlert('Quantidade deve ser maior que zero','error');
+        const valorTotal = qtd * piercing.preco_venda; 
+        const {error:upd} = await supabaseClient.from('piercings_estoque').update({quantidade: piercing.quantidade - qtd}).eq('id',piercingId);
+        if(upd) throw upd;
+        await supabaseClient.from('vendas_piercing').insert([{piercing_id:piercingId, quantidade:qtd, valor_total:valorTotal, cliente:cliente||null}]); 
+        await carregarPiercings(); 
+        await carregarVendasPiercing(); 
+        document.getElementById('venda-qtd').value=1; 
+        document.getElementById('venda-cliente').value=''; 
+        showAlert(`Venda registrada: ${formatMoney(valorTotal)}`,'success');
+    } catch(e) { showAlert('Erro na venda: '+e.message, 'error'); }
+};
 
 // ==================== MATERIAIS ====================
-window.abrirModalMaterial = (id=null) => { document.getElementById('material-id').value=''; document.getElementById('material-nome').value=''; document.getElementById('material-qtd').value=''; document.getElementById('material-preco').value=''; if(id){ supabaseClient.from('materiais_estoque').select('*').eq('id',id).single().then(({data})=>{ if(data){ document.getElementById('material-id').value=data.id; document.getElementById('material-nome').value=data.nome; document.getElementById('material-qtd').value=data.quantidade; document.getElementById('material-preco').value=data.valor_unitario; document.getElementById('modal-material').style.display='block'; } }); } else document.getElementById('modal-material').style.display='block'; };
-window.salvarMaterial = async () => { const id = document.getElementById('material-id').value; const nome = document.getElementById('material-nome').value; const quantidade = parseInt(document.getElementById('material-qtd').value)||0; const valor_unitario = parseFloat(document.getElementById('material-preco').value)||0; if(!nome) return showAlert('Nome obrigatório','error'); if(id) await supabaseClient.from('materiais_estoque').update({nome,quantidade,valor_unitario}).eq('id',id); else await supabaseClient.from('materiais_estoque').insert([{nome,quantidade,valor_unitario}]); fecharModal('modal-material'); await carregarMateriais(); await carregarUsosMateriais(); showAlert('Material salvo','success'); };
+window.abrirModalMaterial = (id=null) => { 
+    document.getElementById('material-id').value=''; 
+    document.getElementById('material-nome').value=''; 
+    document.getElementById('material-qtd').value=''; 
+    document.getElementById('material-preco').value=''; 
+    if(id){ 
+        supabaseClient.from('materiais_estoque').select('*').eq('id',id).single().then(({data})=>{ 
+            if(data){ 
+                document.getElementById('material-id').value=data.id; 
+                document.getElementById('material-nome').value=data.nome; 
+                document.getElementById('material-qtd').value=data.quantidade; 
+                document.getElementById('material-preco').value=data.valor_unitario; 
+                document.getElementById('modal-material').style.display='block'; 
+            } 
+        }).catch(e=>showAlert('Erro ao carregar material','error')); 
+    } else document.getElementById('modal-material').style.display='block'; 
+};
+window.salvarMaterial = async () => { 
+    const id = document.getElementById('material-id').value; 
+    const nome = document.getElementById('material-nome').value; 
+    const quantidade = parseInt(document.getElementById('material-qtd').value)||0; 
+    const valor_unitario = parseFloat(document.getElementById('material-preco').value)||0; 
+    if(!nome) return showAlert('Nome obrigatório','error'); 
+    try {
+        if(id) await supabaseClient.from('materiais_estoque').update({nome,quantidade,valor_unitario}).eq('id',id);
+        else await supabaseClient.from('materiais_estoque').insert([{nome,quantidade,valor_unitario}]);
+        fecharModal('modal-material'); 
+        await carregarMateriais(); 
+        await carregarUsosMateriais(); 
+        showAlert('Material salvo','success');
+    } catch(e) { showAlert('Erro ao salvar material','error'); }
+};
 window.editarMaterial = (id) => window.abrirModalMaterial(id);
-window.excluirMaterial = async (id) => { if(confirm('Excluir material?')){ await supabaseClient.from('materiais_estoque').delete().eq('id',id); await carregarMateriais(); await carregarUsosMateriais(); showAlert('Excluído','success'); } };
-window.registrarUsoMaterial = async () => { const materialId = document.getElementById('uso-material-id').value; const qtd = parseInt(document.getElementById('uso-qtd').value); const obs = document.getElementById('uso-obs').value; if(!materialId) return showAlert('Selecione um material','error'); const {data:material} = await supabaseClient.from('materiais_estoque').select('*').eq('id',materialId).single(); if(!material || material.quantidade < qtd) return showAlert('Quantidade insuficiente','error'); const {error:upd} = await supabaseClient.from('materiais_estoque').update({quantidade: material.quantidade - qtd}).eq('id',materialId); if(upd) return showAlert('Erro ao atualizar estoque','error'); await supabaseClient.from('usos_materiais').insert([{material_id:materialId, quantidade:qtd, observacao:obs||null}]); await carregarMateriais(); await carregarUsosMateriais(); document.getElementById('uso-qtd').value=1; document.getElementById('uso-obs').value=''; showAlert(`Uso de ${qtd} unidade(s) de ${material.nome} registrado`,'success'); };
+window.excluirMaterial = async (id) => { if(confirm('Excluir material?')){ try { await supabaseClient.from('materiais_estoque').delete().eq('id',id); await carregarMateriais(); await carregarUsosMateriais(); showAlert('Excluído','success'); } catch(e) { showAlert('Erro ao excluir','error'); } } };
+window.registrarUsoMaterial = async () => { 
+    const materialId = document.getElementById('uso-material-id').value; 
+    const qtd = parseInt(document.getElementById('uso-qtd').value); 
+    const obs = document.getElementById('uso-obs').value; 
+    if(!materialId) return showAlert('Selecione um material','error'); 
+    try {
+        const {data:material, error:fetchError} = await supabaseClient.from('materiais_estoque').select('*').eq('id',materialId).single();
+        if(fetchError) throw fetchError;
+        if(!material || material.quantidade < qtd) return showAlert('Quantidade insuficiente','error');
+        if(qtd <= 0) return showAlert('Quantidade deve ser maior que zero','error');
+        const {error:upd} = await supabaseClient.from('materiais_estoque').update({quantidade: material.quantidade - qtd}).eq('id',materialId);
+        if(upd) throw upd;
+        await supabaseClient.from('usos_materiais').insert([{material_id:materialId, quantidade:qtd, observacao:obs||null}]); 
+        await carregarMateriais(); 
+        await carregarUsosMateriais(); 
+        document.getElementById('uso-qtd').value=1; 
+        document.getElementById('uso-obs').value=''; 
+        showAlert(`Uso de ${qtd} unidade(s) de ${material.nome} registrado`,'success');
+    } catch(e) { showAlert('Erro ao registrar uso: '+e.message, 'error'); }
+};
 
 // ==================== BACKUP ====================
-window.exportarBackup = async () => { const {data:servicos}=await supabaseClient.from('servicos').select('*'); const {data:agenda}=await supabaseClient.from('agenda').select('*'); const {data:caixa}=await supabaseClient.from('caixa').select('*'); const {data:piercings}=await supabaseClient.from('piercings_estoque').select('*'); const {data:vendas}=await supabaseClient.from('vendas_piercing').select('*'); const {data:materiais}=await supabaseClient.from('materiais_estoque').select('*'); const {data:usos}=await supabaseClient.from('usos_materiais').select('*'); const backup={data_exportacao:new Date().toISOString(), servicos, agenda, caixa, piercings, vendas, materiais, usos}; const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`backup-dark013-${new Date().toISOString().split('T')[0]}.json`; a.click(); showAlert('Backup exportado','success'); };
-window.importarBackup = async (input) => { const file=input.files[0]; if(!file)return; const text=await file.text(); const backup=JSON.parse(text); if(confirm(`Importar backup de ${backup.data_exportacao}?`)){ for(const s of backup.servicos||[]){ const {id,...rest}=s; await supabaseClient.from('servicos').insert([rest]); } for(const a of backup.agenda||[]){ const {id,...rest}=a; await supabaseClient.from('agenda').insert([rest]); } for(const c of backup.caixa||[]){ const {id,...rest}=c; await supabaseClient.from('caixa').insert([rest]); } for(const p of backup.piercings||[]){ const {id,...rest}=p; await supabaseClient.from('piercings_estoque').insert([rest]); } for(const v of backup.vendas||[]){ const {id,...rest}=v; await supabaseClient.from('vendas_piercing').insert([rest]); } for(const m of backup.materiais||[]){ const {id,...rest}=m; await supabaseClient.from('materiais_estoque').insert([rest]); } for(const u of backup.usos||[]){ const {id,...rest}=u; await supabaseClient.from('usos_materiais').insert([rest]); } showAlert('Backup importado','success'); setTimeout(()=>location.reload(),1500); } input.value=''; };
+window.exportarBackup = async () => { 
+    try {
+        const {data:servicos}=await supabaseClient.from('servicos').select('*'); 
+        const {data:agenda}=await supabaseClient.from('agenda').select('*'); 
+        const {data:caixa}=await supabaseClient.from('caixa').select('*'); 
+        const {data:piercings}=await supabaseClient.from('piercings_estoque').select('*'); 
+        const {data:vendas}=await supabaseClient.from('vendas_piercing').select('*'); 
+        const {data:materiais}=await supabaseClient.from('materiais_estoque').select('*'); 
+        const {data:usos}=await supabaseClient.from('usos_materiais').select('*'); 
+        const backup={data_exportacao:new Date().toISOString(), servicos, agenda, caixa, piercings, vendas, materiais, usos}; 
+        const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}); 
+        const a=document.createElement('a'); 
+        a.href=URL.createObjectURL(blob); 
+        a.download=`backup-dark013-${new Date().toISOString().split('T')[0]}.json`; 
+        a.click(); 
+        showAlert('Backup exportado','success');
+    } catch(e) { showAlert('Erro ao exportar backup','error'); }
+};
+window.importarBackup = async (input) => { 
+    const file=input.files[0]; 
+    if(!file) return; 
+    try {
+        const text=await file.text(); 
+        const backup=JSON.parse(text); 
+        if(!backup.servicos && !backup.agenda && !backup.caixa) throw new Error('Arquivo inválido'); 
+        if(confirm(`Importar backup de ${backup.data_exportacao}? Isso pode duplicar dados.`)){ 
+            for(const s of backup.servicos||[]){ const {id,...rest}=s; await supabaseClient.from('servicos').insert([rest]); } 
+            for(const a of backup.agenda||[]){ const {id,...rest}=a; await supabaseClient.from('agenda').insert([rest]); } 
+            for(const c of backup.caixa||[]){ const {id,...rest}=c; await supabaseClient.from('caixa').insert([rest]); } 
+            for(const p of backup.piercings||[]){ const {id,...rest}=p; await supabaseClient.from('piercings_estoque').insert([rest]); } 
+            for(const v of backup.vendas||[]){ const {id,...rest}=v; await supabaseClient.from('vendas_piercing').insert([rest]); } 
+            for(const m of backup.materiais||[]){ const {id,...rest}=m; await supabaseClient.from('materiais_estoque').insert([rest]); } 
+            for(const u of backup.usos||[]){ const {id,...rest}=u; await supabaseClient.from('usos_materiais').insert([rest]); } 
+            showAlert('Backup importado','success'); 
+            setTimeout(()=>location.reload(),1500); 
+        } 
+    } catch(e) { showAlert('Erro ao importar backup: '+e.message, 'error'); } 
+    input.value=''; 
+};
 
 // ==================== NAVEGAÇÃO E INICIALIZAÇÃO ====================
 window.fecharModal = (id) => document.getElementById(id).style.display='none';
@@ -207,6 +435,10 @@ document.querySelectorAll('.nav button').forEach(btn=>btn.addEventListener('clic
 }));
 
 document.addEventListener('DOMContentLoaded', async()=>{
+    if (!supabaseClient) {
+        showAlert('Supabase não disponível. Verifique sua conexão com a internet.', 'error');
+        return;
+    }
     const conectado = await testarConexao();
     if (!conectado) return;
     await carregarCaixa();
@@ -218,3 +450,62 @@ document.addEventListener('DOMContentLoaded', async()=>{
     await carregarMateriais();
     await carregarUsosMateriais();
 });
+// ==================== DADOS DE EXEMPLO ====================
+window.popularPiercingsExemplo = async () => {
+    if (!confirm('Isso irá adicionar piercings de exemplo (não remove os existentes). Continuar?')) return;
+    const exemplos = [
+        { nome: 'Piercing Nariz Cristal', quantidade: 10, preco_venda: 80.00 },
+        { nome: 'Piercing Septo Aço', quantidade: 8, preco_venda: 120.00 },
+        { nome: 'Piercing Lábio Argola', quantidade: 5, preco_venda: 70.00 },
+        { nome: 'Piercing Tragus Pérola', quantidade: 12, preco_venda: 90.00 },
+        { nome: 'Piercing Indústrial Barra', quantidade: 6, preco_venda: 110.00 }
+    ];
+    try {
+        for (const item of exemplos) {
+            // verifica se já existe para não duplicar (opcional)
+            const { data: existente } = await supabaseClient
+                .from('piercings_estoque')
+                .select('id')
+                .eq('nome', item.nome)
+                .maybeSingle();
+            if (!existente) {
+                await supabaseClient.from('piercings_estoque').insert([item]);
+            }
+        }
+        await carregarPiercings();
+        await carregarVendasPiercing();
+        showAlert('Piercings de exemplo adicionados!', 'success');
+    } catch (e) {
+        showAlert('Erro ao adicionar exemplos: ' + e.message, 'error');
+    }
+};
+
+window.popularMateriaisExemplo = async () => {
+    if (!confirm('Isso irá adicionar materiais de exemplo (não remove os existentes). Continuar?')) return;
+    const exemplos = [
+        { nome: 'Agulha 1207RL', quantidade: 50, valor_unitario: 2.50 },
+        { nome: 'Agulha 1005RL', quantidade: 40, valor_unitario: 2.50 },
+        { nome: 'Tinta Preta Intenze', quantidade: 8, valor_unitario: 45.00 },
+        { nome: 'Tinta Branca Eternal', quantidade: 5, valor_unitario: 55.00 },
+        { nome: 'Luvas Descartáveis M', quantidade: 100, valor_unitario: 0.80 },
+        { nome: 'Filme PVC', quantidade: 20, valor_unitario: 12.00 },
+        { nome: 'Bálsamo Tattoo', quantidade: 15, valor_unitario: 18.00 }
+    ];
+    try {
+        for (const item of exemplos) {
+            const { data: existente } = await supabaseClient
+                .from('materiais_estoque')
+                .select('id')
+                .eq('nome', item.nome)
+                .maybeSingle();
+            if (!existente) {
+                await supabaseClient.from('materiais_estoque').insert([item]);
+            }
+        }
+        await carregarMateriais();
+        await carregarUsosMateriais();
+        showAlert('Materiais de exemplo adicionados!', 'success');
+    } catch (e) {
+        showAlert('Erro ao adicionar exemplos: ' + e.message, 'error');
+    }
+};
