@@ -421,14 +421,29 @@ select:focus, input:focus, textarea:focus {
 .modal-content {
     background: var(--bg-secondary);
     margin: 5% auto;
-    padding: 32px;
+    padding: 24px 28px;
     border-radius: var(--radius-lg);
     width: 90%;
     max-width: 580px;
+    max-height: 85vh;          /* 🔥 Limita a altura a 85% da viewport */
+    overflow-y: auto;          /* 🔥 Adiciona rolagem interna se o conteúdo for maior */
     border: 1px solid var(--border-medium);
     box-shadow: var(--shadow-lg);
     position: relative;
     animation: slideUp 0.3s ease;
+}
+
+/* Garantir que o título não fique escondido pelo botão fechar */
+.modal-content h2 {
+    margin-top: 0;
+    padding-right: 30px;
+}
+
+/* Botão Salvar dentro do modal */
+.modal-content .btn-success {
+    width: 100%;
+    margin-top: 20px;
+    justify-content: center;
 }
 
 @keyframes slideUp {
@@ -681,8 +696,9 @@ textarea {
 
     .modal-content {
         margin: 10% auto;
-        padding: 24px;
+        padding: 20px;
         width: 95%;
+        max-height: 80vh;    /* Um pouco menor em mobile */
     }
 
     #alert-container {
