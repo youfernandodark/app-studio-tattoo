@@ -174,14 +174,8 @@ header p {
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(12px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Cards */
@@ -404,7 +398,7 @@ select:focus, input:focus, textarea:focus {
     box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
 }
 
-/* Modais */
+/* ========== MODAIS REESTRUTURADOS ========== */
 .modal {
     display: none;
     position: fixed;
@@ -421,52 +415,57 @@ select:focus, input:focus, textarea:focus {
 .modal-content {
     background: var(--bg-secondary);
     margin: 5% auto;
-    padding: 24px 28px;
+    padding: 0;
     border-radius: var(--radius-lg);
     width: 90%;
     max-width: 580px;
-    max-height: 85vh;          /* 🔥 Limita a altura a 85% da viewport */
-    overflow-y: auto;          /* 🔥 Adiciona rolagem interna se o conteúdo for maior */
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--border-medium);
     box-shadow: var(--shadow-lg);
     position: relative;
     animation: slideUp 0.3s ease;
 }
 
-/* Garantir que o título não fique escondido pelo botão fechar */
 .modal-content h2 {
-    margin-top: 0;
-    padding-right: 30px;
+    margin: 0;
+    padding: 24px 28px 16px 28px;
+    padding-right: 50px;
+    flex-shrink: 0;
+    font-size: 1.4rem;
 }
 
-/* Botão Salvar dentro do modal */
-.modal-content .btn-success {
+.form-scrollable {
+    padding: 0 28px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.modal-footer {
+    padding: 16px 28px 24px 28px;
+    flex-shrink: 0;
+    border-top: 1px solid var(--border-light);
+    margin-top: 8px;
+}
+
+.modal-footer .btn-success {
     width: 100%;
-    margin-top: 20px;
     justify-content: center;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .close {
     position: absolute;
     right: 24px;
-    top: 20px;
+    top: 24px;
     font-size: 28px;
     font-weight: 400;
     cursor: pointer;
     color: var(--text-muted);
     transition: var(--transition);
     line-height: 1;
+    z-index: 10;
 }
 
 .close:hover {
@@ -474,6 +473,12 @@ select:focus, input:focus, textarea:focus {
     transform: scale(1.1);
 }
 
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== FORMULÁRIOS ========== */
 .form-group {
     margin-bottom: 20px;
 }
@@ -529,14 +534,8 @@ textarea {
 }
 
 @keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(40px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
 }
 
 .alert-success {
@@ -696,9 +695,21 @@ textarea {
 
     .modal-content {
         margin: 10% auto;
-        padding: 20px;
         width: 95%;
-        max-height: 80vh;    /* Um pouco menor em mobile */
+        max-height: 80vh;
+    }
+
+    .modal-content h2 {
+        padding: 20px 20px 12px 20px;
+        padding-right: 45px;
+    }
+
+    .form-scrollable {
+        padding: 0 20px;
+    }
+
+    .modal-footer {
+        padding: 12px 20px 20px 20px;
     }
 
     #alert-container {
@@ -717,7 +728,6 @@ canvas {
     padding: 12px;
 }
 
-/* Links e elementos extras */
 hr {
     border: none;
     height: 1px;
@@ -736,7 +746,6 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Melhorias de acessibilidade */
 button:focus-visible,
 select:focus-visible,
 input:focus-visible,
@@ -745,12 +754,10 @@ textarea:focus-visible {
     outline-offset: 2px;
 }
 
-/* Animações para botões */
 .btn:active {
     transform: scale(0.96);
 }
 
-/* Estilo para o placeholder */
 ::placeholder {
     color: #5A5A70;
     opacity: 0.7;
