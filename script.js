@@ -375,8 +375,6 @@ const Renderer = {
                 <td>${escapeHtml(a.cliente)}</td>
                 <td>${escapeHtml(a.tatuador_nome)}</td>
                 <td>${escapeHtml(a.tipo_servico)}</td>
-                <td>${MoneyUtils.format(a.valor_estimado)}</td>
-                <td>${escapeHtml(a.forma_pagamento) || '-'}</td>
                 <td><span class="status-badge-item ${statusClass}">${escapeHtml(a.status)}</span></td>
                 <td>${escapeHtml(a.observacoes) || '-'}</td>
                 <td>
@@ -386,7 +384,7 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('agenda-tbody', data.length ? linhas : '<tr><td colspan="9">Nenhum agendamento</td></tr>');
+        this._renderTable('agenda-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum agendamento</td></tr>');
     },
 
     renderEstoquePiercing(piercings) {
@@ -658,7 +656,6 @@ const ServicosModule = {
                     await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
                     AlertUtils.show('Agendamento marcado como Concluído!', 'success');
                 } catch (e) {
-                    // Se falhar, o serviço foi salvo mas a agenda não foi atualizada - estado inconsistente
                     AlertUtils.show('Serviço salvo, mas falha ao atualizar agendamento.', 'warning');
                     console.error('Falha ao concluir agendamento:', e);
                 }
@@ -666,7 +663,6 @@ const ServicosModule = {
             }
             AlertUtils.show(id ? 'Serviço atualizado' : 'Serviço salvo', 'success');
         } catch (e) {
-            // Em caso de erro, não limpa pendingAgendaId (para tentar novamente)
             ErrorHandler.handle('salvar serviço', e);
         } finally { LoadingUtils.hide(); }
     },
@@ -696,7 +692,6 @@ const ServicosModule = {
         finally { LoadingUtils.hide(); }
     },
     filtrar: () => {
-        // Implementar filtros no futuro com consultas parametrizadas
         DataService.loadServicos(1);
     },
     limparFiltros: () => {
@@ -724,8 +719,8 @@ const AgendaModule = {
             cliente: DomUtils.getValue('agenda-cliente'),
             tatuador_nome: DomUtils.getValue('agenda-tatuador'),
             tipo_servico: DomUtils.getValue('agenda-tipo'),
-            valor_estimado: MoneyUtils.parse(DomUtils.getValue('agenda-valor')),
-            forma_pagamento: DomUtils.getValue('agenda-pagamento'),
+            valor_estimado: 0, // removido da UI, valor padrão
+            forma_pagamento: null, // removido da UI
             status: DomUtils.getValue('agenda-status'),
             observacoes: DomUtils.getValue('agenda-obs')
         };
@@ -749,8 +744,7 @@ const AgendaModule = {
         DomUtils.setValue('agenda-cliente', item.cliente);
         DomUtils.setValue('agenda-tatuador', item.tatuador_nome);
         DomUtils.setValue('agenda-tipo', item.tipo_servico);
-        DomUtils.setValue('agenda-valor', item.valor_estimado);
-        DomUtils.setValue('agenda-pagamento', item.forma_pagamento || 'PIX');
+        // valores de pagamento não são mais exibidos/alterados
         DomUtils.setValue('agenda-status', item.status);
         DomUtils.setValue('agenda-obs', item.observacoes || '');
         DomUtils.setDisplay('modal-agenda', 'block');
@@ -774,14 +768,13 @@ const AgendaModule = {
         DomUtils.setValue('servico-tatuador', item.tatuador_nome);
         DomUtils.setValue('servico-tipo', item.tipo_servico);
         DomUtils.setValue('servico-descricao', item.observacoes || '');
-        DomUtils.setValue('servico-valor', item.valor_estimado);
+        DomUtils.setValue('servico-valor', item.valor_estimado || 0);
         DomUtils.setValue('servico-pagamento', item.forma_pagamento || 'PIX');
         ServicosModule.calcularRepasse();
         window.pendingAgendaId = id;
         DomUtils.setDisplay('modal-servico', 'block');
     },
     filtrar: () => {
-        // Implementar filtros futuramente
         DataService.loadAgenda(1);
     },
     filtrarHoje: () => {
@@ -853,24 +846,20 @@ const PiercingModule = {
         if (quantidade <= 0) return AlertUtils.show('Quantidade deve ser maior que zero', 'error');
         try {
             LoadingUtils.show('Registrando venda...');
-            // Início de transação simulada
             const { data: piercing, error } = await supabaseClient.from('piercings_estoque').select('*').eq('id', piercingId).single();
             if (error) throw error;
             if (!piercing || piercing.quantidade < quantidade) throw new Error('Estoque insuficiente');
             const valorTotal = quantidade * piercing.preco_venda;
             
-            // Baixa no estoque
             const { error: updateError } = await supabaseClient.from('piercings_estoque')
                 .update({ quantidade: piercing.quantidade - quantidade }).eq('id', piercingId);
             if (updateError) throw updateError;
             
-            // Registro da venda
             const { error: insertError } = await supabaseClient.from('vendas_piercing').insert([{ 
                 piercing_id: piercingId, quantidade, valor_total: valorTotal, cliente: cliente || null,
                 data: new Date().toISOString()
             }]);
             if (insertError) {
-                // Tentar reverter estoque
                 await supabaseClient.from('piercings_estoque').update({ quantidade: piercing.quantidade }).eq('id', piercingId);
                 throw insertError;
             }
@@ -951,7 +940,6 @@ const MateriaisModule = {
                 data: new Date().toISOString()
             }]);
             if (insertError) {
-                // Rollback
                 await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade }).eq('id', materialId);
                 throw insertError;
             }
@@ -1091,7 +1079,7 @@ async function testarConexao() {
 async function carregarDadosSecao(sectionId) {
     const carregamentos = {
         dashboard: async () => {
-            await DataService.loadCaixa(1, 100); // Carrega todos para dashboard
+            await DataService.loadCaixa(1, 100);
             await DataService.loadServicos(1, 100);
             await DataService.loadAgenda(1, 100);
             atualizarDashboard();
@@ -1157,7 +1145,7 @@ window.onclick = (event) => {
     }
 };
 
-// EXPOSIÇÃO GLOBAL PARA COMPATIBILIDADE COM ONCLICK NO HTML (mantida mas prefira data-attributes)
+// EXPOSIÇÃO GLOBAL PARA COMPATIBILIDADE COM ONCLICK NO HTML
 window.CaixaModule = CaixaModule;
 window.ServicosModule = ServicosModule;
 window.AgendaModule = AgendaModule;
@@ -1166,7 +1154,7 @@ window.MateriaisModule = MateriaisModule;
 window.BackupModule = BackupModule;
 window.ExemplosModule = ExemplosModule;
 
-// Funções globais para ações diretas (mantendo compatibilidade)
+// Funções globais para ações diretas
 window.abrirModalCaixa = () => CaixaModule.abrirModal();
 window.salvarCaixa = () => CaixaModule.salvar();
 window.filtrarCaixa = () => CaixaModule.filtrar();
@@ -1210,7 +1198,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupNavigation();
     setupGlobalDelegation();
 
-    // Carregar dados iniciais (dashboard)
     await DataService.loadCaixa(1, 100);
     await DataService.loadServicos(1, 100);
     await DataService.loadAgenda(1, 100);
