@@ -335,7 +335,7 @@ const Renderer = {
 function atualizarDashboard() {
     const totalEntradas = AppState.caixa.reduce((s, i) => s + (+i.entradas || 0), 0);
     const totalSaidas = AppState.caixa.reduce((s, i) => s + (+i.saidas || 0), 0);
-    const saldoAtual = AppState.caixa[0]?.saldo_final || 0;
+    const saldoAtual = AppState.caixa.length ? AppState.caixa[0].saldo_final : 0;
     const servicosRealizados = AppState.servicos.length;
     const repasseThalia = AppState.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? (+sv.valor_total || 0) * 0.7 : 0), 0);
 
@@ -355,35 +355,41 @@ function atualizarDashboard() {
         ? `<ul>${proximos.map(a => `<li>${Helpers.formatDateTime(a.data_hora)} - ${a.cliente}</li>`).join('')}</ul>`
         : 'Nenhum');
 
-    // Gráficos
-    if (AppState.chartFaturamento) AppState.chartFaturamento.destroy();
-    const meses = [], valores = [];
-    for (let i = 5; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        meses.push(d.toLocaleDateString('pt-BR', { month: 'short' }));
-        const soma = AppState.servicos.filter(s => {
-            const data = new Date(s.data);
-            return data.getMonth() === d.getMonth() && data.getFullYear() === d.getFullYear();
-        }).reduce((acc, sv) => acc + (+sv.valor_total || 0), 0);
-        valores.push(soma);
-    }
-    const ctx = Helpers.getElement('chart-faturamento').getContext('2d');
-    AppState.chartFaturamento = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: meses, datasets: [{ label: 'Faturamento', data: valores, backgroundColor: '#818CF8' }] }
-    });
-
-    if (AppState.chartTipos) AppState.chartTipos.destroy();
-    const tatuagens = AppState.servicos.filter(s => s.tipo === 'Tatuagem').length;
-    const piercingsServ = AppState.servicos.filter(s => s.tipo === 'Piercing').length;
-    AppState.chartTipos = new Chart(Helpers.getElement('chart-tipos').getContext('2d'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Tatuagens', 'Piercings'],
-            datasets: [{ data: [tatuagens, piercingsServ], backgroundColor: ['#818CF8', '#C084FC'] }]
+    // Gráficos (apenas se os elementos existirem e estiverem visíveis)
+    const canvasFaturamento = Helpers.getElement('chart-faturamento');
+    if (canvasFaturamento) {
+        if (AppState.chartFaturamento) AppState.chartFaturamento.destroy();
+        const meses = [], valores = [];
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            meses.push(d.toLocaleDateString('pt-BR', { month: 'short' }));
+            const soma = AppState.servicos.filter(s => {
+                const data = new Date(s.data);
+                return data.getMonth() === d.getMonth() && data.getFullYear() === d.getFullYear();
+            }).reduce((acc, sv) => acc + (+sv.valor_total || 0), 0);
+            valores.push(soma);
         }
-    });
+        const ctx = canvasFaturamento.getContext('2d');
+        AppState.chartFaturamento = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: meses, datasets: [{ label: 'Faturamento', data: valores, backgroundColor: '#818CF8' }] }
+        });
+    }
+
+    const canvasTipos = Helpers.getElement('chart-tipos');
+    if (canvasTipos) {
+        if (AppState.chartTipos) AppState.chartTipos.destroy();
+        const tatuagens = AppState.servicos.filter(s => s.tipo === 'Tatuagem').length;
+        const piercingsServ = AppState.servicos.filter(s => s.tipo === 'Piercing').length;
+        AppState.chartTipos = new Chart(canvasTipos.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Tatuagens', 'Piercings'],
+                datasets: [{ data: [tatuagens, piercingsServ], backgroundColor: ['#818CF8', '#C084FC'] }]
+            }
+        });
+    }
 }
 
 async function carregarRelatorios() {
@@ -452,7 +458,9 @@ const CaixaModule = {
     },
     filtrar: () => {
         const termo = Helpers.getValue('search-caixa').toLowerCase();
-        const filtrado = AppState.caixa.filter(i => (i.descricao || '').toLowerCase().includes(termo));
+        const filtrado = termo
+            ? AppState.caixa.filter(i => (i.descricao || '').toLowerCase().includes(termo))
+            : AppState.caixa;
         Renderer.renderCaixa(filtrado);
     }
 };
@@ -464,6 +472,11 @@ const ServicosModule = {
         Helpers.setValue('servico-data', new Date().toISOString().split('T')[0]);
         Helpers.openModal('modal-servico');
         ServicosModule.calcularRepasse();
+        // Garantir que os cálculos sejam atualizados quando os campos mudarem
+        const valorInput = Helpers.getElement('servico-valor');
+        const tatuadorSelect = Helpers.getElement('servico-tatuador');
+        if (valorInput) valorInput.addEventListener('input', ServicosModule.calcularRepasse);
+        if (tatuadorSelect) tatuadorSelect.addEventListener('change', ServicosModule.calcularRepasse);
     },
     calcularRepasse: () => {
         const valor = +Helpers.getValue('servico-valor') || 0;
@@ -593,7 +606,7 @@ const AgendaModule = {
     confirmar: async (id) => {
         if (!confirm('Confirmar este agendamento?')) return;
         try {
-            await supabaseClient.from('agenda').update({ status: 'Confirmado' }).eq('id', id);
+            await DataService.saveRecord('agenda', { status: 'Confirmado' }, id);
             await DataService.loadAgenda();
             atualizarDashboard();
             Helpers.showAlert('Status alterado para Confirmado', 'success');
@@ -879,6 +892,15 @@ function setupNavigation() {
     });
 }
 
+// Configurar listeners adicionais
+function setupEventListeners() {
+    // Campo de busca do caixa
+    const searchCaixa = Helpers.getElement('search-caixa');
+    if (searchCaixa) {
+        searchCaixa.addEventListener('input', () => CaixaModule.filtrar());
+    }
+}
+
 // Fechar modais ao clicar fora
 window.onclick = (event) => {
     if (event.target.classList.contains('modal')) {
@@ -910,6 +932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!conectado) return;
 
     setupNavigation();
+    setupEventListeners();
     await DataService.loadCaixa();
     await DataService.loadServicos();
     await DataService.loadAgenda();
