@@ -195,7 +195,7 @@ const Renderer = {
     renderAgenda(data) {
         const tbody = Helpers.getElement('agenda-tbody');
         if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="8">Nenhum agendamento</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9">Nenhum agendamento</td></tr>';
             return;
         }
         tbody.innerHTML = data.map(a => {
@@ -205,8 +205,8 @@ const Renderer = {
                 Concluído: 'status-success',
                 Cancelado: 'status-danger'
             }[a.status] || '';
-            const confirmBtn = a.status === 'Agendado'
-                ? `<button class="btn btn-success btn-sm" onclick="AgendaModule.confirmar('${a.id}')"><i class="fas fa-check"></i> Confirmar</button> `
+            const realizarBtn = a.status !== 'Concluído' && a.status !== 'Cancelado'
+                ? `<button class="btn btn-success btn-sm" onclick="AgendaModule.realizarServico('${a.id}')"><i class="fas fa-check"></i> Realizar Serviço</button> `
                 : '';
             return `<tr>
                 <td>${Helpers.formatDateTime(a.data_hora)}</td>
@@ -214,10 +214,11 @@ const Renderer = {
                 <td>${a.tatuador_nome}</td>
                 <td>${a.tipo_servico}</td>
                 <td>${Helpers.formatMoney(a.valor_estimado)}</td>
+                <td>${a.forma_pagamento || '-'}</td>
                 <td><span class="status-badge-item ${statusClass}">${a.status}</span></td>
                 <td>${a.observacoes || '-'}</td>
                 <td>
-                    ${confirmBtn}
+                    ${realizarBtn}
                     <button class="btn btn-warning btn-sm" onclick="AgendaModule.editar('${a.id}')">Editar</button>
                     <button class="btn btn-danger btn-sm" onclick="AgendaModule.excluir('${a.id}')">Excluir</button>
                 </td>
@@ -364,7 +365,6 @@ function atualizarDashboard() {
 }
 
 async function carregarRelatorios() {
-    // Recarrega dados para garantir atualização
     await DataService.loadServicos();
     await DataService.loadCaixa();
 
@@ -474,6 +474,15 @@ const ServicosModule = {
             Helpers.closeModal('modal-servico');
             await DataService.loadServicos();
             atualizarDashboard();
+            
+            // Se veio de um agendamento, marcar como Concluído
+            if (window.pendingAgendaId) {
+                await DataService.saveRecord('agenda', { status: 'Concluído' }, window.pendingAgendaId);
+                await DataService.loadAgenda();
+                Helpers.showAlert('Agendamento marcado como Concluído!', 'success');
+                delete window.pendingAgendaId;
+            }
+            
             Helpers.showAlert(id ? 'Serviço atualizado' : 'Serviço salvo', 'success');
         } catch (e) { Helpers.handleError('salvar serviço', e); }
     },
@@ -540,6 +549,7 @@ const AgendaModule = {
             tatuador_nome: Helpers.getValue('agenda-tatuador'),
             tipo_servico: Helpers.getValue('agenda-tipo'),
             valor_estimado: +Helpers.getValue('agenda-valor') || 0,
+            forma_pagamento: Helpers.getValue('agenda-pagamento'),
             status: Helpers.getValue('agenda-status'),
             observacoes: Helpers.getValue('agenda-obs')
         };
@@ -562,6 +572,7 @@ const AgendaModule = {
         Helpers.setValue('agenda-tatuador', item.tatuador_nome);
         Helpers.setValue('agenda-tipo', item.tipo_servico);
         Helpers.setValue('agenda-valor', item.valor_estimado);
+        Helpers.setValue('agenda-pagamento', item.forma_pagamento || 'PIX');
         Helpers.setValue('agenda-status', item.status);
         Helpers.setValue('agenda-obs', item.observacoes || '');
         Helpers.openModal('modal-agenda');
@@ -575,14 +586,20 @@ const AgendaModule = {
             Helpers.showAlert('Agendamento excluído', 'success');
         } catch (e) { Helpers.handleError('excluir agenda', e); }
     },
-    confirmar: async (id) => {
-        if (!confirm('Confirmar este agendamento?')) return;
-        try {
-            await DataService.saveRecord('agenda', { status: 'Confirmado' }, id);
-            await DataService.loadAgenda();
-            atualizarDashboard();
-            Helpers.showAlert('Status alterado para Confirmado', 'success');
-        } catch (e) { Helpers.handleError('confirmar agenda', e); }
+    realizarServico: async (id) => {
+        const item = AppState.agenda.find(a => a.id === id);
+        if (!item) return;
+        // Pré-preenche o modal de serviço
+        Helpers.setValue('servico-data', item.data_hora.split('T')[0]);
+        Helpers.setValue('servico-cliente', item.cliente);
+        Helpers.setValue('servico-tatuador', item.tatuador_nome);
+        Helpers.setValue('servico-tipo', item.tipo_servico);
+        Helpers.setValue('servico-descricao', item.observacoes || '');
+        Helpers.setValue('servico-valor', item.valor_estimado);
+        Helpers.setValue('servico-pagamento', item.forma_pagamento || 'PIX');
+        ServicosModule.calcularRepasse();
+        window.pendingAgendaId = id;
+        Helpers.openModal('modal-servico');
     },
     filtrar: () => {
         let filtrado = [...AppState.agenda];
@@ -949,7 +966,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupNavigation();
     setupEventListeners();
 
-    // Carrega dados iniciais
     await DataService.loadCaixa();
     await DataService.loadServicos();
     await DataService.loadAgenda();
