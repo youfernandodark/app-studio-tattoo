@@ -1,13 +1,23 @@
 // ==================== SUPABASE CONFIG ====================
 const SUPABASE_URL = 'https://bhymkxsgrghhpqgzqrni.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeW1reHNncmdoaHBxZ3pxcm5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzEyOTYsImV4cCI6MjA5MTYwNzI5Nn0.GuY32wg63pzCz5aZtGUJBXcb9zicwhsJSzH-czX3Ly4';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeW1reHNncmdoaHBxZ3pxcm5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzEyOTYsImV4cCI6MjA5MTYwNzI5Nn0.GuY32wg63pzCz5aZtGUJBXcb9zicwhsJSzH-czX3Ly4';
+
 let supabaseClient = null;
 let currentUser = null;
 
-if (typeof supabase !== 'undefined') {
+// Inicializa o cliente Supabase se a biblioteca estiver disponível
+if (typeof supabase !== 'undefined' && supabase.createClient) {
   supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  console.log('✅ Cliente Supabase inicializado');
 } else {
-  console.error('Biblioteca Supabase não carregou.');
+  console.error('❌ Biblioteca Supabase não carregou. Verifique a tag script do Supabase.');
+  // Exibe mensagem visual quando o DOM estiver pronto
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('auth-container');
+    if (container) {
+      container.innerHTML = '<div class="auth-error" style="padding:20px">Erro: Biblioteca Supabase não carregou. Verifique sua conexão com a internet e recarregue a página.</div>';
+    }
+  });
 }
 
 // ==================== ESTADO GLOBAL ====================
@@ -15,7 +25,7 @@ let currentData = { servicos: [], agenda: [], caixa: [] };
 let chartFaturamento = null;
 let chartTipos = null;
 
-// Referências DOM (inicializadas apenas no DOMContentLoaded)
+// Referências DOM (inicializadas no DOMContentLoaded)
 let authContainer, mainContainer, authMessageDiv;
 
 // ==================== HELPERS ====================
@@ -53,58 +63,113 @@ function showAuthMessage(message, isError = true) {
   }, 4000);
 }
 
-// ==================== AUTENTICAÇÃO ====================
+// ==================== AUTENTICAÇÃO MELHORADA ====================
 async function handleLogin(e) {
   if (e) e.preventDefault();
+  
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!email || !password) return showAuthMessage('Preencha email e senha', true);
-
+  const btn = document.getElementById('btn-login');
+  const originalText = btn?.innerHTML;
+  
+  if (!email || !password) {
+    return showAuthMessage('Preencha email e senha', true);
+  }
+  
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+  }
+  
   try {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes('Email not confirmed')) {
+        throw new Error('E-mail não confirmado. Verifique sua caixa de entrada e clique no link de confirmação.');
+      }
+      throw error;
+    }
+    
     currentUser = data.user;
     showAuthMessage('Login realizado com sucesso!', false);
+    
     document.getElementById('login-email').value = '';
     document.getElementById('login-password').value = '';
+    
     await afterLoginSuccess();
   } catch (err) {
     showAuthMessage('Erro ao entrar: ' + err.message, true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText || 'Entrar';
+    }
   }
 }
 
 async function handleRegister(e) {
   if (e) e.preventDefault();
+  
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value;
-  if (!email || !password) return showAuthMessage('Preencha email e senha', true);
-  if (password.length < 6) return showAuthMessage('A senha deve ter pelo menos 6 caracteres', true);
-
+  const btn = document.getElementById('btn-register');
+  const originalText = btn?.innerHTML;
+  
+  if (!email || !password) {
+    return showAuthMessage('Preencha email e senha', true);
+  }
+  if (password.length < 6) {
+    return showAuthMessage('A senha deve ter pelo menos 6 caracteres', true);
+  }
+  
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Criando conta...';
+  }
+  
   try {
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+    const { data, error } = await supabaseClient.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: window.location.origin
+      }
+    });
+    
     if (error) throw error;
+    
     if (data.user) {
-      showAuthMessage('Conta criada! Faça login para continuar.', false);
-      document.getElementById('tab-login').click();
+      let msg = 'Conta criada! Enviamos um e-mail de confirmação. Verifique sua caixa de entrada e spam.';
+      if (data.user.confirmed_at) {
+        msg = 'Conta criada com sucesso! Agora faça login.';
+      }
+      showAuthMessage(msg, false);
+      
+      const tabLogin = document.getElementById('tab-login');
+      if (tabLogin) tabLogin.click();
       document.getElementById('login-email').value = email;
       document.getElementById('login-password').value = '';
     } else {
-      showAuthMessage('Erro ao criar conta. Verifique sua conexão.', true);
+      showAuthMessage('Erro ao criar conta. Tente novamente.', true);
     }
   } catch (err) {
     showAuthMessage('Erro ao criar conta: ' + err.message, true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText || 'Criar Conta';
+    }
   }
 }
 
 async function handleLogout() {
   try {
     await supabaseClient.auth.signOut();
+    // O onAuthStateChange já tratará a UI, mas forçamos a limpeza
     currentUser = null;
     currentData = { servicos: [], agenda: [], caixa: [] };
-    if (authContainer) authContainer.style.display = 'flex';
-    if (mainContainer) mainContainer.style.display = 'none';
     showAuthMessage('Você saiu do sistema.', false);
-    location.reload();
+    setTimeout(() => location.reload(), 1000);
   } catch (err) {
     console.error('Erro ao sair:', err);
     showAuthMessage('Erro ao sair: ' + err.message, true);
@@ -115,23 +180,51 @@ async function checkSession() {
   try {
     const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (error) throw error;
+    
     if (session) {
       currentUser = session.user;
       await afterLoginSuccess();
     } else {
-      if (authContainer) authContainer.style.display = 'flex';
-      if (mainContainer) mainContainer.style.display = 'none';
+      showAuthUI();
     }
   } catch (err) {
     console.error('Erro ao verificar sessão:', err);
-    if (authContainer) authContainer.style.display = 'flex';
-    if (mainContainer) mainContainer.style.display = 'none';
+    showAuthUI();
   }
 }
 
-async function afterLoginSuccess() {
+function showAuthUI() {
+  if (authContainer) authContainer.style.display = 'flex';
+  if (mainContainer) mainContainer.style.display = 'none';
+}
+
+function showAppUI() {
   if (authContainer) authContainer.style.display = 'none';
   if (mainContainer) mainContainer.style.display = 'block';
+}
+
+function setupAuthStateListener() {
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth state changed:', event, session?.user?.email);
+    
+    if (event === 'SIGNED_IN' && session) {
+      currentUser = session.user;
+      await afterLoginSuccess();
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      currentData = { servicos: [], agenda: [], caixa: [] };
+      showAuthUI();
+      if (mainContainer) mainContainer.innerHTML = '<div class="loading">Carregando...</div>';
+    } else if (event === 'USER_UPDATED') {
+      showAuthMessage('Perfil atualizado.', false);
+    } else if (event === 'PASSWORD_RECOVERY') {
+      showAuthMessage('Verifique seu e-mail para redefinir a senha.', false);
+    }
+  });
+}
+
+async function afterLoginSuccess() {
+  showAppUI();
   
   const statusEl = document.getElementById('status-nuvem');
   if (statusEl && currentUser) {
@@ -211,6 +304,7 @@ async function carregarUsosMateriais() {
 // ==================== RENDER FUNCTIONS ====================
 function renderizarCaixa(data) {
   const tbody = document.getElementById('caixa-tbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
   let totalE = 0, totalS = 0;
 
@@ -246,6 +340,7 @@ function renderizarCaixa(data) {
 
 function renderizarServicos(data) {
   const tbody = document.getElementById('servicos-tbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
   let totalV = 0, totalE = 0, totalR = 0;
 
@@ -256,7 +351,6 @@ function renderizarServicos(data) {
 
   data.forEach(s => {
     const val = parseFloat(s.valor_total) || 0;
-    // ✅ FÓRMULAS CORRIGIDAS
     const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : 0;
     const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : val;
     
@@ -291,6 +385,7 @@ function renderizarServicos(data) {
 
 function renderizarAgenda(data) {
   const tbody = document.getElementById('agenda-tbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
   if (data.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" class="text-center">Nenhum agendamento</td></tr>';
@@ -323,6 +418,7 @@ function renderizarAgenda(data) {
 function renderizarEstoquePiercing(piercings) {
   const tbody = document.getElementById('estoque-piercing-tbody');
   const select = document.getElementById('venda-piercing-id');
+  if (!tbody || !select) return;
   
   let html = '';
   let opts = '<option value="">Selecione</option>';
@@ -342,6 +438,7 @@ function renderizarEstoquePiercing(piercings) {
 
 function renderizarVendasPiercing(vendas) {
   const tbody = document.getElementById('vendas-piercing-tbody');
+  if (!tbody) return;
   let html = '';
   vendas.forEach(v => {
     html += `<tr><td>${formatDate(v.data)}</td><td>${v.piercing?.nome || '?'}</td><td>${v.quantidade}</td><td>${formatMoney(v.valor_total)}</td><td>${v.cliente || '-'}</td></tr>`;
@@ -352,6 +449,7 @@ function renderizarVendasPiercing(vendas) {
 function renderizarEstoqueMaterial(materiais) {
   const tbody = document.getElementById('estoque-material-tbody');
   const select = document.getElementById('uso-material-id');
+  if (!tbody || !select) return;
   
   let html = '';
   let opts = '<option value="">Selecione</option>';
@@ -369,6 +467,7 @@ function renderizarEstoqueMaterial(materiais) {
 
 function renderizarUsosMateriais(usos) {
   const tbody = document.getElementById('usos-materiais-tbody');
+  if (!tbody) return;
   let html = '';
   usos.forEach(u => {
     html += `<tr><td>${formatDate(u.data)}</td><td>${u.material?.nome || '?'}</td><td>${u.quantidade}</td><td>${u.observacao || '-'}</td></tr>`;
@@ -387,7 +486,6 @@ function atualizarDashboard() {
   document.getElementById('total-saidas').innerText = formatMoney(totalSai);
   document.getElementById('servicos-realizados').innerText = currentData.servicos.filter(s => s.finalizado).length;
 
-  // ✅ CÁLCULO DE REPASSE THALIA NO DASHBOARD
   const repasseThalia = currentData.servicos.reduce((s, sv) => 
     s + (sv.tatuador_nome === 'Thalia' ? (parseFloat(sv.valor_total) || 0) * 0.7 : 0), 0);
   document.getElementById('repasse-thalia').innerText = formatMoney(repasseThalia);
@@ -416,17 +514,20 @@ function atualizarDashboard() {
   const ctx1 = document.getElementById('chart-faturamento').getContext('2d');
   chartFaturamento = new Chart(ctx1, { 
     type: 'bar', 
-    data: { labels: meses, datasets: [{ label: 'Faturamento',  valores, backgroundColor: '#818CF8' }] } 
+    data: { labels: meses, datasets: [{ label: 'Faturamento', data: valores, backgroundColor: '#818CF8' }] } 
   });
 
-  // Chart Tipos
+  // Chart Tipos (corrigido)
   if (chartTipos) chartTipos.destroy();
   const tatuagens = currentData.servicos.filter(s => s.tipo === 'Tatuagem').length;
   const piercingsServ = currentData.servicos.filter(s => s.tipo === 'Piercing').length;
   const ctx2 = document.getElementById('chart-tipos').getContext('2d');
   chartTipos = new Chart(ctx2, {
     type: 'doughnut',
-     { labels: ['Tatuagens', 'Piercings'], datasets: [{  [tatuagens, piercingsServ], backgroundColor: ['#818CF8', '#C084FC'] }] }
+    data: {
+      labels: ['Tatuagens', 'Piercings'],
+      datasets: [{ data: [tatuagens, piercingsServ], backgroundColor: ['#818CF8', '#C084FC'] }]
+    }
   });
 }
 
@@ -452,7 +553,7 @@ async function carregarRelatorios() {
 // ==================== CAIXA: ADICIONAR ENTRADA AUTOMÁTICA ====================
 async function adicionarEntradaCaixa(data, valor, descricao) {
   try {
-    const {  ultimo, error: ultimoError } = await supabaseClient.from('caixa').select('saldo_final').order('data', { ascending: false }).limit(1);
+    const { data: ultimo, error: ultimoError } = await supabaseClient.from('caixa').select('saldo_final').order('data', { ascending: false }).limit(1);
     if (ultimoError) throw ultimoError;
     const saldoInicial = ultimo && ultimo.length ? ultimo[0].saldo_final : 0;
     const saldoFinal = saldoInicial + valor;
@@ -506,7 +607,7 @@ window.remarcarServico = async (servicoId) => {
     const novaDescricao = descricaoExtra + (servico.descricao || '');
     
     try {
-      const { error } = await supabaseClient.from('servicos').update({  novaData, descricao: novaDescricao }).eq('id', servicoId);
+      const { error } = await supabaseClient.from('servicos').update({ data: novaData, descricao: novaDescricao }).eq('id', servicoId);
       if (error) throw error;
       showAlert(`Serviço remarcado para ${formatDate(novaData)}${novaHora ? ` às ${novaHora}` : ''}`, 'success');
       fecharModal(modalId);
@@ -596,7 +697,7 @@ window.abrirModalCaixa = async () => {
 window.salvarCaixa = async () => {
   const id = document.getElementById('caixa-id').value;
   const data = {
-     document.getElementById('caixa-data').value,
+    data: document.getElementById('caixa-data').value,
     saldo_inicial: parseFloat(document.getElementById('caixa-saldo-inicial').value) || 0,
     entradas: parseFloat(document.getElementById('caixa-entradas').value) || 0,
     saidas: parseFloat(document.getElementById('caixa-saidas').value) || 0,
@@ -678,7 +779,7 @@ window.calcularRepasse = () => configurarCalculoRepasse();
 window.salvarServico = async () => {
   const id = document.getElementById('servico-id').value;
   const data = {
-     document.getElementById('servico-data').value,
+    data: document.getElementById('servico-data').value,
     cliente: document.getElementById('servico-cliente').value,
     tatuador_nome: document.getElementById('servico-tatuador').value,
     tipo: document.getElementById('servico-tipo').value,
@@ -877,7 +978,7 @@ window.registrarVendaPiercing = async () => {
   const cliente = document.getElementById('venda-cliente').value;
   if (!piercingId) return showAlert('Selecione um piercing', 'error');
   try {
-    const {  piercing, error: fetchError } = await supabaseClient.from('piercings_estoque').select('*').eq('id', piercingId).single();
+    const { data: piercing, error: fetchError } = await supabaseClient.from('piercings_estoque').select('*').eq('id', piercingId).single();
     if (fetchError) throw fetchError;
     if (!piercing || piercing.quantidade < qtd) return showAlert('Estoque insuficiente', 'error');
     if (qtd <= 0) return showAlert('Quantidade deve ser maior que zero', 'error');
@@ -942,7 +1043,7 @@ window.registrarUsoMaterial = async () => {
   const obs = document.getElementById('uso-obs').value;
   if (!materialId) return showAlert('Selecione um material', 'error');
   try {
-    const {  material, error: fetchError } = await supabaseClient.from('materiais_estoque').select('*').eq('id', materialId).single();
+    const { data: material, error: fetchError } = await supabaseClient.from('materiais_estoque').select('*').eq('id', materialId).single();
     if (fetchError) throw fetchError;
     if (!material || material.quantidade < qtd) return showAlert('Quantidade insuficiente', 'error');
     if (qtd <= 0) return showAlert('Quantidade deve ser maior que zero', 'error');
@@ -1021,7 +1122,7 @@ window.popularPiercingsExemplo = async () => {
   ];
   try {
     for (const item of exemplos) {
-      const {  existente } = await supabaseClient.from('piercings_estoque').select('id').eq('nome', item.nome).maybeSingle();
+      const { data: existente } = await supabaseClient.from('piercings_estoque').select('id').eq('nome', item.nome).maybeSingle();
       if (!existente) await supabaseClient.from('piercings_estoque').insert([item]);
     }
     await carregarPiercings(); await carregarVendasPiercing();
@@ -1087,39 +1188,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   authMessageDiv = document.getElementById('auth-message');
   
   if (!supabaseClient) {
-    showAuthMessage('Supabase não disponível. Verifique sua conexão.', true);
+    if (authContainer) {
+      authContainer.innerHTML = '<div class="auth-error">Erro: Supabase não inicializado. Recarregue a página.</div>';
+    }
     return;
   }
 
   setupAuthTabs();
-
+  setupAuthStateListener();
+  
+  // Configura eventos de login/registro
+  const loginForm = document.getElementById('login-form');
+  const registerForm = document.getElementById('register-form');
   const loginBtn = document.getElementById('btn-login');
   const registerBtn = document.getElementById('btn-register');
   const logoutBtn = document.getElementById('btn-logout');
-  const loginForm = document.getElementById('login-form');
-  const registerForm = document.getElementById('register-form');
-
+  
   if (loginForm) loginForm.addEventListener('submit', handleLogin);
   else if (loginBtn) loginBtn.addEventListener('click', handleLogin);
-
+  
   if (registerForm) registerForm.addEventListener('submit', handleRegister);
   else if (registerBtn) registerBtn.addEventListener('click', handleRegister);
-
+  
   if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-
+  
+  // Navegação entre seções
   document.querySelectorAll('.nav button').forEach(btn => {
     btn.addEventListener('click', () => {
       const sectionId = btn.getAttribute('data-section');
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.getElementById(sectionId)?.classList.add('active');
+      const targetSection = document.getElementById(sectionId);
+      if (targetSection) targetSection.classList.add('active');
+      
       document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      
       if (sectionId === 'dashboard') atualizarDashboard();
       if (sectionId === 'relatorios') carregarRelatorios();
       if (sectionId === 'piercing') { carregarPiercings(); carregarVendasPiercing(); }
       if (sectionId === 'materiais') { carregarMateriais(); carregarUsosMateriais(); }
     });
   });
-
+  
   await checkSession();
 });
