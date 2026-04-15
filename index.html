@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DARK013TATTOO - Gestão Profissional</title>
+  <title>DARK013TATTOO - Gestï¿½o Profissional</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -132,7 +132,7 @@
         </div>
         <div class="form-group">
           <label>Senha</label>
-          <input type="password" id="login-password" placeholder="••••••••" required>
+          <input type="password" id="login-password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" required>
         </div>
         <button type="button" id="btn-login" class="btn btn-primary" style="width:100%; justify-content:center;">Entrar</button>
         <div style="text-align:center; font-size:0.8rem; color:var(--text-secondary); margin-top:10px;">
@@ -146,8 +146,8 @@
           <input type="email" id="register-email" placeholder="seu@email.com" required>
         </div>
         <div class="form-group">
-          <label>Senha (mínimo 6 caracteres)</label>
-          <input type="password" id="register-password" placeholder="••••••••" required>
+          <label>Senha (mï¿½nimo 6 caracteres)</label>
+          <input type="password" id="register-password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" required>
         </div>
         <button type="button" id="btn-register" class="btn btn-primary" style="width:100%; justify-content:center;">Criar Conta</button>
       </form>
@@ -157,7 +157,7 @@
   <!-- MAIN APP -->
   <div id="main-container">
     <header>
-      <div class="logo"><i class="fas fa-moon"></i> DARK013TATTOO <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:400;">Gestão Profissional</span></div>
+      <div class="logo"><i class="fas fa-moon"></i> DARK013TATTOO <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:400;">Gestï¿½o Profissional</span></div>
       <div style="display:flex; align-items:center; gap:15px;">
         <div id="status-nuvem" class="status-badge status-info">Conectando...</div>
         <button id="btn-logout" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Sair</button>
@@ -167,11 +167,11 @@
     <nav class="nav">
       <button class="active" data-section="dashboard">Dashboard</button>
       <button data-section="caixa">Caixa</button>
-      <button data-section="servicos">Serviços</button>
+      <button data-section="servicos">Serviï¿½os</button>
       <button data-section="agenda">Agenda</button>
       <button data-section="piercing">Piercing</button>
       <button data-section="materiais">Materiais</button>
-      <button data-section="relatorios">Relatórios</button>
+      <button data-section="relatorios">Relatï¿½rios</button>
       <button data-section="backup">Backup</button>
     </nav>
 
@@ -181,8 +181,8 @@
         <div class="dashboard-grid">
           <div class="card"><h3><i class="fas fa-wallet"></i> Saldo Atual</h3><div id="saldo-atual" class="value">R$ 0,00</div></div>
           <div class="card"><h3><i class="fas fa-arrow-trend-up"></i> Total Entradas</h3><div id="total-entradas" class="value">R$ 0,00</div></div>
-          <div class="card"><h3><i class="fas fa-arrow-trend-down"></i> Total Saídas</h3><div id="total-saidas" class="value">R$ 0,00</div></div>
-          <div class="card"><h3><i class="fas fa-check-circle"></i> Serviços Realizados</h3><div id="servicos-realizados" class="value">0</div></div>
+          <div class="card"><h3><i class="fas fa-arrow-trend-down"></i> Total Saï¿½das</h3><div id="total-saidas" class="value">R$ 0,00</div></div>
+          <div class="card"><h3><i class="fas fa-check-circle"></i> Serviï¿½os Realizados</h3><div id="servicos-realizados" class="value">0</div></div>
           <div class="card"><h3><i class="fas fa-user-tag"></i> Repasse Thalia (70%)</h3><div id="repasse-thalia" class="value">R$ 0,00</div></div>
         </div>
         <div class="charts-grid">
@@ -191,8 +191,8 @@
           <div class="chart-box"><canvas id="chart-pagamentos"></canvas></div>
         </div>
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-top:20px;">
-          <div class="card recent-box"><h3><i class="fas fa-history"></i> Últimos Serviços</h3><div id="servicos-recentes"></div></div>
-          <div class="card recent-box"><h3><i class="fas fa-calendar-alt"></i> Próximos Agendamentos</h3><div id="proximos-agendamentos"></div></div>
+          <div class="card recent-box"><h3><i class="fas fa-history"></i> ï¿½ltimos Serviï¿½os</h3><div id="servicos-recentes"></div></div>
+          <div class="card recent-box"><h3><i class="fas fa-calendar-alt"></i> Prï¿½ximos Agendamentos</h3><div id="proximos-agendamentos"></div></div>
         </div>
       </section>
 
@@ -200,47 +200,47 @@
       <section id="caixa" class="section">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
           <h2><i class="fas fa-cash-register"></i> Fluxo de Caixa</h2>
-          <button id="btn-add-caixa" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Lançamento</button>
+          <button id="btn-add-caixa" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Lanï¿½amento</button>
         </div>
         <div class="form-group" style="max-width:300px; margin-bottom:15px;">
-          <input type="text" id="search-caixa" placeholder="Buscar na descrição..." oninput="filtrarCaixa()">
+          <input type="text" id="search-caixa" placeholder="Buscar na descriï¿½ï¿½o..." oninput="filtrarCaixa()">
         </div>
         <div class="table-container">
           <table>
-            <thead><tr><th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo Final</th><th>Descrição</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saï¿½das</th><th>Saldo Final</th><th>Descriï¿½ï¿½o</th><th>Aï¿½ï¿½es</th></tr></thead>
             <tbody id="caixa-tbody"><tr><td colspan="7">Carregando...</td></tr></tbody>
           </table>
         </div>
         <div style="display:flex; gap:20px; margin-top:10px; padding:10px; background:var(--bg-secondary); border-radius:var(--radius);">
           <div><strong>Total Entradas:</strong> <span id="caixa-total-entradas">R$0</span></div>
-          <div><strong>Total Saídas:</strong> <span id="caixa-total-saidas">R$0</span></div>
+          <div><strong>Total Saï¿½das:</strong> <span id="caixa-total-saidas">R$0</span></div>
           <div><strong>Saldo Final:</strong> <span id="caixa-saldo-final">R$0</span></div>
         </div>
       </section>
 
-      <!-- SERVIÇOS -->
+      <!-- SERVIï¿½OS -->
       <section id="servicos" class="section">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-          <h2><i class="fas fa-paint-brush"></i> Serviços Realizados</h2>
-          <button id="btn-add-servico" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Serviço</button>
+          <h2><i class="fas fa-paint-brush"></i> Serviï¿½os Realizados</h2>
+          <button id="btn-add-servico" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Serviï¿½o</button>
         </div>
         <div class="filters">
           <select id="filtro-tatuador-servico" onchange="filtrarServicos()"><option value="">Tatuador: Todos</option><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select>
           <select id="filtro-tipo-servico" onchange="filtrarServicos()"><option value="">Tipo: Todos</option><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select>
-          <select id="filtro-pagamento" onchange="filtrarServicos()"><option value="">Pagamento: Todas</option><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartão Débito">Cartão Débito</option><option value="Cartão Crédito">Cartão Crédito</option><option value="Transferência">Transferência</option></select>
+          <select id="filtro-pagamento" onchange="filtrarServicos()"><option value="">Pagamento: Todas</option><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartï¿½o Dï¿½bito">Cartï¿½o Dï¿½bito</option><option value="Cartï¿½o Crï¿½dito">Cartï¿½o Crï¿½dito</option><option value="Transferï¿½ncia">Transferï¿½ncia</option></select>
           <input type="date" id="filtro-data-servico" onchange="filtrarServicos()">
-          <input type="text" id="search-servicos" placeholder="Buscar cliente/descrição..." oninput="filtrarServicos()">
+          <input type="text" id="search-servicos" placeholder="Buscar cliente/descriï¿½ï¿½o..." oninput="filtrarServicos()">
           <button class="btn btn-info btn-sm" onclick="limparFiltrosServicos()">Limpar</button>
         </div>
         <div class="table-container">
           <table>
-            <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30% Thalia)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descriï¿½ï¿½o</th><th>Valor</th><th>Estï¿½dio (30% Thalia)</th><th>Repasse</th><th>Pagamento</th><th>Aï¿½ï¿½es</th></tr></thead>
             <tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody>
           </table>
         </div>
         <div style="display:flex; gap:20px; margin-top:10px; padding:10px; background:var(--bg-secondary); border-radius:var(--radius);">
           <div><strong>Total Valor:</strong> <span id="servicos-total-valor">R$0</span></div>
-          <div><strong>Total Estúdio:</strong> <span id="servicos-total-estudio">R$0</span></div>
+          <div><strong>Total Estï¿½dio:</strong> <span id="servicos-total-estudio">R$0</span></div>
           <div><strong>Total Repasse:</strong> <span id="servicos-total-repasse">R$0</span></div>
         </div>
       </section>
@@ -253,14 +253,14 @@
         </div>
         <div class="filters">
           <select id="filtro-tatuador-agenda" onchange="filtrarAgenda()"><option value="">Tatuador: Todos</option><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select>
-          <select id="filtro-status-agenda" onchange="filtrarAgenda()"><option value="">Status: Todos</option><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluído">Concluído</option><option value="Cancelado">Cancelado</option></select>
+          <select id="filtro-status-agenda" onchange="filtrarAgenda()"><option value="">Status: Todos</option><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluï¿½do">Concluï¿½do</option><option value="Cancelado">Cancelado</option></select>
           <input type="date" id="filtro-data-agenda" onchange="filtrarAgenda()">
           <button class="btn btn-info btn-sm" onclick="filtrarAgendaHoje()">Hoje</button>
           <button class="btn btn-info btn-sm" onclick="limparFiltrosAgenda()">Limpar</button>
         </div>
         <div class="table-container">
           <table>
-            <thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Obs</th><th>Aï¿½ï¿½es</th></tr></thead>
             <tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
           </table>
         </div>
@@ -278,7 +278,7 @@
         <h3>Estoque de Piercings</h3>
         <div class="table-container">
           <table>
-            <thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda (R$)</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Nome</th><th>Quantidade</th><th>Preï¿½o Venda (R$)</th><th>Aï¿½ï¿½es</th></tr></thead>
             <tbody id="estoque-piercing-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
           </table>
         </div>
@@ -291,7 +291,7 @@
           </div>
           <button id="btn-registrar-venda" class="btn btn-success mt-2">Finalizar Venda</button>
         </div>
-        <h3 style="margin-top:20px;">Histórico de Vendas</h3>
+        <h3 style="margin-top:20px;">Histï¿½rico de Vendas</h3>
         <div class="table-container">
           <table>
             <thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead>
@@ -312,7 +312,7 @@
         <h3>Estoque de Materiais</h3>
         <div class="table-container">
           <table>
-            <thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitário (R$)</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitï¿½rio (R$)</th><th>Aï¿½ï¿½es</th></tr></thead>
             <tbody id="estoque-material-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
           </table>
         </div>
@@ -321,33 +321,33 @@
           <div class="form-row" style="margin-top:10px;">
             <div class="form-group"><label>Material</label><select id="uso-material-id"></select></div>
             <div class="form-group"><label>Quantidade Usada</label><input type="number" id="uso-qtd" value="1" min="1"></div>
-            <div class="form-group"><label>Observação</label><input type="text" id="uso-obs" placeholder="Ex: Sessão cliente X"></div>
+            <div class="form-group"><label>Observaï¿½ï¿½o</label><input type="text" id="uso-obs" placeholder="Ex: Sessï¿½o cliente X"></div>
           </div>
           <button id="btn-registrar-uso" class="btn btn-success mt-2">Usar Material</button>
         </div>
-        <h3 style="margin-top:20px;">Histórico de Usos</h3>
+        <h3 style="margin-top:20px;">Histï¿½rico de Usos</h3>
         <div class="table-container">
           <table>
-            <thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead>
+            <thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observaï¿½ï¿½o</th></tr></thead>
             <tbody id="usos-materiais-tbody"><tr><td colspan="4">Nenhum uso</td></tr></tbody>
           </table>
         </div>
       </section>
 
-      <!-- RELATÓRIOS -->
+      <!-- RELATï¿½RIOS -->
       <section id="relatorios" class="section">
-        <h2 style="margin-bottom:15px;"><i class="fas fa-chart-pie"></i> Relatórios Gerenciais</h2>
+        <h2 style="margin-bottom:15px;"><i class="fas fa-chart-pie"></i> Relatï¿½rios Gerenciais</h2>
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
           <div class="card"><h3><i class="fas fa-user-tie"></i> Faturamento por Tatuador</h3><div id="faturamento-tatuador" style="margin-top:10px;"></div></div>
           <div class="card"><h3><i class="fas fa-user-tag"></i> Repasses Thalia (70%)</h3><div id="relatorio-repasse" style="margin-top:10px;"></div></div>
-          <div class="card"><h3><i class="fas fa-coins"></i> Lucro Líquido Estúdio</h3><div id="relatorio-lucro-liquido" style="margin-top:10px;"></div></div>
+          <div class="card"><h3><i class="fas fa-coins"></i> Lucro Lï¿½quido Estï¿½dio</h3><div id="relatorio-lucro-liquido" style="margin-top:10px;"></div></div>
           <div class="card"><h3><i class="fas fa-credit-card"></i> Formas de Pagamento</h3><div id="relatorio-pagamentos" style="margin-top:10px;"></div></div>
         </div>
       </section>
 
       <!-- BACKUP -->
       <section id="backup" class="section">
-        <h2 style="margin-bottom:15px;"><i class="fas fa-database"></i> Backup e Sincronização</h2>
+        <h2 style="margin-bottom:15px;"><i class="fas fa-database"></i> Backup e Sincronizaï¿½ï¿½o</h2>
         <div class="card" style="padding:20px; text-align:center;">
           <button id="btn-sincronizar" class="btn btn-info btn-sm" onclick="sincronizarAgora()"><i class="fas fa-sync-alt"></i> Sincronizar agora</button>
           <button id="btn-export" class="btn btn-success btn-sm" onclick="exportarBackup()"><i class="fas fa-download"></i> Exportar Backup (.json)</button>
@@ -362,15 +362,15 @@
   <div id="modal-caixa" class="modal">
     <div class="modal-content">
       <span class="close-modal" onclick="fecharModal('modal-caixa')">&times;</span>
-      <h3>Lançamento de Caixa</h3>
+      <h3>Lanï¿½amento de Caixa</h3>
       <input type="hidden" id="caixa-id">
       <div class="form-group"><label>Data</label><input type="date" id="caixa-data" class="form-control"></div>
       <div class="form-row">
         <div class="form-group"><label>Saldo Inicial (R$)</label><input type="number" id="caixa-saldo-inicial" step="0.01" readonly></div>
         <div class="form-group"><label>Entradas (R$)</label><input type="number" id="caixa-entradas" step="0.01"></div>
-        <div class="form-group"><label>Saídas (R$)</label><input type="number" id="caixa-saidas" step="0.01"></div>
+        <div class="form-group"><label>Saï¿½das (R$)</label><input type="number" id="caixa-saidas" step="0.01"></div>
       </div>
-      <div class="form-group"><label>Descrição</label><input type="text" id="caixa-descricao" placeholder="Detalhes do lançamento"></div>
+      <div class="form-group"><label>Descriï¿½ï¿½o</label><input type="text" id="caixa-descricao" placeholder="Detalhes do lanï¿½amento"></div>
       <button id="btn-save-caixa" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
     </div>
   </div>
@@ -378,7 +378,7 @@
   <div id="modal-servico" class="modal">
     <div class="modal-content">
       <span class="close-modal" onclick="fecharModal('modal-servico')">&times;</span>
-      <h3>Serviço Realizado</h3>
+      <h3>Serviï¿½o Realizado</h3>
       <input type="hidden" id="servico-id">
       <div class="form-row">
         <div class="form-group"><label>Data</label><input type="date" id="servico-data"></div>
@@ -388,11 +388,11 @@
         <div class="form-group"><label>Tatuador</label><select id="servico-tatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div>
         <div class="form-group"><label>Tipo</label><select id="servico-tipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
       </div>
-      <div class="form-group"><label>Descrição</label><input type="text" id="servico-descricao" placeholder="Detalhes do trabalho"></div>
+      <div class="form-group"><label>Descriï¿½ï¿½o</label><input type="text" id="servico-descricao" placeholder="Detalhes do trabalho"></div>
       <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="servico-valor" step="0.01"></div>
       <div class="form-group"><label>Forma de Pagamento</label><select id="servico-pagamento"></select></div>
       <div style="display:flex; justify-content:space-between; background:#0f172a; padding:10px; border-radius:6px; margin-top:10px;">
-        <span>Estúdio (30% Thalia): <strong id="valor-estudio" style="color:var(--warning)">R$0,00</strong></span>
+        <span>Estï¿½dio (30% Thalia): <strong id="valor-estudio" style="color:var(--warning)">R$0,00</strong></span>
         <span>Repasse: <strong id="valor-repasse" style="color:var(--success)">R$0,00</strong></span>
       </div>
       <button id="btn-save-servico" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
@@ -406,18 +406,18 @@
       <input type="hidden" id="agenda-id">
       <div class="form-row">
         <div class="form-group"><label>Data</label><input type="date" id="agenda-data"></div>
-        <div class="form-group"><label>Horário</label><input type="time" id="agenda-horario"></div>
+        <div class="form-group"><label>Horï¿½rio</label><input type="time" id="agenda-horario"></div>
       </div>
       <div class="form-group"><label>Cliente</label><input type="text" id="agenda-cliente" required></div>
       <div class="form-row">
         <div class="form-group"><label>Tatuador</label><select id="agenda-tatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div>
-        <div class="form-group"><label>Tipo de Serviço</label><select id="agenda-tipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
+        <div class="form-group"><label>Tipo de Serviï¿½o</label><select id="agenda-tipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Valor Estimado (R$)</label><input type="number" id="agenda-valor" step="0.01"></div>
-        <div class="form-group"><label>Status</label><select id="agenda-status"><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluído">Concluído</option><option value="Cancelado">Cancelado</option></select></div>
+        <div class="form-group"><label>Status</label><select id="agenda-status"><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluï¿½do">Concluï¿½do</option><option value="Cancelado">Cancelado</option></select></div>
       </div>
-      <div class="form-group"><label>Observações</label><textarea id="agenda-obs" rows="2" placeholder="Anotações importantes..."></textarea></div>
+      <div class="form-group"><label>Observaï¿½ï¿½es</label><textarea id="agenda-obs" rows="2" placeholder="Anotaï¿½ï¿½es importantes..."></textarea></div>
       <button id="btn-save-agenda" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
     </div>
   </div>
@@ -430,7 +430,7 @@
       <div class="form-group"><label>Nome</label><input type="text" id="piercing-nome" required></div>
       <div class="form-row">
         <div class="form-group"><label>Quantidade</label><input type="number" id="piercing-qtd" min="0"></div>
-        <div class="form-group"><label>Preço de Venda (R$)</label><input type="number" id="piercing-preco" step="0.01"></div>
+        <div class="form-group"><label>Preï¿½o de Venda (R$)</label><input type="number" id="piercing-preco" step="0.01"></div>
       </div>
       <button id="btn-save-piercing" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
     </div>
@@ -444,7 +444,461 @@
       <div class="form-group"><label>Nome</label><input type="text" id="material-nome" required></div>
       <div class="form-row">
         <div class="form-group"><label>Quantidade</label><input type="number" id="material-qtd" min="0"></div>
-        <div class="form-group"><label>Valor Unitário (R$)</label><input type="number" id="material-preco" step="0.01"></div>
+        <div class="form-group"><label>Valor Unitï¿½rio (R$)</label><input type="number" id="material-preco" step="0.01"></div>
+      </div>
+      <button id="btn-save-material" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DARK013TATTOO - Gestï¿½o Profissional</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-primary: #0f172a; --bg-secondary: #1e293b; --bg-card: #1e293b;
+      --text-primary: #f8fafc; --text-secondary: #94a3b8; --accent: #818cf8;
+      --success: #34d399; --warning: #f59e0b; --danger: #f87171; --info: #38bdf8;
+      --border: #334155; --radius: 8px; --shadow: 0 4px 6px -1px rgba(0,0,0,0.5);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+    body { background: var(--bg-primary); color: var(--text-primary); line-height: 1.5; min-height: 100vh; }
+    
+    /* Layout & Containers */
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    header { background: var(--bg-secondary); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .logo { font-size: 1.4rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+    .nav { display: flex; gap: 10px; flex-wrap: wrap; padding: 10px 20px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+    .nav button { background: transparent; border: none; color: var(--text-secondary); padding: 8px 12px; cursor: pointer; border-radius: var(--radius); transition: 0.2s; font-weight: 500; }
+    .nav button:hover, .nav button.active { background: var(--accent); color: white; }
+    main { padding: 20px; display: none; }
+    .section { display: none; animation: fadeIn 0.3s ease; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Auth Screen */
+    #auth-container { display: flex; align-items: center; justify-content: center; height: 100vh; background: radial-gradient(circle at top, #1e293b, #0f172a); }
+    .auth-box { background: var(--bg-secondary); padding: 2rem; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .auth-tabs { display: flex; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+    .auth-tab { flex: 1; padding: 10px; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-weight: 500; transition: 0.2s; border-bottom: 2px solid transparent; }
+    .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .auth-form { display: none; }
+    .auth-form.active { display: flex; flex-direction: column; gap: 12px; }
+    .auth-message { text-align: center; padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 0.9rem; min-height: 30px; }
+    .auth-error { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .auth-success { background: rgba(52,211,153,0.15); color: var(--success); }
+
+    /* Forms & Inputs */
+    input, select, textarea { width: 100%; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius); font-size: 0.95rem; transition: 0.2s; }
+    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(129,140,248,0.3); }
+    label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--text-secondary); font-size: 0.9rem; }
+    .form-group { margin-bottom: 12px; }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .btn { padding: 10px 16px; border: none; border-radius: var(--radius); cursor: pointer; font-weight: 500; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-success { background: var(--success); color: #0f172a; }
+    .btn-warning { background: var(--warning); color: #0f172a; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-info { background: var(--info); color: #0f172a; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-sm { padding: 6px 10px; font-size: 0.8rem; }
+
+    /* Cards & Dashboard */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .card { background: var(--bg-card); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .card h3 { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 8px; }
+    .card .value { font-size: 1.8rem; font-weight: 700; }
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; margin-top: 20px; }
+    .chart-box { background: var(--bg-card); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); }
+    .recent-box { margin-top: 20px; }
+    .recent-box ul { list-style: none; margin-top: 10px; }
+    .recent-box li { padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+    .recent-box li:last-child { border: none; }
+
+    /* Tables */
+    .table-container { overflow-x: auto; margin-top: 16px; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; background: var(--bg-card); }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: #0f172a; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+    tr:hover { background: rgba(129,140,248,0.05); }
+    .totals-row { background: rgba(129,140,248,0.1) !important; font-weight: 600; }
+    .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+    .status-success { background: rgba(52,211,153,0.15); color: var(--success); }
+    .status-warning { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .status-danger { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .status-info { background: rgba(56,189,248,0.15); color: var(--info); }
+
+    /* Filters */
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; padding: 12px; background: var(--bg-secondary); border-radius: var(--radius); border: 1px solid var(--border); }
+    .filters input, .filters select { width: auto; min-width: 150px; padding: 8px; }
+
+    /* Modals */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-content { background: var(--bg-card); padding: 24px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; transition: 0.2s; }
+    .close-modal:hover { color: var(--danger); }
+    .modal h3 { margin-bottom: 16px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+
+    /* Alerts */
+    #alert-container { position: fixed; top: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
+    .alert { padding: 12px 16px; border-radius: var(--radius); color: white; box-shadow: var(--shadow); display: flex; align-items: center; gap: 10px; min-width: 300px; animation: slideIn 0.3s ease; }
+    .alert-success { background: var(--success); color: #0f172a; }
+    .alert-error { background: var(--danger); }
+    .alert-info { background: var(--info); color: #0f172a; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .filters { flex-direction: column; }
+      .nav { overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <div id="alert-container"></div>
+
+  <!-- AUTH -->
+  <div id="auth-container">
+    <div class="auth-box">
+      <div style="text-align:center; margin-bottom: 20px;">
+        <h1 style="color:var(--accent);"><i class="fas fa-moon"></i> DARK013TATTOO</h1>
+        <p style="color:var(--text-secondary); font-size:0.9rem;">Acesse sua conta para continuar</p>
+      </div>
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab active">Entrar</button>
+        <button id="tab-register" class="auth-tab">Criar Conta</button>
+      </div>
+      <div id="auth-message" class="auth-message"></div>
+      
+      <form id="login-form" class="auth-form active">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="login-email" placeholder="seu@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="login-password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" required>
+        </div>
+        <button type="button" id="btn-login" class="btn btn-primary" style="width:100%; justify-content:center;">Entrar</button>
+        <div style="text-align:center; font-size:0.8rem; color:var(--text-secondary); margin-top:10px;">
+          <i class="fas fa-lock"></i> Sistema seguro com criptografia
+        </div>
+      </form>
+
+      <form id="register-form" class="auth-form">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="register-email" placeholder="seu@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>Senha (mï¿½nimo 6 caracteres)</label>
+          <input type="password" id="register-password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" required>
+        </div>
+        <button type="button" id="btn-register" class="btn btn-primary" style="width:100%; justify-content:center;">Criar Conta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="main-container">
+    <header>
+      <div class="logo"><i class="fas fa-moon"></i> DARK013TATTOO <span style="font-size:0.8rem; color:var(--text-secondary); font-weight:400;">Gestï¿½o Profissional</span></div>
+      <div style="display:flex; align-items:center; gap:15px;">
+        <div id="status-nuvem" class="status-badge status-info">Conectando...</div>
+        <button id="btn-logout" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Sair</button>
+      </div>
+    </header>
+
+    <nav class="nav">
+      <button class="active" data-section="dashboard">Dashboard</button>
+      <button data-section="caixa">Caixa</button>
+      <button data-section="servicos">Serviï¿½os</button>
+      <button data-section="agenda">Agenda</button>
+      <button data-section="piercing">Piercing</button>
+      <button data-section="materiais">Materiais</button>
+      <button data-section="relatorios">Relatï¿½rios</button>
+      <button data-section="backup">Backup</button>
+    </nav>
+
+    <main>
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="section active">
+        <div class="dashboard-grid">
+          <div class="card"><h3><i class="fas fa-wallet"></i> Saldo Atual</h3><div id="saldo-atual" class="value">R$ 0,00</div></div>
+          <div class="card"><h3><i class="fas fa-arrow-trend-up"></i> Total Entradas</h3><div id="total-entradas" class="value">R$ 0,00</div></div>
+          <div class="card"><h3><i class="fas fa-arrow-trend-down"></i> Total Saï¿½das</h3><div id="total-saidas" class="value">R$ 0,00</div></div>
+          <div class="card"><h3><i class="fas fa-check-circle"></i> Serviï¿½os Realizados</h3><div id="servicos-realizados" class="value">0</div></div>
+          <div class="card"><h3><i class="fas fa-user-tag"></i> Repasse Thalia (70%)</h3><div id="repasse-thalia" class="value">R$ 0,00</div></div>
+        </div>
+        <div class="charts-grid">
+          <div class="chart-box"><canvas id="chart-faturamento"></canvas></div>
+          <div class="chart-box"><canvas id="chart-tipos"></canvas></div>
+          <div class="chart-box"><canvas id="chart-pagamentos"></canvas></div>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-top:20px;">
+          <div class="card recent-box"><h3><i class="fas fa-history"></i> ï¿½ltimos Serviï¿½os</h3><div id="servicos-recentes"></div></div>
+          <div class="card recent-box"><h3><i class="fas fa-calendar-alt"></i> Prï¿½ximos Agendamentos</h3><div id="proximos-agendamentos"></div></div>
+        </div>
+      </section>
+
+      <!-- CAIXA -->
+      <section id="caixa" class="section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h2><i class="fas fa-cash-register"></i> Fluxo de Caixa</h2>
+          <button id="btn-add-caixa" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Lanï¿½amento</button>
+        </div>
+        <div class="form-group" style="max-width:300px; margin-bottom:15px;">
+          <input type="text" id="search-caixa" placeholder="Buscar na descriï¿½ï¿½o..." oninput="filtrarCaixa()">
+        </div>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saï¿½das</th><th>Saldo Final</th><th>Descriï¿½ï¿½o</th><th>Aï¿½ï¿½es</th></tr></thead>
+            <tbody id="caixa-tbody"><tr><td colspan="7">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+        <div style="display:flex; gap:20px; margin-top:10px; padding:10px; background:var(--bg-secondary); border-radius:var(--radius);">
+          <div><strong>Total Entradas:</strong> <span id="caixa-total-entradas">R$0</span></div>
+          <div><strong>Total Saï¿½das:</strong> <span id="caixa-total-saidas">R$0</span></div>
+          <div><strong>Saldo Final:</strong> <span id="caixa-saldo-final">R$0</span></div>
+        </div>
+      </section>
+
+      <!-- SERVIï¿½OS -->
+      <section id="servicos" class="section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h2><i class="fas fa-paint-brush"></i> Serviï¿½os Realizados</h2>
+          <button id="btn-add-servico" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Serviï¿½o</button>
+        </div>
+        <div class="filters">
+          <select id="filtro-tatuador-servico" onchange="filtrarServicos()"><option value="">Tatuador: Todos</option><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select>
+          <select id="filtro-tipo-servico" onchange="filtrarServicos()"><option value="">Tipo: Todos</option><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select>
+          <select id="filtro-pagamento" onchange="filtrarServicos()"><option value="">Pagamento: Todas</option><option value="PIX">PIX</option><option value="Dinheiro">Dinheiro</option><option value="Cartï¿½o Dï¿½bito">Cartï¿½o Dï¿½bito</option><option value="Cartï¿½o Crï¿½dito">Cartï¿½o Crï¿½dito</option><option value="Transferï¿½ncia">Transferï¿½ncia</option></select>
+          <input type="date" id="filtro-data-servico" onchange="filtrarServicos()">
+          <input type="text" id="search-servicos" placeholder="Buscar cliente/descriï¿½ï¿½o..." oninput="filtrarServicos()">
+          <button class="btn btn-info btn-sm" onclick="limparFiltrosServicos()">Limpar</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descriï¿½ï¿½o</th><th>Valor</th><th>Estï¿½dio (30% Thalia)</th><th>Repasse</th><th>Pagamento</th><th>Aï¿½ï¿½es</th></tr></thead>
+            <tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+        <div style="display:flex; gap:20px; margin-top:10px; padding:10px; background:var(--bg-secondary); border-radius:var(--radius);">
+          <div><strong>Total Valor:</strong> <span id="servicos-total-valor">R$0</span></div>
+          <div><strong>Total Estï¿½dio:</strong> <span id="servicos-total-estudio">R$0</span></div>
+          <div><strong>Total Repasse:</strong> <span id="servicos-total-repasse">R$0</span></div>
+        </div>
+      </section>
+
+      <!-- AGENDA -->
+      <section id="agenda" class="section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h2><i class="fas fa-calendar-check"></i> Agenda de Atendimentos</h2>
+          <button id="btn-add-agenda" class="btn btn-primary"><i class="fas fa-plus"></i> Novo Agendamento</button>
+        </div>
+        <div class="filters">
+          <select id="filtro-tatuador-agenda" onchange="filtrarAgenda()"><option value="">Tatuador: Todos</option><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select>
+          <select id="filtro-status-agenda" onchange="filtrarAgenda()"><option value="">Status: Todos</option><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluï¿½do">Concluï¿½do</option><option value="Cancelado">Cancelado</option></select>
+          <input type="date" id="filtro-data-agenda" onchange="filtrarAgenda()">
+          <button class="btn btn-info btn-sm" onclick="filtrarAgendaHoje()">Hoje</button>
+          <button class="btn btn-info btn-sm" onclick="limparFiltrosAgenda()">Limpar</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Status</th><th>Obs</th><th>Aï¿½ï¿½es</th></tr></thead>
+            <tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PIERCING -->
+      <section id="piercing" class="section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h2><i class="fas fa-ring"></i> Piercings - Estoque e Vendas</h2>
+          <div style="display:flex; gap:10px;">
+            <button id="btn-add-piercing" class="btn btn-primary"><i class="fas fa-plus"></i> Adicionar ao Estoque</button>
+            <button class="btn btn-warning" onclick="popularPiercingsExemplo()">Popular com exemplos</button>
+          </div>
+        </div>
+        <h3>Estoque de Piercings</h3>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Nome</th><th>Quantidade</th><th>Preï¿½o Venda (R$)</th><th>Aï¿½ï¿½es</th></tr></thead>
+            <tbody id="estoque-piercing-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="card" style="margin-top:20px; padding:16px;">
+          <h3><i class="fas fa-shopping-cart"></i> Registrar Venda</h3>
+          <div class="form-row" style="margin-top:10px;">
+            <div class="form-group"><label>Piercing</label><select id="venda-piercing-id"></select></div>
+            <div class="form-group"><label>Quantidade</label><input type="number" id="venda-qtd" value="1" min="1"></div>
+            <div class="form-group"><label>Cliente</label><input type="text" id="venda-cliente" placeholder="Opcional"></div>
+          </div>
+          <button id="btn-registrar-venda" class="btn btn-success mt-2">Finalizar Venda</button>
+        </div>
+        <h3 style="margin-top:20px;">Histï¿½rico de Vendas</h3>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead>
+            <tbody id="vendas-piercing-tbody"><tr><td colspan="5">Nenhuma venda</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- MATERIAIS -->
+      <section id="materiais" class="section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h2><i class="fas fa-box-open"></i> Materiais - Estoque e Consumo</h2>
+          <div style="display:flex; gap:10px;">
+            <button id="btn-add-material" class="btn btn-primary"><i class="fas fa-plus"></i> Adicionar Material</button>
+            <button class="btn btn-warning" onclick="popularMateriaisExemplo()">Popular com exemplos</button>
+          </div>
+        </div>
+        <h3>Estoque de Materiais</h3>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitï¿½rio (R$)</th><th>Aï¿½ï¿½es</th></tr></thead>
+            <tbody id="estoque-material-tbody"><tr><td colspan="4">Carregando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="card" style="margin-top:20px; padding:16px;">
+          <h3><i class="fas fa-hand-holding-medical"></i> Registrar Uso de Material</h3>
+          <div class="form-row" style="margin-top:10px;">
+            <div class="form-group"><label>Material</label><select id="uso-material-id"></select></div>
+            <div class="form-group"><label>Quantidade Usada</label><input type="number" id="uso-qtd" value="1" min="1"></div>
+            <div class="form-group"><label>Observaï¿½ï¿½o</label><input type="text" id="uso-obs" placeholder="Ex: Sessï¿½o cliente X"></div>
+          </div>
+          <button id="btn-registrar-uso" class="btn btn-success mt-2">Usar Material</button>
+        </div>
+        <h3 style="margin-top:20px;">Histï¿½rico de Usos</h3>
+        <div class="table-container">
+          <table>
+            <thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observaï¿½ï¿½o</th></tr></thead>
+            <tbody id="usos-materiais-tbody"><tr><td colspan="4">Nenhum uso</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- RELATï¿½RIOS -->
+      <section id="relatorios" class="section">
+        <h2 style="margin-bottom:15px;"><i class="fas fa-chart-pie"></i> Relatï¿½rios Gerenciais</h2>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
+          <div class="card"><h3><i class="fas fa-user-tie"></i> Faturamento por Tatuador</h3><div id="faturamento-tatuador" style="margin-top:10px;"></div></div>
+          <div class="card"><h3><i class="fas fa-user-tag"></i> Repasses Thalia (70%)</h3><div id="relatorio-repasse" style="margin-top:10px;"></div></div>
+          <div class="card"><h3><i class="fas fa-coins"></i> Lucro Lï¿½quido Estï¿½dio</h3><div id="relatorio-lucro-liquido" style="margin-top:10px;"></div></div>
+          <div class="card"><h3><i class="fas fa-credit-card"></i> Formas de Pagamento</h3><div id="relatorio-pagamentos" style="margin-top:10px;"></div></div>
+        </div>
+      </section>
+
+      <!-- BACKUP -->
+      <section id="backup" class="section">
+        <h2 style="margin-bottom:15px;"><i class="fas fa-database"></i> Backup e Sincronizaï¿½ï¿½o</h2>
+        <div class="card" style="padding:20px; text-align:center;">
+          <button id="btn-sincronizar" class="btn btn-info btn-sm" onclick="sincronizarAgora()"><i class="fas fa-sync-alt"></i> Sincronizar agora</button>
+          <button id="btn-export" class="btn btn-success btn-sm" onclick="exportarBackup()"><i class="fas fa-download"></i> Exportar Backup (.json)</button>
+          <label for="input-import" class="btn btn-warning btn-sm" style="cursor:pointer;"><i class="fas fa-upload"></i> Importar Backup (.json)</label>
+          <input type="file" id="input-import" accept=".json" style="display:none;" onchange="importarBackup(this)">
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAIS -->
+  <div id="modal-caixa" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="fecharModal('modal-caixa')">&times;</span>
+      <h3>Lanï¿½amento de Caixa</h3>
+      <input type="hidden" id="caixa-id">
+      <div class="form-group"><label>Data</label><input type="date" id="caixa-data" class="form-control"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Saldo Inicial (R$)</label><input type="number" id="caixa-saldo-inicial" step="0.01" readonly></div>
+        <div class="form-group"><label>Entradas (R$)</label><input type="number" id="caixa-entradas" step="0.01"></div>
+        <div class="form-group"><label>Saï¿½das (R$)</label><input type="number" id="caixa-saidas" step="0.01"></div>
+      </div>
+      <div class="form-group"><label>Descriï¿½ï¿½o</label><input type="text" id="caixa-descricao" placeholder="Detalhes do lanï¿½amento"></div>
+      <button id="btn-save-caixa" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
+    </div>
+  </div>
+
+  <div id="modal-servico" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="fecharModal('modal-servico')">&times;</span>
+      <h3>Serviï¿½o Realizado</h3>
+      <input type="hidden" id="servico-id">
+      <div class="form-row">
+        <div class="form-group"><label>Data</label><input type="date" id="servico-data"></div>
+        <div class="form-group"><label>Cliente</label><input type="text" id="servico-cliente" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Tatuador</label><select id="servico-tatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div>
+        <div class="form-group"><label>Tipo</label><select id="servico-tipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
+      </div>
+      <div class="form-group"><label>Descriï¿½ï¿½o</label><input type="text" id="servico-descricao" placeholder="Detalhes do trabalho"></div>
+      <div class="form-group"><label>Valor Total (R$)</label><input type="number" id="servico-valor" step="0.01"></div>
+      <div class="form-group"><label>Forma de Pagamento</label><select id="servico-pagamento"></select></div>
+      <div style="display:flex; justify-content:space-between; background:#0f172a; padding:10px; border-radius:6px; margin-top:10px;">
+        <span>Estï¿½dio (30% Thalia): <strong id="valor-estudio" style="color:var(--warning)">R$0,00</strong></span>
+        <span>Repasse: <strong id="valor-repasse" style="color:var(--success)">R$0,00</strong></span>
+      </div>
+      <button id="btn-save-servico" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
+    </div>
+  </div>
+
+  <div id="modal-agenda" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="fecharModal('modal-agenda')">&times;</span>
+      <h3>Agendamento</h3>
+      <input type="hidden" id="agenda-id">
+      <div class="form-row">
+        <div class="form-group"><label>Data</label><input type="date" id="agenda-data"></div>
+        <div class="form-group"><label>Horï¿½rio</label><input type="time" id="agenda-horario"></div>
+      </div>
+      <div class="form-group"><label>Cliente</label><input type="text" id="agenda-cliente" required></div>
+      <div class="form-row">
+        <div class="form-group"><label>Tatuador</label><select id="agenda-tatuador"><option value="Fernando Dark">Fernando Dark</option><option value="Thalia">Thalia</option></select></div>
+        <div class="form-group"><label>Tipo de Serviï¿½o</label><select id="agenda-tipo"><option value="Tatuagem">Tatuagem</option><option value="Piercing">Piercing</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Valor Estimado (R$)</label><input type="number" id="agenda-valor" step="0.01"></div>
+        <div class="form-group"><label>Status</label><select id="agenda-status"><option value="Agendado">Agendado</option><option value="Confirmado">Confirmado</option><option value="Concluï¿½do">Concluï¿½do</option><option value="Cancelado">Cancelado</option></select></div>
+      </div>
+      <div class="form-group"><label>Observaï¿½ï¿½es</label><textarea id="agenda-obs" rows="2" placeholder="Anotaï¿½ï¿½es importantes..."></textarea></div>
+      <button id="btn-save-agenda" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
+    </div>
+  </div>
+
+  <div id="modal-piercing" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="fecharModal('modal-piercing')">&times;</span>
+      <h3>Piercing</h3>
+      <input type="hidden" id="piercing-id">
+      <div class="form-group"><label>Nome</label><input type="text" id="piercing-nome" required></div>
+      <div class="form-row">
+        <div class="form-group"><label>Quantidade</label><input type="number" id="piercing-qtd" min="0"></div>
+        <div class="form-group"><label>Preï¿½o de Venda (R$)</label><input type="number" id="piercing-preco" step="0.01"></div>
+      </div>
+      <button id="btn-save-piercing" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
+    </div>
+  </div>
+
+  <div id="modal-material" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="fecharModal('modal-material')">&times;</span>
+      <h3>Material</h3>
+      <input type="hidden" id="material-id">
+      <div class="form-group"><label>Nome</label><input type="text" id="material-nome" required></div>
+      <div class="form-row">
+        <div class="form-group"><label>Quantidade</label><input type="number" id="material-qtd" min="0"></div>
+        <div class="form-group"><label>Valor Unitï¿½rio (R$)</label><input type="number" id="material-preco" step="0.01"></div>
       </div>
       <button id="btn-save-material" class="btn btn-primary mt-2" style="width:100%;">Salvar</button>
     </div>
