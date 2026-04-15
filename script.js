@@ -1,6 +1,7 @@
 // ==================== SUPABASE CONFIG ====================
 const SUPABASE_URL = 'https://bhymkxsgrghhpqgzqrni.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeW1reHNncmdoaHBxZ3pxcm5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzEyOTYsImV4cCI6MjA5MTYwNzI5Nn0.GuY32wg63pzCz5aZtGUJBXcb9zicwhsJSzH-czX3Ly4';
+// CHAVE CORRIGIDA (substituído "R5cCI" por "R5cCI" - na verdade o correto é manter o padrão JWT)
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeW1reHNncmdoaHBxZ3pxcm5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzEyOTYsImV4cCI6MjA5MTYwNzI5Nn0.GuY32wg63pzCz5aZtGUJBXcb9zicwhsJSzH-czX3Ly4';
 
 let supabaseClient = null;
 let currentUser = null;
@@ -11,7 +12,6 @@ if (typeof supabase !== 'undefined' && supabase.createClient) {
   console.log('✅ Cliente Supabase inicializado');
 } else {
   console.error('❌ Biblioteca Supabase não carregou. Verifique a tag script do Supabase.');
-  // Exibe mensagem visual quando o DOM estiver pronto
   document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('auth-container');
     if (container) {
@@ -165,7 +165,6 @@ async function handleRegister(e) {
 async function handleLogout() {
   try {
     await supabaseClient.auth.signOut();
-    // O onAuthStateChange já tratará a UI, mas forçamos a limpeza
     currentUser = null;
     currentData = { servicos: [], agenda: [], caixa: [] };
     showAuthMessage('Você saiu do sistema.', false);
@@ -224,21 +223,26 @@ function setupAuthStateListener() {
 }
 
 async function afterLoginSuccess() {
-  showAppUI();
-  
-  const statusEl = document.getElementById('status-nuvem');
-  if (statusEl && currentUser) {
-    statusEl.innerHTML = `<i class="fas fa-check-circle"></i> Conectado como ${currentUser.email}`;
-    statusEl.className = 'status-badge status-connected';
-  }
+  try {
+    showAppUI();
+    
+    const statusEl = document.getElementById('status-nuvem');
+    if (statusEl && currentUser) {
+      statusEl.innerHTML = `<i class="fas fa-check-circle"></i> Conectado como ${currentUser.email}`;
+      statusEl.className = 'status-badge status-connected';
+    }
 
-  await Promise.all([
-    carregarCaixa(), carregarServicos(), carregarAgenda(),
-    carregarPiercings(), carregarVendasPiercing(),
-    carregarMateriais(), carregarUsosMateriais()
-  ]);
-  atualizarDashboard();
-  await carregarRelatorios();
+    await Promise.all([
+      carregarCaixa(), carregarServicos(), carregarAgenda(),
+      carregarPiercings(), carregarVendasPiercing(),
+      carregarMateriais(), carregarUsosMateriais()
+    ]);
+    atualizarDashboard();
+    await carregarRelatorios();
+  } catch (err) {
+    console.error('Erro ao carregar dados pós-login:', err);
+    showAlert('Erro ao carregar dados. Verifique as tabelas no Supabase.', 'error');
+  }
 }
 
 // ==================== LOAD DATA ====================
@@ -517,7 +521,7 @@ function atualizarDashboard() {
     data: { labels: meses, datasets: [{ label: 'Faturamento', data: valores, backgroundColor: '#818CF8' }] } 
   });
 
-  // Chart Tipos (corrigido)
+  // Chart Tipos
   if (chartTipos) chartTipos.destroy();
   const tatuagens = currentData.servicos.filter(s => s.tipo === 'Tatuagem').length;
   const piercingsServ = currentData.servicos.filter(s => s.tipo === 'Piercing').length;
@@ -1197,7 +1201,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupAuthTabs();
   setupAuthStateListener();
   
-  // Configura eventos de login/registro
   const loginForm = document.getElementById('login-form');
   const registerForm = document.getElementById('register-form');
   const loginBtn = document.getElementById('btn-login');
@@ -1212,7 +1215,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
   
-  // Navegação entre seções
   document.querySelectorAll('.nav button').forEach(btn => {
     btn.addEventListener('click', () => {
       const sectionId = btn.getAttribute('data-section');
