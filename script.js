@@ -28,21 +28,32 @@ function showAuthMessage(message, isError = true) {
 async function handleLogin() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  if (!email || !password) { showAuthMessage('Preencha email e senha'); return; }
+  if (!email || !password) {
+    showAuthMessage('Preencha email e senha');
+    return;
+  }
   try {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) throw error;
     currentUser = data.user;
     showAuthMessage('Login realizado com sucesso!', false);
     await afterLoginSuccess();
-  } catch (error) { showAuthMessage('Erro ao entrar: ' + error.message); }
+  } catch (error) {
+    showAuthMessage('Erro ao entrar: ' + error.message);
+  }
 }
 
 async function handleRegister() {
   const email = document.getElementById('register-email').value.trim();
   const password = document.getElementById('register-password').value;
-  if (!email || !password) { showAuthMessage('Preencha email e senha'); return; }
-  if (password.length < 6) { showAuthMessage('A senha deve ter pelo menos 6 caracteres'); return; }
+  if (!email || !password) {
+    showAuthMessage('Preencha email e senha');
+    return;
+  }
+  if (password.length < 6) {
+    showAuthMessage('A senha deve ter pelo menos 6 caracteres');
+    return;
+  }
   try {
     const { data, error } = await supabaseClient.auth.signUp({ email, password });
     if (error) throw error;
@@ -51,8 +62,12 @@ async function handleRegister() {
       document.getElementById('tab-login').click();
       document.getElementById('login-email').value = email;
       document.getElementById('login-password').value = '';
-    } else { showAuthMessage('Erro ao criar conta. Tente novamente.'); }
-  } catch (error) { showAuthMessage('Erro ao criar conta: ' + error.message); }
+    } else {
+      showAuthMessage('Erro ao criar conta. Tente novamente.');
+    }
+  } catch (error) {
+    showAuthMessage('Erro ao criar conta: ' + error.message);
+  }
 }
 
 async function handleLogout() {
@@ -62,12 +77,14 @@ async function handleLogout() {
     authContainer.style.display = 'flex';
     mainContainer.style.display = 'none';
     showAuthMessage('Você saiu do sistema.', false);
-  } catch (error) { console.error('Erro ao sair:', error); }
+  } catch (error) {
+    console.error('Erro ao sair:', error);
+  }
 }
 
 async function checkSession() {
   try {
-    const {  { session }, error } = await supabaseClient.auth.getSession();
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (error) throw error;
     if (session) {
       currentUser = session.user;
@@ -112,32 +129,6 @@ function showAlert(msg, type) {
   a.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${msg}`;
   a.style.display = 'block'; document.getElementById('alert-container').appendChild(a);
   setTimeout(() => a.remove(), 4500);
-}
-
-// ==================== CAIXA AUTOMÁTICO (ENTRADA/SAÍDA) ====================
-async function adicionarLancamentoCaixa(tipo, valor, descricao) {
-  try {
-    const { data: ultimo, error: ultimoError } = await supabaseClient
-      .from('caixa').select('saldo_final').order('data', { ascending: false }).limit(1);
-    if (ultimoError) throw ultimoError;
-    
-    const saldoInicial = ultimo && ultimo.length ? ultimo[0].saldo_final : 0;
-    const entradas = tipo === 'entrada' ? valor : 0;
-    const saidas = tipo === 'saida' ? valor : 0;
-    const saldoFinal = saldoInicial + entradas - saidas;
-    
-    const novoLancamento = { 
-      data: new Date().toISOString().split('T')[0], 
-      saldo_inicial: saldoInicial, entradas, saidas, saldo_final: saldoFinal, descricao 
-    };
-    const { error: insertError } = await supabaseClient.from('caixa').insert([novoLancamento]);
-    if (insertError) throw insertError;
-    await carregarCaixa();
-    return true;
-  } catch (e) {
-    showAlert('Erro ao lançar no caixa: ' + e.message, 'error');
-    return false;
-  }
 }
 
 // ==================== LOAD DATA ====================
@@ -229,14 +220,13 @@ function renderizarServicos(data) {
   const tbody = document.getElementById('servicos-tbody'); tbody.innerHTML = '';
   data.forEach(s => {
     const val = +s.valor_total || 0;
-    // Fórmula: Thalia (70% repasse / 30% estúdio), Outros (100% repasse / 0% estúdio)
     const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : 0;
     const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : val;
     totalV += val; totalE += estudio; totalR += repasse;
     const isFinalizado = s.finalizado === true;
     const acoes = isFinalizado
       ? `<span class="status-badge status-success">✅ Finalizado</span>`
-      : `<button class="btn btn-success btn-sm" onclick="finalizarServico('${s.id}')">✅ Finalizar</button> <button class="btn btn-info btn-sm" onclick="remarcarServico('${s.id}')">📅 Remarcar</button> <button class="btn btn-danger btn-sm" onclick="excluirServico('${s.id}')">Excluir</button>`;
+      : `<button class="btn btn-success btn-sm" onclick="finalizarServico('${s.id}')">✅ Finalizar Trabalho</button> <button class="btn btn-info btn-sm" onclick="remarcarServico('${s.id}')">📅 Remarcar</button> <button class="btn btn-danger btn-sm" onclick="excluirServico('${s.id}')">Excluir</button>`;
     
     tbody.innerHTML += `<tr>
       <td>${formatDate(s.data)}</td><td>${s.cliente}</td><td>${s.tatuador_nome}</td>
@@ -313,18 +303,16 @@ function atualizarDashboard() {
   const prox = currentData.agenda.filter(a => new Date(a.data_hora) >= new Date() && a.status !== 'Cancelado').slice(0, 5);
   document.getElementById('proximos-agendamentos').innerHTML = prox.length ? `<ul>${prox.map(a => `<li>${formatDateTime(a.data_hora)} - ${a.cliente}</li>`).join('')}</ul>` : 'Nenhum';
 
-  // Gráfico Faturamento
   if (chartFaturamento) chartFaturamento.destroy();
   const meses = [], valores = [];
   for (let i = 5; i >= 0; i--) { const d = new Date(); d.setMonth(d.getMonth() - i); meses.push(d.toLocaleDateString('pt-BR', { month: 'short' })); const soma = currentData.servicos.filter(s => new Date(s.data).getMonth() === d.getMonth() && new Date(s.data).getFullYear() === d.getFullYear()).reduce((s, sv) => s + (+sv.valor_total || 0), 0); valores.push(soma); }
   const ctx = document.getElementById('chart-faturamento').getContext('2d');
-  chartFaturamento = new Chart(ctx, { type: 'bar',  { labels: meses, datasets: [{ label: 'Faturamento',  valores, backgroundColor: '#818CF8' }] } });
+  chartFaturamento = new Chart(ctx, { type: 'bar', data: { labels: meses, datasets: [{ label: 'Faturamento', data: valores, backgroundColor: '#818CF8' }] } });
   
-  // Gráfico Tipos
   if (chartTipos) chartTipos.destroy();
   const tatuagens = currentData.servicos.filter(s => s.tipo === 'Tatuagem').length;
   const piercingsServ = currentData.servicos.filter(s => s.tipo === 'Piercing').length;
-  chartTipos = new Chart(document.getElementById('chart-tipos').getContext('2d'), { type: 'doughnut',  { labels: ['Tatuagens', 'Piercings'], datasets: [{  [tatuagens, piercingsServ], backgroundColor: ['#818CF8', '#C084FC'] }] } });
+  chartTipos = new Chart(document.getElementById('chart-tipos').getContext('2d'), { type: 'doughnut', data: { labels: ['Tatuagens', 'Piercings'], datasets: [{ data: [tatuagens, piercingsServ], backgroundColor: ['#818CF8', '#C084FC'] }] } });
 }
 
 // ==================== 📊 RELATÓRIOS ====================
@@ -333,12 +321,29 @@ async function carregarRelatorios() {
   document.getElementById('faturamento-tatuador').innerHTML = Object.entries(fat).map(([k, v]) => `<div><strong>${k}:</strong> ${formatMoney(v)}</div>`).join('') || 'Sem dados';
   const totalRepThalia = currentData.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? (+sv.valor_total || 0) * 0.7 : 0), 0);
   document.getElementById('relatorio-repasse').innerHTML = `<strong>Total a repassar para Thalia:</strong> ${formatMoney(totalRepThalia)}`;
-  
-  // Fórmula Revisada: Lucro Líquido = Total Entradas - Total Saídas
-  const totalEntradas = currentData.caixa.reduce((s, c) => s + (+c.entradas || 0), 0);
+  const estudioThalia = currentData.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? (+sv.valor_total || 0) * 0.3 : 0), 0);
   const totalSaidas = currentData.caixa.reduce((s, c) => s + (+c.saidas || 0), 0);
-  const lucroLiq = totalEntradas - totalSaidas;
-  document.getElementById('relatorio-lucro-liquido').innerHTML = `<strong>Lucro Líquido (Caixa):</strong> ${formatMoney(lucroLiq)} <small style="color:#9CA3AF">(Total Entradas - Total Saídas)</small>`;
+  const totalEstudio = currentData.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? (+sv.valor_total || 0) * 0.3 : (+sv.valor_total || 0)), 0);
+  const lucroLiq = totalEstudio - totalSaidas;
+  document.getElementById('relatorio-lucro-liquido').innerHTML = `<strong>Lucro Líquido (Estúdio):</strong> ${formatMoney(lucroLiq)} <small style="color:#9CA3AF">(Receita estúdio - Despesas caixa)</small>`;
+}
+
+// ==================== CAIXA: ADICIONAR ENTRADA ====================
+async function adicionarEntradaCaixa(data, valor, descricao) {
+  try {
+    const { data: ultimo, error: ultimoError } = await supabaseClient.from('caixa').select('saldo_final').order('data', { ascending: false }).limit(1);
+    if (ultimoError) throw ultimoError;
+    const saldoInicial = ultimo && ultimo.length ? ultimo[0].saldo_final : 0;
+    const saldoFinal = saldoInicial + valor;
+    const novoLancamento = { data, saldo_inicial: saldoInicial, entradas: valor, saidas: 0, saldo_final: saldoFinal, descricao };
+    const { error: insertError } = await supabaseClient.from('caixa').insert([novoLancamento]);
+    if (insertError) throw insertError;
+    await carregarCaixa();
+    return true;
+  } catch (e) {
+    showAlert('Erro ao lançar entrada no caixa: ' + e.message, 'error');
+    return false;
+  }
 }
 
 // ==================== REMARCAR SERVIÇO ====================
@@ -346,6 +351,7 @@ window.remarcarServico = async (servicoId) => {
   const servico = currentData.servicos.find(s => s.id === servicoId);
   if (!servico) { showAlert('Serviço não encontrado', 'error'); return; }
   if (servico.finalizado) { showAlert('Serviço já finalizado. Não é possível remarcar.', 'warning'); return; }
+  
   const modalId = 'modal-remarcar';
   const modal = document.createElement('div');
   modal.id = modalId; modal.className = 'modal';
@@ -376,7 +382,7 @@ window.remarcarServico = async (servicoId) => {
 // ==================== AGENDA: CONFIRMAR + CRIAR SERVIÇO ====================
 async function criarServicoDoAgendamento(agendaId) {
   try {
-    const {  agenda, error } = await supabaseClient.from('agenda').select('*').eq('id', agendaId).single();
+    const { data: agenda, error } = await supabaseClient.from('agenda').select('*').eq('id', agendaId).single();
     if (error) throw error;
     const novoServico = {
       data: agenda.data_hora.split('T')[0], cliente: agenda.cliente, tatuador_nome: agenda.tatuador_nome,
@@ -387,7 +393,7 @@ async function criarServicoDoAgendamento(agendaId) {
     if (insertError) throw insertError;
     showAlert(`Serviço para ${agenda.cliente} criado automaticamente!`, 'success');
     await carregarServicos(); atualizarDashboard();
-  } catch (e) { showAlert('Erro ao criar serviço: ' + e.message, 'error'); }
+  } catch (e) { showAlert('Erro ao criar serviço a partir do agendamento: ' + e.message, 'error'); }
 }
 
 window.confirmarAgendamento = async (id) => {
@@ -405,18 +411,19 @@ window.finalizarServico = async (servicoId) => {
   const servico = currentData.servicos.find(s => s.id === servicoId);
   if (!servico) { showAlert('Serviço não encontrado', 'error'); return; }
   if (servico.finalizado) { showAlert('Este serviço já foi finalizado.', 'warning'); return; }
-  if (!servico.valor_total || servico.valor_total <= 0) { showAlert('Defina um valor antes de finalizar.', 'warning'); return; }
+  if (!servico.valor_total || servico.valor_total <= 0) { showAlert('Este serviço tem valor R$ 0,00. Defina um valor antes de finalizar.', 'warning'); return; }
   
-  if (confirm(`Finalizar trabalho para ${servico.cliente} no valor de ${formatMoney(servico.valor_total)}? Isso lançará o valor como ENTRADA no caixa.`)) {
-    const sucesso = await adicionarLancamentoCaixa('entrada', servico.valor_total, `Serviço finalizado: ${servico.cliente}`);
+  if (confirm(`Finalizar trabalho para ${servico.cliente} no valor de ${formatMoney(servico.valor_total)}? Isso lançará o valor no caixa como entrada.`)) {
+    const descricaoCaixa = `Serviço finalizado: ${servico.cliente} - ${servico.descricao || servico.tipo}`;
+    const sucesso = await adicionarEntradaCaixa(servico.data, servico.valor_total, descricaoCaixa);
     if (sucesso) {
       try {
         const { error } = await supabaseClient.from('servicos').update({ finalizado: true }).eq('id', servicoId);
         if (error) throw error;
-        showAlert(`Trabalho finalizado! Valor de ${formatMoney(servico.valor_total)} lançado como Entrada.`, 'success');
+        showAlert(`Trabalho finalizado! Valor de ${formatMoney(servico.valor_total)} lançado no caixa.`, 'success');
         await carregarServicos(); await carregarRelatorios(); atualizarDashboard();
-      } catch (e) { showAlert('Erro ao marcar como finalizado: ' + e.message, 'error'); }
-    }
+      } catch (e) { showAlert('Erro ao marcar serviço como finalizado: ' + e.message, 'error'); }
+    } else { console.error('Falha ao adicionar entrada no caixa'); }
   }
 };
 
@@ -435,7 +442,7 @@ window.abrirModalCaixa = async () => {
 window.salvarCaixa = async () => {
   const id = document.getElementById('caixa-id').value;
   const data = {
-     document.getElementById('caixa-data').value,
+    data: document.getElementById('caixa-data').value,
     saldo_inicial: parseFloat(document.getElementById('caixa-saldo-inicial').value) || 0,
     entradas: parseFloat(document.getElementById('caixa-entradas').value) || 0,
     saidas: parseFloat(document.getElementById('caixa-saidas').value) || 0,
@@ -585,20 +592,16 @@ window.registrarVendaPiercing = async () => {
   const piercingId = document.getElementById('venda-piercing-id').value; const qtd = parseInt(document.getElementById('venda-qtd').value); const cliente = document.getElementById('venda-cliente').value;
   if (!piercingId) return showAlert('Selecione um piercing', 'error');
   try {
-    const {  piercing, error: fetchError } = await supabaseClient.from('piercings_estoque').select('').eq('id', piercingId).single();
+    const { data: piercing, error: fetchError } = await supabaseClient.from('piercings_estoque').select('').eq('id', piercingId).single();
     if (fetchError) throw fetchError;
     if (!piercing || piercing.quantidade < qtd) return showAlert('Estoque insuficiente', 'error');
     if (qtd <= 0) return showAlert('Quantidade deve ser maior que zero', 'error');
     const valorTotal = qtd * piercing.preco_venda;
     await supabaseClient.from('piercings_estoque').update({ quantidade: piercing.quantidade - qtd }).eq('id', piercingId);
     await supabaseClient.from('vendas_piercing').insert([{ piercing_id: piercingId, quantidade: qtd, valor_total: valorTotal, cliente: cliente || null }]);
-    
-    // ✅ TUDO QUE ENTRA VAI PARA ENTRADA
-    await adicionarLancamentoCaixa('entrada', valorTotal, `Venda piercing: ${piercing.nome} (${qtd}un)`);
-    
     await carregarPiercings(); await carregarVendasPiercing();
     document.getElementById('venda-qtd').value = 1; document.getElementById('venda-cliente').value = '';
-    showAlert(`Venda registrada: ${formatMoney(valorTotal)} (Lançado como Entrada)`, 'success');
+    showAlert(`Venda registrada: ${formatMoney(valorTotal)}`, 'success');
   } catch (e) { showAlert('Erro na venda: ' + e.message, 'error'); }
 };
 
@@ -628,36 +631,30 @@ window.registrarUsoMaterial = async () => {
     if (fetchError) throw fetchError;
     if (!material || material.quantidade < qtd) return showAlert('Quantidade insuficiente', 'error');
     if (qtd <= 0) return showAlert('Quantidade deve ser maior que zero', 'error');
-    
-    const custoUso = qtd * material.valor_unitario;
     await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade - qtd }).eq('id', materialId);
     await supabaseClient.from('usos_materiais').insert([{ material_id: materialId, quantidade: qtd, observacao: obs || null }]);
-    
-    // ✅ TUDO QUE SAI VAI PARA SAÍDA
-    await adicionarLancamentoCaixa('saida', custoUso, `Uso material: ${material.nome} (${qtd}un)`);
-    
     await carregarMateriais(); await carregarUsosMateriais();
     document.getElementById('uso-qtd').value = 1; document.getElementById('uso-obs').value = '';
-    showAlert(`Uso de ${qtd} unidade(s) de ${material.nome} registrado (${formatMoney(custoUso)} lançado como Saída)`, 'success');
+    showAlert(`Uso de ${qtd} unidade(s) de ${material.nome} registrado`, 'success');
   } catch (e) { showAlert('Erro ao registrar uso: ' + e.message, 'error'); }
 };
 
-// ==================== 💾 BACKUP + INFORMAÇÕES ====================
+// ==================== 💾 BACKUP ====================
 window.exportarBackup = async () => {
   try {
     const { data: servicos } = await supabaseClient.from('servicos').select('');
-    const {  agenda } = await supabaseClient.from('agenda').select('');
-    const {  caixa } = await supabaseClient.from('caixa').select('');
-    const {  piercings } = await supabaseClient.from('piercings_estoque').select('');
-    const {  vendas } = await supabaseClient.from('vendas_piercing').select('');
-    const {  materiais } = await supabaseClient.from('materiais_estoque').select('');
-    const {  usos } = await supabaseClient.from('usos_materiais').select('*');
+    const { data: agenda } = await supabaseClient.from('agenda').select('');
+    const { data: caixa } = await supabaseClient.from('caixa').select('');
+    const { data: piercings } = await supabaseClient.from('piercings_estoque').select('');
+    const { data: vendas } = await supabaseClient.from('vendas_piercing').select('');
+    const { data: materiais } = await supabaseClient.from('materiais_estoque').select('');
+    const { data: usos } = await supabaseClient.from('usos_materiais').select('*');
     
     const totalFaturamento = (servicos || []).reduce((s, i) => s + (+i.valor_total || 0), 0);
     const saldoAtual = caixa && caixa.length > 0 ? caixa[0].saldo_final : 0;
 
     const backup = {
-      meta { versao_app: '1.3.0', data_exportacao: new Date().toISOString(), exportado_por: currentUser?.email || 'Desconhecido', resumo_financeiro: { faturamento_total_servicos: totalFaturamento, saldo_atual_caixa: saldoAtual, moeda: 'BRL' }, contagens: { servicos: servicos?.length || 0, agendamentos: agenda?.length || 0, lancamentos_caixa: caixa?.length || 0, piercings_estoque: piercings?.length || 0, vendas_piercing: vendas?.length || 0, materiais_estoque: materiais?.length || 0, usos_materiais: usos?.length || 0 } },
+      metadata: { versao_app: '1.2.0', data_exportacao: new Date().toISOString(), exportado_por: currentUser?.email || 'Desconhecido', resumo_financeiro: { faturamento_total_servicos: totalFaturamento, saldo_atual_caixa: saldoAtual, moeda: 'BRL' }, contagens: { servicos: servicos?.length || 0, agendamentos: agenda?.length || 0, lancamentos_caixa: caixa?.length || 0, piercings_estoque: piercings?.length || 0, vendas_piercing: vendas?.length || 0, materiais_estoque: materiais?.length || 0, usos_materiais: usos?.length || 0 } },
       servicos: servicos || [], agenda: agenda || [], caixa: caixa || [], piercings_estoque: piercings || [], vendas_piercing: vendas || [], materiais_estoque: materiais || [], usos_materiais: usos || []
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -691,36 +688,12 @@ window.importarBackup = async (input) => {
   input.value = '';
 };
 
-// Adiciona descrições informativas aos botões de Backup via JS
-function setupBackupInfo() {
-  const container = document.querySelector('.backup-section') || document.getElementById('backup-container');
-  if (!container) return;
-  const btns = container.querySelectorAll('button');
-  const descriptions = {
-    'btn-sync': { text: 'Atualiza todos os dados diretamente do servidor para garantir que você está vendo as informações mais recentes.', icon: 'fas fa-sync-alt' },
-    'btn-export': { text: 'Baixa um arquivo .JSON com todo o banco de dados atual. Ideal para cópia de segurança local.', icon: 'fas fa-download' },
-    'btn-import': { text: 'Restaura dados a partir de um arquivo .JSON exportado anteriormente. Use com cautela para evitar duplicações.', icon: 'fas fa-upload' }
-  };
-  
-  btns.forEach(btn => {
-    const id = btn.id || '';
-    if (descriptions[id]) {
-      btn.title = descriptions[id].text;
-      const small = document.createElement('small');
-      small.className = 'backup-desc';
-      small.style.display = 'block'; small.style.marginTop = '4px'; small.style.fontSize = '0.8em'; small.style.opacity = '0.8';
-      small.innerHTML = `<i class="${descriptions[id].icon}"></i> ${descriptions[id].text}`;
-      btn.parentElement.appendChild(small);
-    }
-  });
-}
-
 // ==================== EXEMPLOS ====================
 window.popularPiercingsExemplo = async () => {
   if (!confirm('Isso irá adicionar piercings de exemplo (não remove os existentes). Continuar?')) return;
   const exemplos = [{ nome: 'Piercing Nariz Cristal', quantidade: 10, preco_venda: 80.00 }, { nome: 'Piercing Septo Aço', quantidade: 8, preco_venda: 120.00 }, { nome: 'Piercing Lábio Argola', quantidade: 5, preco_venda: 70.00 }, { nome: 'Piercing Tragus Pérola', quantidade: 12, preco_venda: 90.00 }, { nome: 'Piercing Indústrial Barra', quantidade: 6, preco_venda: 110.00 }];
   try {
-    for (const item of exemplos) { const {  existente } = await supabaseClient.from('piercings_estoque').select('id').eq('nome', item.nome).maybeSingle(); if (!existente) await supabaseClient.from('piercings_estoque').insert([item]); }
+    for (const item of exemplos) { const { data: existente } = await supabaseClient.from('piercings_estoque').select('id').eq('nome', item.nome).maybeSingle(); if (!existente) await supabaseClient.from('piercings_estoque').insert([item]); }
     await carregarPiercings(); await carregarVendasPiercing(); showAlert('Piercings de exemplo adicionados!', 'success');
   } catch (e) { showAlert('Erro ao adicionar exemplos: ' + e.message, 'error'); }
 };
@@ -728,7 +701,7 @@ window.popularMateriaisExemplo = async () => {
   if (!confirm('Isso irá adicionar materiais de exemplo (não remove os existentes). Continuar?')) return;
   const exemplos = [{ nome: 'Agulha 1207RL', quantidade: 50, valor_unitario: 2.50 }, { nome: 'Agulha 1005RL', quantidade: 40, valor_unitario: 2.50 }, { nome: 'Tinta Preta Intenze', quantidade: 8, valor_unitario: 45.00 }, { nome: 'Tinta Branca Eternal', quantidade: 5, valor_unitario: 55.00 }, { nome: 'Luvas Descartáveis M', quantidade: 100, valor_unitario: 0.80 }, { nome: 'Filme PVC', quantidade: 20, valor_unitario: 12.00 }, { nome: 'Bálsamo Tattoo', quantidade: 15, valor_unitario: 18.00 }];
   try {
-    for (const item of exemplos) { const {  existente } = await supabaseClient.from('materiais_estoque').select('id').eq('nome', item.nome).maybeSingle(); if (!existente) await supabaseClient.from('materiais_estoque').insert([item]); }
+    for (const item of exemplos) { const { data: existente } = await supabaseClient.from('materiais_estoque').select('id').eq('nome', item.nome).maybeSingle(); if (!existente) await supabaseClient.from('materiais_estoque').insert([item]); }
     await carregarMateriais(); await carregarUsosMateriais(); showAlert('Materiais de exemplo adicionados!', 'success');
   } catch (e) { showAlert('Erro ao adicionar exemplos: ' + e.message, 'error'); }
 };
@@ -760,7 +733,6 @@ document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('cl
 document.addEventListener('DOMContentLoaded', async () => {
   if (!supabaseClient) { showAlert('Supabase não disponível. Verifique sua conexão.', 'error'); return; }
   setupAuthTabs();
-  setupBackupInfo(); // ✅ Adiciona informações nos botões de backup
   document.getElementById('btn-login').addEventListener('click', handleLogin);
   document.getElementById('btn-register').addEventListener('click', handleRegister);
   document.getElementById('btn-logout').addEventListener('click', handleLogout);
