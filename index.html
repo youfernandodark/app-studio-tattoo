@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div class="container">
+<main class="container">
     <header>
         <h1><i class="fas fa-skull"></i> DARK013TATTOO</h1>
         <p>Gestão profissional com sincronização na nuvem | Dark Mode Studio</p>
@@ -19,7 +19,7 @@
         </div>
     </header>
 
-    <nav class="nav">
+    <nav class="nav" aria-label="Navegação principal">
         <button class="active" data-section="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
         <button data-section="caixa"><i class="fas fa-wallet"></i> Caixa</button>
         <button data-section="servicos"><i class="fas fa-paint-brush"></i> Serviços</button>
@@ -62,9 +62,29 @@
             <input type="text" id="search-caixa" placeholder="Buscar por descrição..." style="width:100%; margin: 20px 0;">
             <div style="overflow-x: auto;">
                 <table>
-                    <thead><tr><th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo Final</th><th>Descrição</th><th>Ações</th></tr></thead>
-                    <tbody id="caixa-tbody"><tr><td colspan="7">Carregando...</td></tr></tbody>
-                    <tfoot><tr><td colspan="2"><strong>TOTAIS</strong></td><td id="caixa-total-entradas">R$0</td><td id="caixa-total-saidas">R$0</td><td id="caixa-saldo-final">R$0</td><td colspan="2"></td></tr></tfoot>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Saldo Inicial</th>
+                            <th>Entradas</th>
+                            <th>Saídas</th>
+                            <th>Saldo Final</th>
+                            <th>Descrição</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="caixa-tbody">
+                        <tr><td colspan="7" data-label="Status">Carregando...</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"><strong>TOTAIS</strong></td>
+                            <td id="caixa-total-entradas" data-label="Total Entradas">R$0</td>
+                            <td id="caixa-total-saidas" data-label="Total Saídas">R$0</td>
+                            <td id="caixa-saldo-final" data-label="Saldo Final">R$0</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -85,9 +105,24 @@
             <input type="text" id="search-servicos" placeholder="Buscar serviços...">
             <div style="overflow-x: auto;">
                 <table>
-                    <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30%)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead>
-                    <tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody>
-                    <tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
+                    <thead>
+                        <tr>
+                            <th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th>
+                            <th>Valor</th><th>Estúdio (30%)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="servicos-tbody">
+                        <tr><td colspan="10" data-label="Status">Carregando...</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5"><strong>TOTAIS</strong></td>
+                            <td id="servicos-total-valor" data-label="Total Valor">R$0</td>
+                            <td id="servicos-total-estudio" data-label="Total Estúdio">R$0</td>
+                            <td id="servicos-total-repasse" data-label="Total Repasse">R$0</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -106,9 +141,17 @@
                 <button class="btn btn-warning btn-sm" onclick="limparFiltrosAgenda()">Limpar</button>
             </div>
             <div style="overflow-x: auto;">
-                <table><thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Pagamento</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead>
-                <tbody id="agenda-tbody"><tr><td colspan="9">Carregando...</td></tr></tbody>
-            </table>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th>
+                            <th>Valor</th><th>Pagamento</th><th>Status</th><th>Obs</th><th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agenda-tbody">
+                        <tr><td colspan="9" data-label="Status">Carregando...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </section>
@@ -121,8 +164,10 @@
             <button class="btn btn-info" onclick="popularPiercingsExemplo()">Popular exemplos</button>
             <h3>Estoque</h3>
             <div style="overflow-x: auto;">
-                <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda</th><th>Ações</th></tr></thead>
-                <tbody id="estoque-piercing-tbody"></tbody></table>
+                <table>
+                    <thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda</th><th>Ações</th></tr></thead>
+                    <tbody id="estoque-piercing-tbody"></tbody>
+                </table>
             </div>
             <h3>Registrar Venda</h3>
             <div class="form-row">
@@ -132,8 +177,10 @@
             </div>
             <button class="btn btn-success" onclick="registrarVendaPiercing()">Finalizar Venda</button>
             <h3>Histórico de Vendas</h3>
-            <table><thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead>
-            <tbody id="vendas-piercing-tbody"></tbody></table>
+            <table>
+                <thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead>
+                <tbody id="vendas-piercing-tbody"></tbody>
+            </table>
         </div>
     </section>
 
@@ -145,8 +192,10 @@
             <button class="btn btn-info" onclick="popularMateriaisExemplo()">Popular exemplos</button>
             <h3>Estoque</h3>
             <div style="overflow-x: auto;">
-                <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitário</th><th>Ações</th></tr></thead>
-                <tbody id="estoque-material-tbody"></tbody></table>
+                <table>
+                    <thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitário</th><th>Ações</th></tr></thead>
+                    <tbody id="estoque-material-tbody"></tbody>
+                </table>
             </div>
             <h3>Registrar Uso</h3>
             <div class="form-row">
@@ -156,8 +205,10 @@
             </div>
             <button class="btn btn-warning" onclick="registrarUsoMaterial()">Usar Material</button>
             <h3>Histórico de Usos</h3>
-            <table><thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead>
-            <tbody id="usos-materiais-tbody"></tbody></table>
+            <table>
+                <thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead>
+                <tbody id="usos-materiais-tbody"></tbody>
+            </table>
         </div>
     </section>
 
@@ -187,10 +238,9 @@
             </div>
         </div>
     </section>
-</div>
+</main>
 
-<!-- MODAIS REESTRUTURADOS (com cabeçalho, área rolável e rodapé fixo) -->
-
+<!-- MODAIS -->
 <!-- Modal Caixa -->
 <div id="modal-caixa" class="modal">
     <div class="modal-content">
