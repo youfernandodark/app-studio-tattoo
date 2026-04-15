@@ -25,6 +25,7 @@ const Helpers = {
     formatDateTime: (date) => {
         if (!date) return '-';
         const dt = new Date(date);
+        if (isNaN(dt.getTime())) return '-';
         return `${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     },
     showAlert: (message, type = 'info') => {

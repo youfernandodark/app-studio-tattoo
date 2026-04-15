@@ -729,11 +729,6 @@ textarea:focus-visible {
     outline-offset: 2px;
 }
 
-/* Tooltip sutil */
-[title] {
-    position: relative;
-}
-
 /* Animações para botões */
 .btn:active {
     transform: scale(0.96);

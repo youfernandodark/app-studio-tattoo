@@ -64,9 +64,8 @@
                 <table>
                     <thead><tr><th>Data</th><th>Saldo Inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo Final</th><th>Descrição</th><th>Ações</th></tr></thead>
                     <tbody id="caixa-tbody"><tr><td colspan="7">Carregando...</td></tr></tbody>
-                    <tfoot><tr><td colspan="2"><strong>TOTAIS</strong></td><td id="caixa-total-entradas">R$0</td><td id="caixa-total-saidas">R$0</td><td id="caixa-saldo-final">R$0</td><td colspan="2"></td></tr>
-                </tfoot>
-            </table>
+                    <tfoot><tr><td colspan="2"><strong>TOTAIS</strong></td><td id="caixa-total-entradas">R$0</td><td id="caixa-total-saidas">R$0</td><td id="caixa-saldo-final">R$0</td><td colspan="2"></td></tr></tfoot>
+                </table>
             </div>
         </div>
     </section>
@@ -87,10 +86,9 @@
             <div style="overflow-x: auto;">
                 <table>
                     <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30%)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead>
-                    <tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr>
-                    <tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr>
-                </tfoot>
-            </table>
+                    <tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody>
+                    <tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
+                </table>
             </div>
         </div>
     </section>
@@ -109,8 +107,7 @@
             </div>
             <div style="overflow-x: auto;">
                 <table><thead><tr><th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Valor</th><th>Pagamento</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead>
-                <tbody id="agenda-tbody"><tr><td colspan="9">Carregando...</td></tr>
-                </tbody>
+                <tbody id="agenda-tbody"><tr><td colspan="9">Carregando...</td></tr></tbody>
             </table>
             </div>
         </div>
@@ -123,7 +120,10 @@
             <button class="btn btn-primary" onclick="abrirModalPiercing()">+ Adicionar Estoque</button>
             <button class="btn btn-info" onclick="popularPiercingsExemplo()">Popular exemplos</button>
             <h3>Estoque</h3>
-            <div style="overflow-x: auto;"><table><thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda</th><th>Ações</th></tr></thead><tbody id="estoque-piercing-tbody"></tbody></table></div>
+            <div style="overflow-x: auto;">
+                <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda</th><th>Ações</th></tr></thead>
+                <tbody id="estoque-piercing-tbody"></tbody></table>
+            </div>
             <h3>Registrar Venda</h3>
             <div class="form-row">
                 <div class="form-group"><label>Piercing</label><select id="venda-piercing-id"></select></div>
@@ -132,7 +132,8 @@
             </div>
             <button class="btn btn-success" onclick="registrarVendaPiercing()">Finalizar Venda</button>
             <h3>Histórico de Vendas</h3>
-            <table><thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead><tbody id="vendas-piercing-tbody"></tbody></table>
+            <table><thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead>
+            <tbody id="vendas-piercing-tbody"></tbody></table>
         </div>
     </section>
 
@@ -143,7 +144,10 @@
             <button class="btn btn-primary" onclick="abrirModalMaterial()">+ Adicionar Material</button>
             <button class="btn btn-info" onclick="popularMateriaisExemplo()">Popular exemplos</button>
             <h3>Estoque</h3>
-            </table><thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitário</th><th>Ações</th></tr></thead><tbody id="estoque-material-tbody"></tbody></table>
+            <div style="overflow-x: auto;">
+                <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitário</th><th>Ações</th></tr></thead>
+                <tbody id="estoque-material-tbody"></tbody></table>
+            </div>
             <h3>Registrar Uso</h3>
             <div class="form-row">
                 <div class="form-group"><label>Material</label><select id="uso-material-id"></select></div>
@@ -152,7 +156,8 @@
             </div>
             <button class="btn btn-warning" onclick="registrarUsoMaterial()">Usar Material</button>
             <h3>Histórico de Usos</h3>
-            <table><thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead><tbody id="usos-materiais-tbody"></tbody></table>
+            <table><thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead>
+            <tbody id="usos-materiais-tbody"></tbody></table>
         </div>
     </section>
 
@@ -184,7 +189,7 @@
     </section>
 </div>
 
-<!-- MODAIS -->
+<!-- MODAIS (mantidos iguais) -->
 <div id="modal-caixa" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-caixa')">&times;</span><h2>Lançamento</h2><input type="hidden" id="caixa-id"><div class="form-group"><label>Data</label><input type="date" id="caixa-data"></div><div class="form-row"><div class="form-group"><label>Saldo Inicial</label><input type="number" id="caixa-saldo-inicial" value="0"></div><div class="form-group"><label>Entradas</label><input type="number" id="caixa-entradas" value="0"></div><div class="form-group"><label>Saídas</label><input type="number" id="caixa-saidas" value="0"></div></div><div class="form-group"><label>Descrição</label><input type="text" id="caixa-descricao"></div><button class="btn btn-success" onclick="salvarCaixa()">Salvar</button></div></div>
 
 <div id="modal-servico" class="modal"><div class="modal-content"><span class="close" onclick="fecharModal('modal-servico')">&times;</span><h2>Serviço</h2><input type="hidden" id="servico-id"><div class="form-row"><div class="form-group"><label>Data</label><input type="date" id="servico-data"></div><div class="form-group"><label>Cliente</label><input type="text" id="servico-cliente"></div></div><div class="form-row"><div class="form-group"><label>Tatuador</label><select id="servico-tatuador" onchange="calcularRepasse()"><option>Fernando Dark</option><option>Thalia</option></select></div><div class="form-group"><label>Tipo</label><select id="servico-tipo"><option>Tatuagem</option><option>Piercing</option></select></div></div><div class="form-group"><label>Descrição</label><input type="text" id="servico-descricao"></div><div class="form-row"><div class="form-group"><label>Valor Total</label><input type="number" id="servico-valor" oninput="calcularRepasse()"></div><div class="form-group"><label>Pagamento</label><select id="servico-pagamento"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select></div></div><div id="repasse-info" style="background:#14141E; padding:12px; border-radius:20px;"><p><strong>Estúdio (30%):</strong> <span id="valor-estudio">R$0,00</span> <span style="color:#F59E0B;">(apenas Thalia)</span></p><p><strong>Repasse:</strong> <span id="valor-repasse">R$0,00</span></p></div><button class="btn btn-success" onclick="salvarServico()">Salvar</button></div></div>
