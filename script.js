@@ -6,8 +6,7 @@ let supabaseClient = null;
 if (typeof supabase !== 'undefined') {
     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 } else {
-    console.error('Supabase não carregou. Verifique a tag script.');
-    document.getElementById('status-nuvem').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro: Supabase não carregou';
+    console.error('Supabase não carregou.');
 }
 
 // ==================== ESTADO GLOBAL ====================
@@ -35,7 +34,6 @@ const Helpers = {
         alertDiv.className = `alert alert-${type}`;
         const icon = type === 'success' ? 'fa-check-circle' : (type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle');
         alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-        alertDiv.style.display = 'block';
         container.appendChild(alertDiv);
         setTimeout(() => alertDiv.remove(), 4500);
     },
@@ -50,37 +48,8 @@ const Helpers = {
     setDisplay: (id, display) => { const el = Helpers.getElement(id); if (el) el.style.display = display; },
     closeModal: (modalId) => Helpers.setDisplay(modalId, 'none'),
     openModal: (modalId) => Helpers.setDisplay(modalId, 'block'),
-    clearForm: (formId) => { const form = Helpers.getElement(formId); if (form) form.reset(); },
-    buildOptions: (items, valueKey, textFn, selectedValue = null) => {
-        return items.map(item => {
-            const value = item[valueKey];
-            const text = textFn(item);
-            const selected = selectedValue !== null && value == selectedValue ? 'selected' : '';
-            return `<option value="${value}" ${selected}>${text}</option>`;
-        }).join('');
-    }
+    clearForm: (formId) => { const form = Helpers.getElement(formId); if (form) form.reset(); }
 };
-
-// ==================== CONEXÃO ====================
-async function testarConexao() {
-    const statusEl = Helpers.getElement('status-nuvem');
-    if (!supabaseClient) {
-        statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Cliente Supabase não inicializado';
-        return false;
-    }
-    try {
-        const { error } = await supabaseClient.from('caixa').select('id').limit(1);
-        if (error) throw error;
-        statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Conectado ao Supabase';
-        statusEl.className = 'status-badge status-connected';
-        return true;
-    } catch (err) {
-        statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falha na conexão';
-        statusEl.className = 'status-badge status-error';
-        Helpers.handleError('conexão', err);
-        return false;
-    }
-}
 
 // ==================== SERVIÇO DE DADOS ====================
 const DataService = {
@@ -164,7 +133,7 @@ const Renderer = {
     renderCaixa(data) {
         let totalEntradas = 0, totalSaidas = 0;
         const tbody = Helpers.getElement('caixa-tbody');
-        if (data.length === 0) {
+        if (!data.length) {
             tbody.innerHTML = '<tr><td colspan="7">Nenhum lançamento</td></tr>';
         } else {
             tbody.innerHTML = data.map(item => {
@@ -225,7 +194,7 @@ const Renderer = {
 
     renderAgenda(data) {
         const tbody = Helpers.getElement('agenda-tbody');
-        if (data.length === 0) {
+        if (!data.length) {
             tbody.innerHTML = '<tr><td colspan="8">Nenhum agendamento</td></tr>';
             return;
         }
@@ -271,12 +240,13 @@ const Renderer = {
                 </td>
             </tr>`).join('');
         }
-        // Atualiza select de venda
         const select = Helpers.getElement('venda-piercing-id');
-        select.innerHTML = '<option value="">Selecione</option>' +
-            piercings.filter(p => p.quantidade > 0)
-                .map(p => `<option value="${p.id}" data-preco="${p.preco_venda}">${p.nome} - ${Helpers.formatMoney(p.preco_venda)} (Estoque: ${p.quantidade})</option>`)
-                .join('');
+        if (select) {
+            select.innerHTML = '<option value="">Selecione</option>' +
+                piercings.filter(p => p.quantidade > 0)
+                    .map(p => `<option value="${p.id}" data-preco="${p.preco_venda}">${p.nome} - ${Helpers.formatMoney(p.preco_venda)} (Estoque: ${p.quantidade})</option>`)
+                    .join('');
+        }
     },
 
     renderVendasPiercing(vendas) {
@@ -310,10 +280,12 @@ const Renderer = {
             </tr>`).join('');
         }
         const select = Helpers.getElement('uso-material-id');
-        select.innerHTML = '<option value="">Selecione</option>' +
-            materiais.filter(m => m.quantidade > 0)
-                .map(m => `<option value="${m.id}">${m.nome} (${m.quantidade} un.)</option>`)
-                .join('');
+        if (select) {
+            select.innerHTML = '<option value="">Selecione</option>' +
+                materiais.filter(m => m.quantidade > 0)
+                    .map(m => `<option value="${m.id}">${m.nome} (${m.quantidade} un.)</option>`)
+                    .join('');
+        }
     },
 
     renderUsosMateriais(usos) {
@@ -355,7 +327,7 @@ function atualizarDashboard() {
         ? `<ul>${proximos.map(a => `<li>${Helpers.formatDateTime(a.data_hora)} - ${a.cliente}</li>`).join('')}</ul>`
         : 'Nenhum');
 
-    // Gráficos (apenas se os elementos existirem e estiverem visíveis)
+    // Gráficos
     const canvasFaturamento = Helpers.getElement('chart-faturamento');
     if (canvasFaturamento) {
         if (AppState.chartFaturamento) AppState.chartFaturamento.destroy();
@@ -370,8 +342,7 @@ function atualizarDashboard() {
             }).reduce((acc, sv) => acc + (+sv.valor_total || 0), 0);
             valores.push(soma);
         }
-        const ctx = canvasFaturamento.getContext('2d');
-        AppState.chartFaturamento = new Chart(ctx, {
+        AppState.chartFaturamento = new Chart(canvasFaturamento.getContext('2d'), {
             type: 'bar',
             data: { labels: meses, datasets: [{ label: 'Faturamento', data: valores, backgroundColor: '#818CF8' }] }
         });
@@ -393,6 +364,10 @@ function atualizarDashboard() {
 }
 
 async function carregarRelatorios() {
+    // Recarrega dados para garantir atualização
+    await DataService.loadServicos();
+    await DataService.loadCaixa();
+
     const faturamentoPorTatuador = {};
     AppState.servicos.forEach(s => {
         faturamentoPorTatuador[s.tatuador_nome] = (faturamentoPorTatuador[s.tatuador_nome] || 0) + (+s.valor_total || 0);
@@ -457,7 +432,7 @@ const CaixaModule = {
         } catch (e) { Helpers.handleError('excluir caixa', e); }
     },
     filtrar: () => {
-        const termo = Helpers.getValue('search-caixa').toLowerCase();
+        const termo = Helpers.getValue('search-caixa')?.toLowerCase() || '';
         const filtrado = termo
             ? AppState.caixa.filter(i => (i.descricao || '').toLowerCase().includes(termo))
             : AppState.caixa;
@@ -472,19 +447,16 @@ const ServicosModule = {
         Helpers.setValue('servico-data', new Date().toISOString().split('T')[0]);
         Helpers.openModal('modal-servico');
         ServicosModule.calcularRepasse();
-        // Garantir que os cálculos sejam atualizados quando os campos mudarem
-        const valorInput = Helpers.getElement('servico-valor');
-        const tatuadorSelect = Helpers.getElement('servico-tatuador');
-        if (valorInput) valorInput.addEventListener('input', ServicosModule.calcularRepasse);
-        if (tatuadorSelect) tatuadorSelect.addEventListener('change', ServicosModule.calcularRepasse);
     },
     calcularRepasse: () => {
         const valor = +Helpers.getValue('servico-valor') || 0;
         const tatuador = Helpers.getValue('servico-tatuador');
         const estudio = tatuador === 'Thalia' ? valor * 0.3 : 0;
         const repasse = tatuador === 'Thalia' ? valor * 0.7 : valor;
-        Helpers.getElement('valor-estudio').innerText = Helpers.formatMoney(estudio);
-        Helpers.getElement('valor-repasse').innerText = Helpers.formatMoney(repasse);
+        const estudioSpan = Helpers.getElement('valor-estudio');
+        const repasseSpan = Helpers.getElement('valor-repasse');
+        if (estudioSpan) estudioSpan.innerText = Helpers.formatMoney(estudio);
+        if (repasseSpan) repasseSpan.innerText = Helpers.formatMoney(repasse);
     },
     salvar: async () => {
         const id = Helpers.getValue('servico-id');
@@ -538,7 +510,7 @@ const ServicosModule = {
         if (pagamento) filtrado = filtrado.filter(s => s.forma_pagamento === pagamento);
         const data = Helpers.getValue('filtro-data-servico');
         if (data) filtrado = filtrado.filter(s => s.data === data);
-        const termo = Helpers.getValue('search-servicos').toLowerCase();
+        const termo = Helpers.getValue('search-servicos')?.toLowerCase() || '';
         if (termo) filtrado = filtrado.filter(s => s.cliente.toLowerCase().includes(termo) || (s.descricao || '').toLowerCase().includes(termo));
         Renderer.renderServicos(filtrado);
     },
@@ -623,7 +595,8 @@ const AgendaModule = {
         Renderer.renderAgenda(filtrado);
     },
     filtrarHoje: () => {
-        Helpers.getElement('filtro-data-agenda').valueAsDate = new Date();
+        const dataInput = Helpers.getElement('filtro-data-agenda');
+        if (dataInput) dataInput.valueAsDate = new Date();
         AgendaModule.filtrar();
     },
     limparFiltros: () => {
@@ -855,6 +828,30 @@ const ExemplosModule = {
 };
 
 // ==================== NAVEGAÇÃO E INICIALIZAÇÃO ====================
+async function testarConexao() {
+    const statusEl = Helpers.getElement('status-nuvem');
+    if (!supabaseClient) {
+        if (statusEl) statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Cliente Supabase não inicializado';
+        return false;
+    }
+    try {
+        const { error } = await supabaseClient.from('caixa').select('id').limit(1);
+        if (error) throw error;
+        if (statusEl) {
+            statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Conectado ao Supabase';
+            statusEl.className = 'status-badge status-connected';
+        }
+        return true;
+    } catch (err) {
+        if (statusEl) {
+            statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falha na conexão';
+            statusEl.className = 'status-badge status-error';
+        }
+        Helpers.handleError('conexão', err);
+        return false;
+    }
+}
+
 async function carregarDadosSecao(sectionId) {
     const carregamentos = {
         dashboard: async () => {
@@ -884,7 +881,8 @@ function setupNavigation() {
         btn.addEventListener('click', () => {
             const sectionId = btn.getAttribute('data-section');
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            Helpers.getElement(sectionId).classList.add('active');
+            const targetSection = Helpers.getElement(sectionId);
+            if (targetSection) targetSection.classList.add('active');
             document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             carregarDadosSecao(sectionId);
@@ -892,9 +890,7 @@ function setupNavigation() {
     });
 }
 
-// Configurar listeners adicionais
 function setupEventListeners() {
-    // Campo de busca do caixa
     const searchCaixa = Helpers.getElement('search-caixa');
     if (searchCaixa) {
         searchCaixa.addEventListener('input', () => CaixaModule.filtrar());
@@ -908,24 +904,43 @@ window.onclick = (event) => {
     }
 };
 
-// Atalhos globais
-window.fecharModal = Helpers.closeModal;
-window.sincronizarAgora = () => location.reload();
-window.testarConexao = testarConexao;
+// EXPORTAÇÃO GLOBAL DAS FUNÇÕES USADAS NO HTML
+window.abrirModalCaixa = () => CaixaModule.abrirModal();
+window.salvarCaixa = () => CaixaModule.salvar();
+window.filtrarCaixa = () => CaixaModule.filtrar();
 
-// Expondo módulos para o escopo global (necessário para onclick)
-window.CaixaModule = CaixaModule;
-window.ServicosModule = ServicosModule;
-window.AgendaModule = AgendaModule;
-window.PiercingModule = PiercingModule;
-window.MateriaisModule = MateriaisModule;
-window.BackupModule = BackupModule;
-window.ExemplosModule = ExemplosModule;
+window.abrirModalServico = () => ServicosModule.abrirModal();
+window.salvarServico = () => ServicosModule.salvar();
+window.filtrarServicos = () => ServicosModule.filtrar();
+window.limparFiltrosServicos = () => ServicosModule.limparFiltros();
+window.calcularRepasse = () => ServicosModule.calcularRepasse();
+
+window.abrirModalAgendamento = () => AgendaModule.abrirModal();
+window.salvarAgenda = () => AgendaModule.salvar();
+window.filtrarAgenda = () => AgendaModule.filtrar();
+window.filtrarAgendaHoje = () => AgendaModule.filtrarHoje();
+window.limparFiltrosAgenda = () => AgendaModule.limparFiltros();
+
+window.abrirModalPiercing = () => PiercingModule.abrirModal();
+window.salvarPiercing = () => PiercingModule.salvar();
+window.registrarVendaPiercing = () => PiercingModule.registrarVenda();
+window.popularPiercingsExemplo = () => ExemplosModule.popularPiercings();
+
+window.abrirModalMaterial = () => MateriaisModule.abrirModal();
+window.salvarMaterial = () => MateriaisModule.salvar();
+window.registrarUsoMaterial = () => MateriaisModule.registrarUso();
+window.popularMateriaisExemplo = () => ExemplosModule.popularMateriais();
+
+window.exportarBackup = () => BackupModule.exportar();
+window.importarBackup = (input) => BackupModule.importar(input);
+window.sincronizarAgora = () => location.reload();
+
+window.fecharModal = Helpers.closeModal;
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
     if (!supabaseClient) {
-        Helpers.showAlert('Supabase não disponível. Verifique sua conexão com a internet.', 'error');
+        Helpers.showAlert('Supabase não disponível. Verifique sua conexão.', 'error');
         return;
     }
     const conectado = await testarConexao();
@@ -933,12 +948,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupNavigation();
     setupEventListeners();
+
+    // Carrega dados iniciais
     await DataService.loadCaixa();
     await DataService.loadServicos();
     await DataService.loadAgenda();
-    atualizarDashboard();
     await DataService.loadPiercings();
     await DataService.loadVendasPiercing();
     await DataService.loadMateriais();
     await DataService.loadUsosMateriais();
+    atualizarDashboard();
 });
