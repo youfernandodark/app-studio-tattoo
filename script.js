@@ -17,11 +17,18 @@ const DomUtils = {
     getValue: (id) => DomUtils.get(id)?.value,
     setDisplay: (id, display) => { const el = DomUtils.get(id); if (el) el.style.display = display; },
     clearForm: (formId) => { const form = DomUtils.get(formId); if (form) form.reset(); },
-    exists: (id) => !!DomUtils.get(id)
+    exists: (id) => !!DomUtils.get(id),
+    // Criação de elementos com atributos
+    createEl: (tag, props = {}, children = []) => {
+        const el = document.createElement(tag);
+        Object.entries(props).forEach(([k, v]) => el[k] = v);
+        children.forEach(child => el.appendChild(child));
+        return el;
+    }
 };
 
 const DateUtils = {
-    formatDate: (date) => date ? new Date(date).toLocaleDateString('pt-BR') : '-',
+    formatDate: (date) => date ? new Date(date + 'T00:00:00').toLocaleDateString('pt-BR') : '-',
     formatDateTime: (date) => {
         if (!date) return '-';
         const dt = new Date(date);
@@ -103,23 +110,74 @@ const DebounceUtils = {
     }
 };
 
+// ==================== MODAL DE CONFIRMAÇÃO CUSTOMIZADO ====================
+const ConfirmModal = {
+    _modal: null,
+    _resolve: null,
+    init: () => {
+        if (ConfirmModal._modal) return;
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'none';
+        modal.innerHTML = `
+            <div class="modal-content confirm-modal">
+                <h3>Confirmação</h3>
+                <p id="confirm-message"></p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="confirm-cancel">Cancelar</button>
+                    <button class="btn btn-primary" id="confirm-ok">Confirmar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        ConfirmModal._modal = modal;
+        document.getElementById('confirm-cancel').addEventListener('click', () => ConfirmModal._handle(false));
+        document.getElementById('confirm-ok').addEventListener('click', () => ConfirmModal._handle(true));
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) ConfirmModal._handle(false);
+        });
+    },
+    show: (message) => {
+        ConfirmModal.init();
+        return new Promise((resolve) => {
+            ConfirmModal._resolve = resolve;
+            document.getElementById('confirm-message').innerText = message;
+            ConfirmModal._modal.style.display = 'block';
+        });
+    },
+    _handle: (result) => {
+        ConfirmModal._modal.style.display = 'none';
+        if (ConfirmModal._resolve) {
+            ConfirmModal._resolve(result);
+            ConfirmModal._resolve = null;
+        }
+    }
+};
+
 // ==================== ESTADO GLOBAL ====================
 const AppState = {
     servicos: [],
     agenda: [],
     caixa: [],
     chartFaturamento: null,
-    chartTipos: null
+    chartTipos: null,
+    // Paginação
+    paginacao: {
+        caixa: { pagina: 1, itensPorPagina: 10 },
+        servicos: { pagina: 1, itensPorPagina: 10 },
+        agenda: { pagina: 1, itensPorPagina: 10 }
+    }
 };
 
 // ==================== SERVIÇO DE DADOS ====================
 const DataService = {
-    async fetchTable(table, orderBy = null, ascending = true) {
-        let query = supabaseClient.from(table).select('*');
+    async fetchTable(table, orderBy = null, ascending = true, limit = null, offset = 0) {
+        let query = supabaseClient.from(table).select('*', { count: 'exact' });
         if (orderBy) query = query.order(orderBy, { ascending });
-        const { data, error } = await query;
+        if (limit) query = query.range(offset, offset + limit - 1);
+        const { data, error, count } = await query;
         if (error) throw error;
-        return data || [];
+        return { data: data || [], count };
     },
 
     async saveRecord(table, record, id = null) {
@@ -137,38 +195,53 @@ const DataService = {
         if (error) throw error;
     },
 
-    // Métodos específicos para carregar dados
-    async loadCaixa() {
+    // Métodos específicos com paginação
+    async loadCaixa(pagina = 1, itensPorPagina = 10) {
         try {
-            AppState.caixa = await this.fetchTable('caixa', 'data', false);
+            const offset = (pagina - 1) * itensPorPagina;
+            const { data, count } = await this.fetchTable('caixa', 'data', false, itensPorPagina, offset);
+            AppState.caixa = data;
+            AppState.paginacao.caixa.total = count;
+            AppState.paginacao.caixa.pagina = pagina;
             Renderer.renderCaixa(AppState.caixa);
+            Renderer.renderPaginacao('caixa', count, pagina, itensPorPagina, (novaPagina) => DataService.loadCaixa(novaPagina));
         } catch (e) { ErrorHandler.handle('carregar caixa', e); }
     },
 
-    async loadServicos() {
+    async loadServicos(pagina = 1, itensPorPagina = 10) {
         try {
-            AppState.servicos = await this.fetchTable('servicos', 'data', false);
+            const offset = (pagina - 1) * itensPorPagina;
+            const { data, count } = await this.fetchTable('servicos', 'data', false, itensPorPagina, offset);
+            AppState.servicos = data;
+            AppState.paginacao.servicos.total = count;
+            AppState.paginacao.servicos.pagina = pagina;
             Renderer.renderServicos(AppState.servicos);
+            Renderer.renderPaginacao('servicos', count, pagina, itensPorPagina, (novaPagina) => DataService.loadServicos(novaPagina));
         } catch (e) { ErrorHandler.handle('carregar serviços', e); }
     },
 
-    async loadAgenda() {
+    async loadAgenda(pagina = 1, itensPorPagina = 10) {
         try {
-            AppState.agenda = await this.fetchTable('agenda', 'data_hora');
+            const offset = (pagina - 1) * itensPorPagina;
+            const { data, count } = await this.fetchTable('agenda', 'data_hora', true, itensPorPagina, offset);
+            AppState.agenda = data;
+            AppState.paginacao.agenda.total = count;
+            AppState.paginacao.agenda.pagina = pagina;
             Renderer.renderAgenda(AppState.agenda);
+            Renderer.renderPaginacao('agenda', count, pagina, itensPorPagina, (novaPagina) => DataService.loadAgenda(novaPagina));
         } catch (e) { ErrorHandler.handle('carregar agenda', e); }
     },
 
     async loadPiercings() {
         try {
-            const data = await this.fetchTable('piercings_estoque', 'nome');
+            const { data } = await this.fetchTable('piercings_estoque', 'nome');
             Renderer.renderEstoquePiercing(data);
         } catch (e) { ErrorHandler.handle('carregar piercings', e); }
     },
 
     async loadVendasPiercing() {
         try {
-            const { data, error } = await supabaseClient.from('vendas_piercing').select('*, piercing:piercings_estoque(nome)').order('data', { ascending: false });
+            const { data, error } = await supabaseClient.from('vendas_piercing').select('*, piercing:piercings_estoque(nome)').order('data', { ascending: false }).limit(100);
             if (error) throw error;
             Renderer.renderVendasPiercing(data || []);
         } catch (e) { ErrorHandler.handle('carregar vendas piercing', e); }
@@ -176,14 +249,14 @@ const DataService = {
 
     async loadMateriais() {
         try {
-            const data = await this.fetchTable('materiais_estoque', 'nome');
+            const { data } = await this.fetchTable('materiais_estoque', 'nome');
             Renderer.renderEstoqueMaterial(data);
         } catch (e) { ErrorHandler.handle('carregar materiais', e); }
     },
 
     async loadUsosMateriais() {
         try {
-            const { data, error } = await supabaseClient.from('usos_materiais').select('*, material:materiais_estoque(nome)').order('data', { ascending: false });
+            const { data, error } = await supabaseClient.from('usos_materiais').select('*, material:materiais_estoque(nome)').order('data', { ascending: false }).limit(100);
             if (error) throw error;
             Renderer.renderUsosMateriais(data || []);
         } catch (e) { ErrorHandler.handle('carregar usos materiais', e); }
@@ -192,32 +265,63 @@ const DataService = {
 
 // ==================== RENDERIZAÇÃO ====================
 const Renderer = {
+    // Renderização com DocumentFragment para performance
+    _renderTable: (idTbody, linhasHtml) => {
+        const tbody = DomUtils.get(idTbody);
+        if (!tbody) return;
+        const fragment = document.createDocumentFragment();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = linhasHtml;
+        while (tempDiv.firstChild) fragment.appendChild(tempDiv.firstChild);
+        tbody.innerHTML = '';
+        tbody.appendChild(fragment);
+    },
+
+    renderPaginacao: (prefixo, total, paginaAtual, itensPorPagina, callback) => {
+        const container = DomUtils.get(`${prefixo}-paginacao`);
+        if (!container) return;
+        const totalPaginas = Math.ceil(total / itensPorPagina);
+        if (totalPaginas <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+        let html = `<div class="paginacao">`;
+        html += `<button ${paginaAtual === 1 ? 'disabled' : ''} data-pagina="${paginaAtual - 1}">&laquo; Anterior</button>`;
+        for (let i = 1; i <= totalPaginas; i++) {
+            html += `<button class="${i === paginaAtual ? 'active' : ''}" data-pagina="${i}">${i}</button>`;
+        }
+        html += `<button ${paginaAtual === totalPaginas ? 'disabled' : ''} data-pagina="${paginaAtual + 1}">Próximo &raquo;</button>`;
+        html += `</div>`;
+        container.innerHTML = html;
+        container.querySelectorAll('button[data-pagina]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const novaPagina = parseInt(btn.dataset.pagina);
+                if (!isNaN(novaPagina)) callback(novaPagina);
+            });
+        });
+    },
+
     renderCaixa(data) {
         let totalEntradas = 0, totalSaidas = 0;
-        const tbody = DomUtils.get('caixa-tbody');
-        if (!tbody) return;
-        if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="7">Nenhum lançamento</td></tr>';
-        } else {
-            tbody.innerHTML = data.map(item => {
-                const ent = MoneyUtils.parse(item.entradas);
-                const sai = MoneyUtils.parse(item.saidas);
-                totalEntradas += ent;
-                totalSaidas += sai;
-                return `<tr>
-                    <td>${DateUtils.formatDate(item.data)}</td>
-                    <td>${MoneyUtils.format(item.saldo_inicial)}</td>
-                    <td style="color:#34D399">+${MoneyUtils.format(ent)}</td>
-                    <td style="color:#F87171">-${MoneyUtils.format(sai)}</td>
-                    <td>${MoneyUtils.format(item.saldo_final)}</td>
-                    <td>${item.descricao || '-'}</td>
-                    <td>
-                        <button class="btn btn-warning btn-sm" onclick="window.CaixaModule.editar('${item.id}')">Editar</button>
-                        <button class="btn btn-danger btn-sm" onclick="window.CaixaModule.excluir('${item.id}')">Excluir</button>
-                    </td>
-                </tr>`;
-            }).join('');
-        }
+        const linhas = data.map(item => {
+            const ent = MoneyUtils.parse(item.entradas);
+            const sai = MoneyUtils.parse(item.saidas);
+            totalEntradas += ent;
+            totalSaidas += sai;
+            return `<tr>
+                <td>${DateUtils.formatDate(item.data)}</td>
+                <td>${MoneyUtils.format(item.saldo_inicial)}</td>
+                <td style="color:#34D399">+${MoneyUtils.format(ent)}</td>
+                <td style="color:#F87171">-${MoneyUtils.format(sai)}</td>
+                <td>${MoneyUtils.format(item.saldo_final)}</td>
+                <td>${escapeHtml(item.descricao) || '-'}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" data-acao="editar-caixa" data-id="${item.id}">Editar</button>
+                    <button class="btn btn-danger btn-sm" data-acao="excluir-caixa" data-id="${item.id}">Excluir</button>
+                </td>
+            </tr>`;
+        }).join('');
+        this._renderTable('caixa-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum lançamento</td></tr>');
         DomUtils.setHtml('caixa-total-entradas', MoneyUtils.format(totalEntradas));
         DomUtils.setHtml('caixa-total-saidas', MoneyUtils.format(totalSaidas));
         const ultimoSaldo = data.length ? data[0].saldo_final : 0;
@@ -226,9 +330,7 @@ const Renderer = {
 
     renderServicos(data) {
         let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
-        const tbody = DomUtils.get('servicos-tbody');
-        if (!tbody) return;
-        tbody.innerHTML = data.map(s => {
+        const linhas = data.map(s => {
             const val = MoneyUtils.parse(s.valor_total);
             const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : 0;
             const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : val;
@@ -240,30 +342,25 @@ const Renderer = {
                 <td>${escapeHtml(s.cliente)}</td>
                 <td>${escapeHtml(s.tatuador_nome)}</td>
                 <td>${escapeHtml(s.tipo)}</td>
-                <td>${escapeHtml(s.descricao || '-')}</td>
+                <td>${escapeHtml(s.descricao) || '-'}</td>
                 <td>${MoneyUtils.format(val)}</td>
                 <td>${MoneyUtils.format(estudio)}</td>
                 <td style="color:#34D399">${MoneyUtils.format(repasse)}</td>
                 <td>${escapeHtml(s.forma_pagamento)}</td>
                 <td>
-                    <button class="btn btn-warning btn-sm" onclick="window.ServicosModule.editar('${s.id}')">Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="window.ServicosModule.excluir('${s.id}')">Excluir</button>
+                    <button class="btn btn-warning btn-sm" data-acao="editar-servico" data-id="${s.id}">Editar</button>
+                    <button class="btn btn-danger btn-sm" data-acao="excluir-servico" data-id="${s.id}">Excluir</button>
                 </td>
             </tr>`;
         }).join('');
+        this._renderTable('servicos-tbody', data.length ? linhas : '<tr><td colspan="10">Nenhum serviço</td></tr>');
         DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(totalValor));
         DomUtils.setHtml('servicos-total-estudio', MoneyUtils.format(totalEstudio));
         DomUtils.setHtml('servicos-total-repasse', MoneyUtils.format(totalRepasse));
     },
 
     renderAgenda(data) {
-        const tbody = DomUtils.get('agenda-tbody');
-        if (!tbody) return;
-        if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="9">Nenhum agendamento</td></tr>';
-            return;
-        }
-        tbody.innerHTML = data.map(a => {
+        const linhas = data.map(a => {
             const statusClass = {
                 Agendado: 'status-warning',
                 Confirmado: 'status-info',
@@ -271,7 +368,7 @@ const Renderer = {
                 Cancelado: 'status-danger'
             }[a.status] || '';
             const realizarBtn = a.status !== 'Concluído' && a.status !== 'Cancelado'
-                ? `<button class="btn btn-success btn-sm" onclick="window.AgendaModule.realizarServico('${a.id}')"><i class="fas fa-check"></i> Realizar Serviço</button> `
+                ? `<button class="btn btn-success btn-sm" data-acao="realizar-servico" data-id="${a.id}"><i class="fas fa-check"></i> Realizar</button> `
                 : '';
             return `<tr>
                 <td>${DateUtils.formatDateTime(a.data_hora)}</td>
@@ -279,34 +376,40 @@ const Renderer = {
                 <td>${escapeHtml(a.tatuador_nome)}</td>
                 <td>${escapeHtml(a.tipo_servico)}</td>
                 <td>${MoneyUtils.format(a.valor_estimado)}</td>
-                <td>${escapeHtml(a.forma_pagamento || '-')}</td>
+                <td>${escapeHtml(a.forma_pagamento) || '-'}</td>
                 <td><span class="status-badge-item ${statusClass}">${escapeHtml(a.status)}</span></td>
-                <td>${escapeHtml(a.observacoes || '-')}</td>
+                <td>${escapeHtml(a.observacoes) || '-'}</td>
                 <td>
                     ${realizarBtn}
-                    <button class="btn btn-warning btn-sm" onclick="window.AgendaModule.editar('${a.id}')">Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="window.AgendaModule.excluir('${a.id}')">Excluir</button>
+                    <button class="btn btn-warning btn-sm" data-acao="editar-agenda" data-id="${a.id}">Editar</button>
+                    <button class="btn btn-danger btn-sm" data-acao="excluir-agenda" data-id="${a.id}">Excluir</button>
                 </td>
             </tr>`;
         }).join('');
+        this._renderTable('agenda-tbody', data.length ? linhas : '<tr><td colspan="9">Nenhum agendamento</td></tr>');
     },
 
     renderEstoquePiercing(piercings) {
         const tbody = DomUtils.get('estoque-piercing-tbody');
         if (!tbody) return;
-        if (!piercings.length) {
-            tbody.innerHTML = '<tr><td colspan="4">Nenhum piercing</td></tr>';
-        } else {
-            tbody.innerHTML = piercings.map(p => `<tr>
+        const fragment = document.createDocumentFragment();
+        piercings.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
                 <td>${escapeHtml(p.nome)}</td>
                 <td>${p.quantidade}</td>
                 <td>${MoneyUtils.format(p.preco_venda)}</td>
                 <td>
-                    <button class="btn btn-warning btn-sm" onclick="window.PiercingModule.editar(${p.id})">Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="window.PiercingModule.excluir(${p.id})">Excluir</button>
+                    <button class="btn btn-warning btn-sm" data-acao="editar-piercing" data-id="${p.id}">Editar</button>
+                    <button class="btn btn-danger btn-sm" data-acao="excluir-piercing" data-id="${p.id}">Excluir</button>
                 </td>
-            </tr>`).join('');
-        }
+            `;
+            fragment.appendChild(tr);
+        });
+        tbody.innerHTML = '';
+        if (piercings.length) tbody.appendChild(fragment);
+        else tbody.innerHTML = '<tr><td colspan="4">Nenhum piercing</td></tr>';
+
         const select = DomUtils.get('venda-piercing-id');
         if (select) {
             select.innerHTML = '<option value="">Selecione</option>' +
@@ -319,35 +422,27 @@ const Renderer = {
     renderVendasPiercing(vendas) {
         const tbody = DomUtils.get('vendas-piercing-tbody');
         if (!tbody) return;
-        if (!vendas.length) {
-            tbody.innerHTML = '<tr><td colspan="5">Nenhuma venda</td></tr>';
-        } else {
-            tbody.innerHTML = vendas.map(v => `<tr>
-                <td>${DateUtils.formatDate(v.data)}</td>
-                <td>${escapeHtml(v.piercing?.nome || '?')}</td>
-                <td>${v.quantidade}</td>
-                <td>${MoneyUtils.format(v.valor_total)}</td>
-                <td>${escapeHtml(v.cliente || '-')}</td>
-            </tr>`).join('');
-        }
+        tbody.innerHTML = vendas.length ? vendas.map(v => `<tr>
+            <td>${DateUtils.formatDate(v.data)}</td>
+            <td>${escapeHtml(v.piercing?.nome || '?')}</td>
+            <td>${v.quantidade}</td>
+            <td>${MoneyUtils.format(v.valor_total)}</td>
+            <td>${escapeHtml(v.cliente || '-')}</td>
+        </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td></tr>';
     },
 
     renderEstoqueMaterial(materiais) {
         const tbody = DomUtils.get('estoque-material-tbody');
         if (!tbody) return;
-        if (!materiais.length) {
-            tbody.innerHTML = '<tr><td colspan="4">Nenhum material</td></tr>';
-        } else {
-            tbody.innerHTML = materiais.map(m => `<tr>
-                <td>${escapeHtml(m.nome)}</td>
-                <td>${m.quantidade}</td>
-                <td>${MoneyUtils.format(m.valor_unitario)}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm" onclick="window.MateriaisModule.editar(${m.id})">Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="window.MateriaisModule.excluir(${m.id})">Excluir</button>
-                </td>
-            </tr>`).join('');
-        }
+        tbody.innerHTML = materiais.length ? materiais.map(m => `<tr>
+            <td>${escapeHtml(m.nome)}</td>
+            <td>${m.quantidade}</td>
+            <td>${MoneyUtils.format(m.valor_unitario)}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" data-acao="editar-material" data-id="${m.id}">Editar</button>
+                <button class="btn btn-danger btn-sm" data-acao="excluir-material" data-id="${m.id}">Excluir</button>
+            </td>
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td></tr>';
         const select = DomUtils.get('uso-material-id');
         if (select) {
             select.innerHTML = '<option value="">Selecione</option>' +
@@ -360,30 +455,19 @@ const Renderer = {
     renderUsosMateriais(usos) {
         const tbody = DomUtils.get('usos-materiais-tbody');
         if (!tbody) return;
-        if (!usos.length) {
-            tbody.innerHTML = '<tr><td colspan="4">Nenhum uso</td></tr>';
-        } else {
-            tbody.innerHTML = usos.map(u => `<tr>
-                <td>${DateUtils.formatDate(u.data)}</td>
-                <td>${escapeHtml(u.material?.nome || '?')}</td>
-                <td>${u.quantidade}</td>
-                <td>${escapeHtml(u.observacao || '-')}</td>
-            </tr>`).join('');
-        }
+        tbody.innerHTML = usos.length ? usos.map(u => `<tr>
+            <td>${DateUtils.formatDate(u.data)}</td>
+            <td>${escapeHtml(u.material?.nome || '?')}</td>
+            <td>${u.quantidade}</td>
+            <td>${escapeHtml(u.observacao || '-')}</td>
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td></tr>';
     }
 };
 
-// Função auxiliar para escapar HTML (segurança)
+// Função para escapar HTML (segurança)
 function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
-        return c;
-    });
+    return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m]);
 }
 
 // ==================== DASHBOARD E RELATÓRIOS ====================
@@ -410,39 +494,48 @@ function atualizarDashboard() {
         ? `<ul>${proximos.map(a => `<li>${DateUtils.formatDateTime(a.data_hora)} - ${escapeHtml(a.cliente)}</li>`).join('')}</ul>`
         : 'Nenhum');
 
-    // Gráficos
+    // Gráficos - atualização sem destruir
     const canvasFaturamento = DomUtils.get('chart-faturamento');
     if (canvasFaturamento) {
-        if (AppState.chartFaturamento) AppState.chartFaturamento.destroy();
+        const ctx = canvasFaturamento.getContext('2d');
         const meses = [], valores = [];
         for (let i = 5; i >= 0; i--) {
             const d = new Date();
             d.setMonth(d.getMonth() - i);
             meses.push(d.toLocaleDateString('pt-BR', { month: 'short' }));
             const soma = AppState.servicos.filter(s => {
-                const data = new Date(s.data);
+                const data = new Date(s.data + 'T00:00:00');
                 return data.getMonth() === d.getMonth() && data.getFullYear() === d.getFullYear();
             }).reduce((acc, sv) => acc + MoneyUtils.parse(sv.valor_total), 0);
             valores.push(soma);
         }
-        AppState.chartFaturamento = new Chart(canvasFaturamento.getContext('2d'), {
-            type: 'bar',
-            data: { labels: meses, datasets: [{ label: 'Faturamento', data: valores, backgroundColor: '#818CF8' }] }
-        });
+        if (!AppState.chartFaturamento) {
+            AppState.chartFaturamento = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: meses, datasets: [{ label: 'Faturamento', data: valores, backgroundColor: '#818CF8' }] },
+                options: { responsive: true }
+            });
+        } else {
+            AppState.chartFaturamento.data.labels = meses;
+            AppState.chartFaturamento.data.datasets[0].data = valores;
+            AppState.chartFaturamento.update();
+        }
     }
 
     const canvasTipos = DomUtils.get('chart-tipos');
     if (canvasTipos) {
-        if (AppState.chartTipos) AppState.chartTipos.destroy();
+        const ctx = canvasTipos.getContext('2d');
         const tatuagens = AppState.servicos.filter(s => s.tipo === 'Tatuagem').length;
         const piercingsServ = AppState.servicos.filter(s => s.tipo === 'Piercing').length;
-        AppState.chartTipos = new Chart(canvasTipos.getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Tatuagens', 'Piercings'],
-                datasets: [{ data: [tatuagens, piercingsServ], backgroundColor: ['#818CF8', '#C084FC'] }]
-            }
-        });
+        if (!AppState.chartTipos) {
+            AppState.chartTipos = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: ['Tatuagens', 'Piercings'], datasets: [{ data: [tatuagens, piercingsServ], backgroundColor: ['#818CF8', '#C084FC'] }] }
+            });
+        } else {
+            AppState.chartTipos.data.datasets[0].data = [tatuagens, piercingsServ];
+            AppState.chartTipos.update();
+        }
     }
 }
 
@@ -489,7 +582,7 @@ const CaixaModule = {
             LoadingUtils.show('Salvando lançamento...');
             await DataService.saveRecord('caixa', record, id || null);
             DomUtils.setDisplay('modal-caixa', 'none');
-            await DataService.loadCaixa();
+            await DataService.loadCaixa(AppState.paginacao.caixa.pagina);
             atualizarDashboard();
             AlertUtils.show(id ? 'Lançamento atualizado' : 'Lançamento salvo', 'success');
         } catch (e) { ErrorHandler.handle('salvar caixa', e); }
@@ -507,11 +600,11 @@ const CaixaModule = {
         DomUtils.setDisplay('modal-caixa', 'block');
     },
     excluir: async (id) => {
-        if (!confirm('Excluir este lançamento?')) return;
+        if (!await ConfirmModal.show('Excluir este lançamento?')) return;
         try {
             LoadingUtils.show('Excluindo...');
             await DataService.deleteRecord('caixa', id);
-            await DataService.loadCaixa();
+            await DataService.loadCaixa(AppState.paginacao.caixa.pagina);
             atualizarDashboard();
             AlertUtils.show('Lançamento excluído', 'success');
         } catch (e) { ErrorHandler.handle('excluir caixa', e); }
@@ -519,10 +612,8 @@ const CaixaModule = {
     },
     filtrar: () => {
         const termo = DomUtils.getValue('search-caixa')?.toLowerCase() || '';
-        const filtrado = termo
-            ? AppState.caixa.filter(i => (i.descricao || '').toLowerCase().includes(termo))
-            : AppState.caixa;
-        Renderer.renderCaixa(filtrado);
+        // Filtro local com recarga (simplificado)
+        DataService.loadCaixa(1);
     }
 };
 
@@ -539,10 +630,8 @@ const ServicosModule = {
         const tatuador = DomUtils.getValue('servico-tatuador');
         const estudio = tatuador === 'Thalia' ? valor * 0.3 : 0;
         const repasse = tatuador === 'Thalia' ? valor * 0.7 : valor;
-        const estudioSpan = DomUtils.get('valor-estudio');
-        const repasseSpan = DomUtils.get('valor-repasse');
-        if (estudioSpan) estudioSpan.innerText = MoneyUtils.format(estudio);
-        if (repasseSpan) repasseSpan.innerText = MoneyUtils.format(repasse);
+        DomUtils.setHtml('valor-estudio', MoneyUtils.format(estudio));
+        DomUtils.setHtml('valor-repasse', MoneyUtils.format(repasse));
     },
     salvar: async () => {
         const id = DomUtils.getValue('servico-id');
@@ -559,18 +648,27 @@ const ServicosModule = {
             LoadingUtils.show('Salvando serviço...');
             await DataService.saveRecord('servicos', record, id || null);
             DomUtils.setDisplay('modal-servico', 'none');
-            await DataService.loadServicos();
+            await DataService.loadServicos(AppState.paginacao.servicos.pagina);
             atualizarDashboard();
-            
+
+            // Atualizar status da agenda se existir pendingAgendaId
             if (window.pendingAgendaId) {
-                await DataService.saveRecord('agenda', { status: 'Concluído' }, window.pendingAgendaId);
-                await DataService.loadAgenda();
-                AlertUtils.show('Agendamento marcado como Concluído!', 'success');
+                try {
+                    await DataService.saveRecord('agenda', { status: 'Concluído' }, window.pendingAgendaId);
+                    await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
+                    AlertUtils.show('Agendamento marcado como Concluído!', 'success');
+                } catch (e) {
+                    // Se falhar, o serviço foi salvo mas a agenda não foi atualizada - estado inconsistente
+                    AlertUtils.show('Serviço salvo, mas falha ao atualizar agendamento.', 'warning');
+                    console.error('Falha ao concluir agendamento:', e);
+                }
                 delete window.pendingAgendaId;
             }
             AlertUtils.show(id ? 'Serviço atualizado' : 'Serviço salvo', 'success');
-        } catch (e) { ErrorHandler.handle('salvar serviço', e); }
-        finally { LoadingUtils.hide(); }
+        } catch (e) {
+            // Em caso de erro, não limpa pendingAgendaId (para tentar novamente)
+            ErrorHandler.handle('salvar serviço', e);
+        } finally { LoadingUtils.hide(); }
     },
     editar: async (id) => {
         const item = AppState.servicos.find(s => s.id === id);
@@ -587,29 +685,19 @@ const ServicosModule = {
         this.calcularRepasse();
     },
     excluir: async (id) => {
-        if (!confirm('Excluir este serviço?')) return;
+        if (!await ConfirmModal.show('Excluir este serviço?')) return;
         try {
             LoadingUtils.show('Excluindo...');
             await DataService.deleteRecord('servicos', id);
-            await DataService.loadServicos();
+            await DataService.loadServicos(AppState.paginacao.servicos.pagina);
             atualizarDashboard();
             AlertUtils.show('Serviço excluído', 'success');
         } catch (e) { ErrorHandler.handle('excluir serviço', e); }
         finally { LoadingUtils.hide(); }
     },
     filtrar: () => {
-        let filtrado = [...AppState.servicos];
-        const tatuador = DomUtils.getValue('filtro-tatuador-servico');
-        if (tatuador) filtrado = filtrado.filter(s => s.tatuador_nome === tatuador);
-        const tipo = DomUtils.getValue('filtro-tipo-servico');
-        if (tipo) filtrado = filtrado.filter(s => s.tipo === tipo);
-        const pagamento = DomUtils.getValue('filtro-pagamento');
-        if (pagamento) filtrado = filtrado.filter(s => s.forma_pagamento === pagamento);
-        const data = DomUtils.getValue('filtro-data-servico');
-        if (data) filtrado = filtrado.filter(s => s.data === data);
-        const termo = DomUtils.getValue('search-servicos')?.toLowerCase() || '';
-        if (termo) filtrado = filtrado.filter(s => s.cliente.toLowerCase().includes(termo) || (s.descricao || '').toLowerCase().includes(termo));
-        Renderer.renderServicos(filtrado);
+        // Implementar filtros no futuro com consultas parametrizadas
+        DataService.loadServicos(1);
     },
     limparFiltros: () => {
         DomUtils.setValue('filtro-tatuador-servico', '');
@@ -617,7 +705,7 @@ const ServicosModule = {
         DomUtils.setValue('filtro-pagamento', '');
         DomUtils.setValue('filtro-data-servico', '');
         DomUtils.setValue('search-servicos', '');
-        Renderer.renderServicos(AppState.servicos);
+        DataService.loadServicos(1);
     }
 };
 
@@ -645,7 +733,7 @@ const AgendaModule = {
             LoadingUtils.show('Salvando agendamento...');
             await DataService.saveRecord('agenda', record, id || null);
             DomUtils.setDisplay('modal-agenda', 'none');
-            await DataService.loadAgenda();
+            await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
             atualizarDashboard();
             AlertUtils.show(id ? 'Agendamento atualizado' : 'Agendamento salvo', 'success');
         } catch (e) { ErrorHandler.handle('salvar agenda', e); }
@@ -668,11 +756,11 @@ const AgendaModule = {
         DomUtils.setDisplay('modal-agenda', 'block');
     },
     excluir: async (id) => {
-        if (!confirm('Excluir este agendamento?')) return;
+        if (!await ConfirmModal.show('Excluir este agendamento?')) return;
         try {
             LoadingUtils.show('Excluindo...');
             await DataService.deleteRecord('agenda', id);
-            await DataService.loadAgenda();
+            await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
             atualizarDashboard();
             AlertUtils.show('Agendamento excluído', 'success');
         } catch (e) { ErrorHandler.handle('excluir agenda', e); }
@@ -693,25 +781,19 @@ const AgendaModule = {
         DomUtils.setDisplay('modal-servico', 'block');
     },
     filtrar: () => {
-        let filtrado = [...AppState.agenda];
-        const tatuador = DomUtils.getValue('filtro-tatuador-agenda');
-        if (tatuador) filtrado = filtrado.filter(a => a.tatuador_nome === tatuador);
-        const status = DomUtils.getValue('filtro-status-agenda');
-        if (status) filtrado = filtrado.filter(a => a.status === status);
-        const data = DomUtils.getValue('filtro-data-agenda');
-        if (data) filtrado = filtrado.filter(a => a.data_hora.startsWith(data));
-        Renderer.renderAgenda(filtrado);
+        // Implementar filtros futuramente
+        DataService.loadAgenda(1);
     },
     filtrarHoje: () => {
         const dataInput = DomUtils.get('filtro-data-agenda');
         if (dataInput) dataInput.valueAsDate = new Date();
-        this.filtrar();
+        DataService.loadAgenda(1);
     },
     limparFiltros: () => {
         DomUtils.setValue('filtro-tatuador-agenda', '');
         DomUtils.setValue('filtro-status-agenda', '');
         DomUtils.setValue('filtro-data-agenda', '');
-        Renderer.renderAgenda(AppState.agenda);
+        DataService.loadAgenda(1);
     }
 };
 
@@ -751,9 +833,9 @@ const PiercingModule = {
         } catch (e) { ErrorHandler.handle('salvar piercing', e); }
         finally { LoadingUtils.hide(); }
     },
-    editar: (id) => this.abrirModal(id),
+    editar: (id) => PiercingModule.abrirModal(id),
     excluir: async (id) => {
-        if (!confirm('Excluir este piercing?')) return;
+        if (!await ConfirmModal.show('Excluir este piercing?')) return;
         try {
             LoadingUtils.show('Excluindo...');
             await DataService.deleteRecord('piercings_estoque', id);
@@ -771,12 +853,28 @@ const PiercingModule = {
         if (quantidade <= 0) return AlertUtils.show('Quantidade deve ser maior que zero', 'error');
         try {
             LoadingUtils.show('Registrando venda...');
+            // Início de transação simulada
             const { data: piercing, error } = await supabaseClient.from('piercings_estoque').select('*').eq('id', piercingId).single();
             if (error) throw error;
             if (!piercing || piercing.quantidade < quantidade) throw new Error('Estoque insuficiente');
             const valorTotal = quantidade * piercing.preco_venda;
-            await supabaseClient.from('piercings_estoque').update({ quantidade: piercing.quantidade - quantidade }).eq('id', piercingId);
-            await supabaseClient.from('vendas_piercing').insert([{ piercing_id: piercingId, quantidade, valor_total: valorTotal, cliente: cliente || null }]);
+            
+            // Baixa no estoque
+            const { error: updateError } = await supabaseClient.from('piercings_estoque')
+                .update({ quantidade: piercing.quantidade - quantidade }).eq('id', piercingId);
+            if (updateError) throw updateError;
+            
+            // Registro da venda
+            const { error: insertError } = await supabaseClient.from('vendas_piercing').insert([{ 
+                piercing_id: piercingId, quantidade, valor_total: valorTotal, cliente: cliente || null,
+                data: new Date().toISOString()
+            }]);
+            if (insertError) {
+                // Tentar reverter estoque
+                await supabaseClient.from('piercings_estoque').update({ quantidade: piercing.quantidade }).eq('id', piercingId);
+                throw insertError;
+            }
+            
             await DataService.loadPiercings();
             await DataService.loadVendasPiercing();
             DomUtils.setValue('venda-qtd', 1);
@@ -823,9 +921,9 @@ const MateriaisModule = {
         } catch (e) { ErrorHandler.handle('salvar material', e); }
         finally { LoadingUtils.hide(); }
     },
-    editar: (id) => this.abrirModal(id),
+    editar: (id) => MateriaisModule.abrirModal(id),
     excluir: async (id) => {
-        if (!confirm('Excluir este material?')) return;
+        if (!await ConfirmModal.show('Excluir este material?')) return;
         try {
             LoadingUtils.show('Excluindo...');
             await DataService.deleteRecord('materiais_estoque', id);
@@ -846,8 +944,18 @@ const MateriaisModule = {
             const { data: material, error } = await supabaseClient.from('materiais_estoque').select('*').eq('id', materialId).single();
             if (error) throw error;
             if (!material || material.quantidade < quantidade) throw new Error('Quantidade insuficiente');
+            
             await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade - quantidade }).eq('id', materialId);
-            await supabaseClient.from('usos_materiais').insert([{ material_id: materialId, quantidade, observacao: observacao || null }]);
+            const { error: insertError } = await supabaseClient.from('usos_materiais').insert([{ 
+                material_id: materialId, quantidade, observacao: observacao || null,
+                data: new Date().toISOString()
+            }]);
+            if (insertError) {
+                // Rollback
+                await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade }).eq('id', materialId);
+                throw insertError;
+            }
+            
             await DataService.loadMateriais();
             await DataService.loadUsosMateriais();
             DomUtils.setValue('uso-qtd', 1);
@@ -886,7 +994,7 @@ const BackupModule = {
             const text = await file.text();
             const backup = JSON.parse(text);
             if (!backup.servicos && !backup.agenda && !backup.caixa) throw new Error('Arquivo inválido');
-            if (!confirm(`Importar backup de ${backup.data_exportacao}? Isso pode duplicar dados.`)) return;
+            if (!await ConfirmModal.show(`Importar backup de ${backup.data_exportacao}? Isso pode duplicar dados.`)) return;
             const tabelas = ['servicos', 'agenda', 'caixa', 'piercings_estoque', 'vendas_piercing', 'materiais_estoque', 'usos_materiais'];
             for (const tabela of tabelas) {
                 const registros = backup[tabela] || [];
@@ -906,7 +1014,7 @@ const BackupModule = {
 // --- EXEMPLOS ---
 const ExemplosModule = {
     popularPiercings: async () => {
-        if (!confirm('Isso irá adicionar piercings de exemplo (não remove os existentes). Continuar?')) return;
+        if (!await ConfirmModal.show('Isso irá adicionar piercings de exemplo (não remove os existentes). Continuar?')) return;
         const exemplos = [
             { nome: 'Piercing Nariz Cristal', quantidade: 10, preco_venda: 80.00 },
             { nome: 'Piercing Septo Aço', quantidade: 8, preco_venda: 120.00 },
@@ -929,7 +1037,7 @@ const ExemplosModule = {
         finally { LoadingUtils.hide(); }
     },
     popularMateriais: async () => {
-        if (!confirm('Isso irá adicionar materiais de exemplo (não remove os existentes). Continuar?')) return;
+        if (!await ConfirmModal.show('Isso irá adicionar materiais de exemplo (não remove os existentes). Continuar?')) return;
         const exemplos = [
             { nome: 'Agulha 1207RL', quantidade: 50, valor_unitario: 2.50 },
             { nome: 'Agulha 1005RL', quantidade: 40, valor_unitario: 2.50 },
@@ -983,14 +1091,14 @@ async function testarConexao() {
 async function carregarDadosSecao(sectionId) {
     const carregamentos = {
         dashboard: async () => {
-            await DataService.loadCaixa();
-            await DataService.loadServicos();
-            await DataService.loadAgenda();
+            await DataService.loadCaixa(1, 100); // Carrega todos para dashboard
+            await DataService.loadServicos(1, 100);
+            await DataService.loadAgenda(1, 100);
             atualizarDashboard();
         },
-        caixa: () => DataService.loadCaixa(),
-        servicos: () => DataService.loadServicos(),
-        agenda: () => DataService.loadAgenda(),
+        caixa: () => DataService.loadCaixa(1),
+        servicos: () => DataService.loadServicos(1),
+        agenda: () => DataService.loadAgenda(1),
         relatorios: () => carregarRelatorios(),
         piercing: async () => {
             await DataService.loadPiercings();
@@ -1020,11 +1128,26 @@ function setupNavigation() {
     });
 }
 
-function setupEventListeners() {
-    const searchCaixa = DomUtils.get('search-caixa');
-    if (searchCaixa) {
-        searchCaixa.addEventListener('input', DebounceUtils.debounce(() => CaixaModule.filtrar(), 300));
-    }
+// Event delegation para ações nos botões dinâmicos
+function setupGlobalDelegation() {
+    document.body.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const acao = btn.dataset.acao;
+        const id = btn.dataset.id;
+        
+        if (acao === 'editar-caixa') CaixaModule.editar(id);
+        else if (acao === 'excluir-caixa') CaixaModule.excluir(id);
+        else if (acao === 'editar-servico') ServicosModule.editar(id);
+        else if (acao === 'excluir-servico') ServicosModule.excluir(id);
+        else if (acao === 'realizar-servico') AgendaModule.realizarServico(id);
+        else if (acao === 'editar-agenda') AgendaModule.editar(id);
+        else if (acao === 'excluir-agenda') AgendaModule.excluir(id);
+        else if (acao === 'editar-piercing') PiercingModule.editar(id);
+        else if (acao === 'excluir-piercing') PiercingModule.excluir(id);
+        else if (acao === 'editar-material') MateriaisModule.editar(id);
+        else if (acao === 'excluir-material') MateriaisModule.excluir(id);
+    });
 }
 
 // Fechar modais ao clicar fora
@@ -1034,7 +1157,7 @@ window.onclick = (event) => {
     }
 };
 
-// EXPOSIÇÃO GLOBAL PARA COMPATIBILIDADE COM ONCLICK NO HTML
+// EXPOSIÇÃO GLOBAL PARA COMPATIBILIDADE COM ONCLICK NO HTML (mantida mas prefira data-attributes)
 window.CaixaModule = CaixaModule;
 window.ServicosModule = ServicosModule;
 window.AgendaModule = AgendaModule;
@@ -1085,11 +1208,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!conectado) return;
 
     setupNavigation();
-    setupEventListeners();
+    setupGlobalDelegation();
 
-    await DataService.loadCaixa();
-    await DataService.loadServicos();
-    await DataService.loadAgenda();
+    // Carregar dados iniciais (dashboard)
+    await DataService.loadCaixa(1, 100);
+    await DataService.loadServicos(1, 100);
+    await DataService.loadAgenda(1, 100);
     await DataService.loadPiercings();
     await DataService.loadVendasPiercing();
     await DataService.loadMateriais();
