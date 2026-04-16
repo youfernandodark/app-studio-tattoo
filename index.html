@@ -90,7 +90,6 @@
         <section id="caixa" class="section">
             <div class="card">
                 <h2><i class="fas fa-exchange-alt"></i> Fluxo de Caixa</h2>
-                <!-- Alterado: container .filters para padronizar -->
                 <div class="filters">
                     <button class="btn btn-primary" onclick="CaixaModule.abrirModal()"><i class="fas fa-plus"></i> Novo Lançamento</button>
                     <input type="text" id="search-caixa" placeholder="Buscar por descrição..." oninput="aplicarFiltrosCaixa()" style="flex:1; min-width:200px;">
@@ -111,7 +110,6 @@
         <section id="servicos" class="section">
             <div class="card">
                 <h2><i class="fas fa-paint-brush"></i> Serviços Realizados</h2>
-                <!-- .filters já existe, apenas mantemos a estrutura e confiamos no CSS ajustado -->
                 <div class="filters">
                     <button class="btn btn-primary" onclick="ServicosModule.abrirModal()">+ Novo Serviço</button>
                     <select id="filtro-tatuador-servico" onchange="aplicarFiltrosServicos()">
@@ -248,7 +246,7 @@
     </main>
 </div>
 
-<!-- MODAIS (mantidos fora do app-content para funcionamento global) -->
+<!-- MODAIS -->
 <div id="modal-caixa" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-caixa')">&times;</span>
