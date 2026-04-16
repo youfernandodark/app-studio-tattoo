@@ -343,8 +343,9 @@ const Renderer = {
         let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
         const linhas = data.map(s => {
             const val = MoneyUtils.parse(s.valor_total);
-            const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : 0;
-            const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : val;
+            // CORREÇÃO: Estúdio fica com 100% para outros tatuadores, repasse 0
+            const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : val;
+            const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : 0;
             totalValor += val;
             totalEstudio += estudio;
             totalRepasse += repasse;
@@ -640,8 +641,9 @@ const ServicosModule = {
     calcularRepasse: () => {
         const valor = MoneyUtils.parse(DomUtils.getValue('servico-valor'));
         const tatuador = DomUtils.getValue('servico-tatuador');
-        const estudio = tatuador === 'Thalia' ? valor * 0.3 : 0;
-        const repasse = tatuador === 'Thalia' ? valor * 0.7 : valor;
+        // CORREÇÃO: Estúdio fica com 100% para outros tatuadores, repasse 0
+        const estudio = tatuador === 'Thalia' ? valor * 0.3 : valor;
+        const repasse = tatuador === 'Thalia' ? valor * 0.7 : 0;
         DomUtils.setHtml('valor-estudio', MoneyUtils.format(estudio));
         DomUtils.setHtml('valor-repasse', MoneyUtils.format(repasse));
     },
