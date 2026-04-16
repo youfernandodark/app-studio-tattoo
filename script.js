@@ -1,4 +1,4 @@
-// ==================== CONFIGURAÇÃO SUPABASE (INALTERADA) ====================
+// ==================== CONFIGURAÇÃO SUPABASE ====================
 const SUPABASE_URL = 'https://bhymkxsgrghhpqgzqrni.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoeW1reHNncmdoaHBxZ3pxcm5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwMzEyOTYsImV4cCI6MjA5MTYwNzI5Nn0.GuY32wg63pzCz5aZtGUJBXcb9zicwhsJSzH-czX3Ly4';
 
@@ -18,7 +18,6 @@ const DomUtils = {
     setDisplay: (id, display) => { const el = DomUtils.get(id); if (el) el.style.display = display; },
     clearForm: (formId) => { const form = DomUtils.get(formId); if (form) form.reset(); },
     exists: (id) => !!DomUtils.get(id),
-    // Criação de elementos com atributos
     createEl: (tag, props = {}, children = []) => {
         const el = document.createElement(tag);
         Object.entries(props).forEach(([k, v]) => el[k] = v);
@@ -100,17 +99,7 @@ const ValidationUtils = {
     }
 };
 
-const DebounceUtils = {
-    debounce: (func, delay) => {
-        let timeout;
-        return (...args) => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), delay);
-        };
-    }
-};
-
-// ==================== MODAL DE CONFIRMAÇÃO CUSTOMIZADO ====================
+// ==================== MODAL DE CONFIRMAÇÃO ====================
 const ConfirmModal = {
     _modal: null,
     _resolve: null,
@@ -161,7 +150,6 @@ const AppState = {
     caixa: [],
     chartFaturamento: null,
     chartTipos: null,
-    // Paginação
     paginacao: {
         caixa: { pagina: 1, itensPorPagina: 10 },
         servicos: { pagina: 1, itensPorPagina: 10 },
@@ -195,7 +183,6 @@ const DataService = {
         if (error) throw error;
     },
 
-    // Métodos específicos com paginação
     async loadCaixa(pagina = 1, itensPorPagina = 10) {
         try {
             const offset = (pagina - 1) * itensPorPagina;
@@ -265,7 +252,6 @@ const DataService = {
 
 // ==================== RENDERIZAÇÃO ====================
 const Renderer = {
-    // Renderização com DocumentFragment para performance
     _renderTable: (idTbody, linhasHtml) => {
         const tbody = DomUtils.get(idTbody);
         if (!tbody) return;
@@ -462,7 +448,6 @@ const Renderer = {
     }
 };
 
-// Função para escapar HTML (segurança)
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m]);
@@ -492,7 +477,6 @@ function atualizarDashboard() {
         ? `<ul>${proximos.map(a => `<li>${DateUtils.formatDateTime(a.data_hora)} - ${escapeHtml(a.cliente)}</li>`).join('')}</ul>`
         : 'Nenhum');
 
-    // Gráficos - atualização sem destruir
     const canvasFaturamento = DomUtils.get('chart-faturamento');
     if (canvasFaturamento) {
         const ctx = canvasFaturamento.getContext('2d');
@@ -610,7 +594,6 @@ const CaixaModule = {
     },
     filtrar: () => {
         const termo = DomUtils.getValue('search-caixa')?.toLowerCase() || '';
-        // Filtro local com recarga (simplificado)
         DataService.loadCaixa(1);
     }
 };
@@ -621,7 +604,7 @@ const ServicosModule = {
         DomUtils.clearForm('form-servico');
         DomUtils.setValue('servico-data', DateUtils.nowDate());
         DomUtils.setDisplay('modal-servico', 'block');
-        this.calcularRepasse();
+        ServicosModule.calcularRepasse();
     },
     calcularRepasse: () => {
         const valor = MoneyUtils.parse(DomUtils.getValue('servico-valor'));
@@ -649,7 +632,6 @@ const ServicosModule = {
             await DataService.loadServicos(AppState.paginacao.servicos.pagina);
             atualizarDashboard();
 
-            // Atualizar status da agenda se existir pendingAgendaId
             if (window.pendingAgendaId) {
                 try {
                     await DataService.saveRecord('agenda', { status: 'Concluído' }, window.pendingAgendaId);
@@ -678,7 +660,7 @@ const ServicosModule = {
         DomUtils.setValue('servico-valor', item.valor_total);
         DomUtils.setValue('servico-pagamento', item.forma_pagamento);
         DomUtils.setDisplay('modal-servico', 'block');
-        this.calcularRepasse();
+        ServicosModule.calcularRepasse();
     },
     excluir: async (id) => {
         if (!await ConfirmModal.show('Excluir este serviço?')) return;
@@ -704,7 +686,7 @@ const ServicosModule = {
     }
 };
 
-// --- AGENDA ---
+// --- AGENDA (com correção de fuso horário) ---
 const AgendaModule = {
     abrirModal: () => {
         DomUtils.clearForm('form-agenda');
@@ -713,14 +695,29 @@ const AgendaModule = {
     },
     salvar: async () => {
         const id = DomUtils.getValue('agenda-id');
-        const dataHora = `${DomUtils.getValue('agenda-data')} ${DomUtils.getValue('agenda-horario')}`;
+        const dataLocal = DomUtils.getValue('agenda-data');      // YYYY-MM-DD
+        const horaLocal = DomUtils.getValue('agenda-horario');   // HH:MM
+
+        if (!dataLocal || !horaLocal) {
+            AlertUtils.show('Data e horário são obrigatórios', 'error');
+            return;
+        }
+
+        // Cria objeto Date no fuso local e converte para UTC
+        const dataHoraLocal = new Date(`${dataLocal}T${horaLocal}:00`);
+        if (isNaN(dataHoraLocal.getTime())) {
+            AlertUtils.show('Data/hora inválida', 'error');
+            return;
+        }
+        const dataHoraUTC = dataHoraLocal.toISOString(); // Ex: "2025-01-15T17:00:00.000Z"
+
         const record = {
-            data_hora: dataHora,
+            data_hora: dataHoraUTC,
             cliente: DomUtils.getValue('agenda-cliente'),
             tatuador_nome: DomUtils.getValue('agenda-tatuador'),
             tipo_servico: DomUtils.getValue('agenda-tipo'),
-            valor_estimado: 0, // removido da UI, valor padrão
-            forma_pagamento: null, // removido da UI
+            valor_estimado: 0,
+            forma_pagamento: null,
             status: DomUtils.getValue('agenda-status'),
             observacoes: DomUtils.getValue('agenda-obs')
         };
@@ -738,13 +735,20 @@ const AgendaModule = {
         const item = AppState.agenda.find(a => a.id === id);
         if (!item) return;
         const dt = new Date(item.data_hora);
+        if (isNaN(dt.getTime())) return;
+
+        const ano = dt.getFullYear();
+        const mes = String(dt.getMonth() + 1).padStart(2, '0');
+        const dia = String(dt.getDate()).padStart(2, '0');
+        const horas = String(dt.getHours()).padStart(2, '0');
+        const minutos = String(dt.getMinutes()).padStart(2, '0');
+
         DomUtils.setValue('agenda-id', item.id);
-        DomUtils.setValue('agenda-data', DateUtils.toISOString(dt));
-        DomUtils.setValue('agenda-horario', DateUtils.toTimeString(dt));
+        DomUtils.setValue('agenda-data', `${ano}-${mes}-${dia}`);
+        DomUtils.setValue('agenda-horario', `${horas}:${minutos}`);
         DomUtils.setValue('agenda-cliente', item.cliente);
         DomUtils.setValue('agenda-tatuador', item.tatuador_nome);
         DomUtils.setValue('agenda-tipo', item.tipo_servico);
-        // valores de pagamento não são mais exibidos/alterados
         DomUtils.setValue('agenda-status', item.status);
         DomUtils.setValue('agenda-obs', item.observacoes || '');
         DomUtils.setDisplay('modal-agenda', 'block');
@@ -763,7 +767,10 @@ const AgendaModule = {
     realizarServico: async (id) => {
         const item = AppState.agenda.find(a => a.id === id);
         if (!item) return;
-        DomUtils.setValue('servico-data', item.data_hora.split('T')[0]);
+        const dt = new Date(item.data_hora);
+        const dataLocal = dt.toISOString().split('T')[0];
+
+        DomUtils.setValue('servico-data', dataLocal);
         DomUtils.setValue('servico-cliente', item.cliente);
         DomUtils.setValue('servico-tatuador', item.tatuador_nome);
         DomUtils.setValue('servico-tipo', item.tipo_servico);
@@ -1116,7 +1123,6 @@ function setupNavigation() {
     });
 }
 
-// Event delegation para ações nos botões dinâmicos
 function setupGlobalDelegation() {
     document.body.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
@@ -1138,14 +1144,13 @@ function setupGlobalDelegation() {
     });
 }
 
-// Fechar modais ao clicar fora
 window.onclick = (event) => {
     if (event.target.classList.contains('modal')) {
         event.target.style.display = 'none';
     }
 };
 
-// EXPOSIÇÃO GLOBAL PARA COMPATIBILIDADE COM ONCLICK NO HTML
+// EXPOSIÇÃO GLOBAL
 window.CaixaModule = CaixaModule;
 window.ServicosModule = ServicosModule;
 window.AgendaModule = AgendaModule;
@@ -1154,7 +1159,6 @@ window.MateriaisModule = MateriaisModule;
 window.BackupModule = BackupModule;
 window.ExemplosModule = ExemplosModule;
 
-// Funções globais para ações diretas
 window.abrirModalCaixa = () => CaixaModule.abrirModal();
 window.salvarCaixa = () => CaixaModule.salvar();
 window.filtrarCaixa = () => CaixaModule.filtrar();
