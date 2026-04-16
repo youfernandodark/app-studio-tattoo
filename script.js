@@ -467,7 +467,7 @@ const Renderer = {
             <td>${escapeHtml(u.material?.nome || '?')}</td>
             <td>${u.quantidade}</td>
             <td>${escapeHtml(u.observacao || '-')}</td>
-        </tr>`).join('') : '<td><td colspan="4">Nenhum uso</td</tr>';
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td</tr>';
     }
 };
 
@@ -931,7 +931,6 @@ const PiercingModule = {
         try {
             LoadingUtils.show('Salvando piercing...');
 
-            // Obter quantidade anterior para cálculo de diferença (se edição)
             let quantidadeAnterior = 0;
             if (id) {
                 const { data } = await supabaseClient
@@ -951,7 +950,6 @@ const PiercingModule = {
             const dataHoje = DateUtils.nowDate();
 
             if (!id) {
-                // Novo piercing: registrar saída do custo total
                 const custoTotal = quantidade * custo_unitario;
                 if (custoTotal > 0) {
                     await registrarSaidaCaixa(
@@ -961,7 +959,6 @@ const PiercingModule = {
                     );
                 }
             } else {
-                // Edição: se quantidade aumentou, registrar saída da diferença
                 const aumento = quantidade - quantidadeAnterior;
                 if (aumento > 0) {
                     const custoAdicional = aumento * custo_unitario;
@@ -971,7 +968,6 @@ const PiercingModule = {
                         `Adição ao estoque: +${aumento} un. de ${nome}`
                     );
                 }
-                // Reduções manuais não geram entrada automática (devem ser feitas via venda)
             }
 
             DomUtils.setDisplay('modal-piercing', 'none');
@@ -1019,14 +1015,12 @@ const PiercingModule = {
             const custoTotal = quantidade * (piercing.custo_unitario || 0);
             const dataHoje = DateUtils.nowDate();
 
-            // Atualiza estoque
             const { error: updateError } = await supabaseClient
                 .from('piercings_estoque')
                 .update({ quantidade: piercing.quantidade - quantidade })
                 .eq('id', piercingId);
             if (updateError) throw updateError;
 
-            // Registra venda
             const { error: insertError } = await supabaseClient
                 .from('vendas_piercing')
                 .insert([{
@@ -1037,7 +1031,6 @@ const PiercingModule = {
                     data: new Date().toISOString()
                 }]);
             if (insertError) {
-                // Rollback do estoque
                 await supabaseClient
                     .from('piercings_estoque')
                     .update({ quantidade: piercing.quantidade })
@@ -1045,7 +1038,6 @@ const PiercingModule = {
                 throw insertError;
             }
 
-            // Registrar ENTRADA no caixa (valor da venda)
             if (valorTotal > 0) {
                 await registrarEntradaCaixa(
                     dataHoje,
@@ -1054,7 +1046,6 @@ const PiercingModule = {
                 );
             }
 
-            // Registrar SAÍDA do custo da mercadoria vendida
             if (custoTotal > 0) {
                 await registrarSaidaCaixa(
                     dataHoje,
@@ -1104,16 +1095,60 @@ const MateriaisModule = {
         const nome = DomUtils.getValue('material-nome');
         const quantidade = parseInt(DomUtils.getValue('material-qtd')) || 0;
         const valor_unitario = MoneyUtils.parse(DomUtils.getValue('material-preco'));
+
         if (!nome) return AlertUtils.show('Nome obrigatório', 'error');
+
         try {
             LoadingUtils.show('Salvando material...');
-            await DataService.saveRecord('materiais_estoque', { nome, quantidade, valor_unitario }, id || null);
+
+            let quantidadeAnterior = 0;
+            if (id) {
+                const { data } = await supabaseClient
+                    .from('materiais_estoque')
+                    .select('quantidade')
+                    .eq('id', id)
+                    .single();
+                quantidadeAnterior = data?.quantidade || 0;
+            }
+
+            await DataService.saveRecord(
+                'materiais_estoque',
+                { nome, quantidade, valor_unitario },
+                id || null
+            );
+
+            const dataHoje = DateUtils.nowDate();
+
+            if (!id) {
+                const custoTotal = quantidade * valor_unitario;
+                if (custoTotal > 0) {
+                    await registrarSaidaCaixa(
+                        dataHoje,
+                        custoTotal,
+                        `Compra de material: ${quantidade} un. de ${nome}`
+                    );
+                }
+            } else {
+                const aumento = quantidade - quantidadeAnterior;
+                if (aumento > 0) {
+                    const custoAdicional = aumento * valor_unitario;
+                    await registrarSaidaCaixa(
+                        dataHoje,
+                        custoAdicional,
+                        `Adição ao estoque de material: +${aumento} un. de ${nome}`
+                    );
+                }
+            }
+
             DomUtils.setDisplay('modal-material', 'none');
             await DataService.loadMateriais();
             await DataService.loadUsosMateriais();
             AlertUtils.show('Material salvo', 'success');
-        } catch (e) { ErrorHandler.handle('salvar material', e); }
-        finally { LoadingUtils.hide(); }
+        } catch (e) {
+            ErrorHandler.handle('salvar material', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     },
     editar: (id) => MateriaisModule.abrirModal(id),
     excluir: async (id) => {
@@ -1151,7 +1186,6 @@ const MateriaisModule = {
                 throw insertError;
             }
             
-            // Registrar saída do custo no caixa
             if (custoTotal > 0) {
                 const dataHoje = DateUtils.nowDate();
                 await registrarSaidaCaixa(dataHoje, custoTotal, `Uso de material: ${quantidade} un. de ${material.nome} - ${observacao || ''}`);
