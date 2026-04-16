@@ -258,11 +258,16 @@ header p {
     color: transparent;
 }
 
-/* Tabelas */
+/* Tabelas com rolagem horizontal */
+.table-wrapper {
+    overflow-x: auto;
+    margin: 24px 0;
+}
+
 table {
     width: 100%;
+    min-width: 650px;
     border-collapse: collapse;
-    margin: 24px 0;
     font-size: 0.85rem;
     border-radius: var(--radius-md);
     overflow: hidden;
@@ -278,6 +283,7 @@ th {
     font-size: 0.8rem;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 td {
@@ -285,6 +291,7 @@ td {
     border-bottom: 1px solid #222;
     vertical-align: middle;
     background-color: var(--bg-secondary);
+    white-space: nowrap;
 }
 
 tr:last-child td {
@@ -361,6 +368,7 @@ tfoot td {
 .btn-sm {
     padding: 8px 18px;
     font-size: 0.75rem;
+    white-space: nowrap;
 }
 
 .filters {
@@ -564,6 +572,7 @@ textarea {
     display: inline-block;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .status-warning {
@@ -655,7 +664,7 @@ textarea:focus-visible {
     opacity: 0.8;
 }
 
-/* Responsividade */
+/* Responsividade - mantém tabelas com rolagem horizontal */
 @media (max-width: 768px) {
     body {
         padding: 16px;
@@ -684,39 +693,26 @@ textarea:focus-visible {
         font-size: 1.8rem;
     }
 
-    table, thead, tbody, th, td, tr {
-        display: block;
+    /* As tabelas já possuem min-width e overflow-x auto */
+    .table-wrapper {
+        margin: 16px 0;
     }
 
-    thead {
-        display: none;
+    table {
+        min-width: 650px;
     }
 
-    tr {
-        margin-bottom: 16px;
-        background: var(--bg-tertiary);
-        border-radius: 24px;
-        padding: 20px;
-        border: 1px solid var(--border-light);
+    th, td {
+        white-space: nowrap;
+        padding: 12px 8px;
     }
 
-    td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 0;
-        border: none;
-        background: transparent !important;
+    td:first-child, th:first-child {
+        padding-left: 16px;
     }
 
-    td:before {
-        content: attr(data-label);
-        font-weight: 700;
-        width: 45%;
-        color: var(--text-muted);
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+    td:last-child, th:last-child {
+        padding-right: 16px;
     }
 
     .filters {

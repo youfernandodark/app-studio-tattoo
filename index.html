@@ -60,7 +60,7 @@
             <h2><i class="fas fa-exchange-alt"></i> Fluxo de Caixa</h2>
             <button class="btn btn-primary" onclick="abrirModalCaixa()"><i class="fas fa-plus"></i> Novo Lançamento</button>
             <input type="text" id="search-caixa" placeholder="Buscar por descrição..." style="width:100%; margin: 20px 0;">
-            <div style="overflow-x: auto;">
+            <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
@@ -103,7 +103,7 @@
                 <button class="btn btn-info btn-sm" onclick="limparFiltrosServicos()">Limpar</button>
             </div>
             <input type="text" id="search-servicos" placeholder="Buscar serviços...">
-            <div style="overflow-x: auto;">
+            <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
@@ -140,12 +140,17 @@
                 <button class="btn btn-info btn-sm" onclick="filtrarAgendaHoje()">Hoje</button>
                 <button class="btn btn-warning btn-sm" onclick="limparFiltrosAgenda()">Limpar</button>
             </div>
-            <div style="overflow-x: auto;">
+            <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
-                            <th>Data/Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th>
-                            <th>Status</th><th>Obs</th><th>Ações</th>
+                            <th>Data/Hora</th>
+                            <th>Cliente</th>
+                            <th>Tatuador</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th>Obs</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody id="agenda-tbody">
@@ -163,9 +168,9 @@
             <button class="btn btn-primary" onclick="abrirModalPiercing()">+ Adicionar Estoque</button>
             <button class="btn btn-info" onclick="popularPiercingsExemplo()">Popular exemplos</button>
             <h3>Estoque</h3>
-            <div style="overflow-x: auto;">
+            <div class="table-wrapper">
                 <table>
-                    <thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda</th><th>Ações</th></tr></thead>
+                    <thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda</th><th>Custo Unitário</th><th>Ações</th></tr></thead>
                     <tbody id="estoque-piercing-tbody"></tbody>
                 </table>
             </div>
@@ -177,10 +182,12 @@
             </div>
             <button class="btn btn-success" onclick="registrarVendaPiercing()">Finalizar Venda</button>
             <h3>Histórico de Vendas</h3>
-            <table>
-                <thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead>
-                <tbody id="vendas-piercing-tbody"></tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead>
+                    <tbody id="vendas-piercing-tbody"></tbody>
+                </table>
+            </div>
         </div>
     </section>
 
@@ -191,7 +198,7 @@
             <button class="btn btn-primary" onclick="abrirModalMaterial()">+ Adicionar Material</button>
             <button class="btn btn-info" onclick="popularMateriaisExemplo()">Popular exemplos</button>
             <h3>Estoque</h3>
-            <div style="overflow-x: auto;">
+            <div class="table-wrapper">
                 <table>
                     <thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitário</th><th>Ações</th></tr></thead>
                     <tbody id="estoque-material-tbody"></tbody>
@@ -205,10 +212,12 @@
             </div>
             <button class="btn btn-warning" onclick="registrarUsoMaterial()">Usar Material</button>
             <h3>Histórico de Usos</h3>
-            <table>
-                <thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead>
-                <tbody id="usos-materiais-tbody"></tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead>
+                    <tbody id="usos-materiais-tbody"></tbody>
+                </table>
+            </div>
         </div>
     </section>
 
@@ -240,9 +249,7 @@
     </section>
 </main>
 
-<!-- MODAIS -->
-
-<!-- Modal Caixa -->
+<!-- MODAIS (mesmo conteúdo original) -->
 <div id="modal-caixa" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-caixa')">&times;</span>
@@ -263,7 +270,6 @@
     </div>
 </div>
 
-<!-- Modal Serviço -->
 <div id="modal-servico" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-servico')">&times;</span>
@@ -290,7 +296,6 @@
     </div>
 </div>
 
-<!-- Modal Agenda -->
 <div id="modal-agenda" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-agenda')">&times;</span>
@@ -317,7 +322,6 @@
     </div>
 </div>
 
-<!-- Modal Piercing (único, com campo de custo) -->
 <div id="modal-piercing" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-piercing')">&times;</span>
@@ -337,7 +341,6 @@
     </div>
 </div>
 
-<!-- Modal Material -->
 <div id="modal-material" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-material')">&times;</span>
