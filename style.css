@@ -223,28 +223,7 @@ textarea { resize: vertical; min-height: 90px; }
 
 canvas { max-height: 300px; width: 100%; border-radius: 24px; background: #0A0A0A; padding: 16px; border: 1px solid #2A2A2A; }
 
-.login-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000;
-    display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(12px);
-}
-.login-card {
-    background: #0C0C0C; border-radius: 48px; padding: 48px 40px; width: 90%; max-width: 460px;
-    border: 1px solid #2A2A2A; box-shadow: 0 25px 45px rgba(0, 0, 0, 0.8); text-align: center;
-}
-.login-header i { font-size: 3rem; color: #A0A0A0; margin-bottom: 16px; }
-.login-header h2 { font-size: 2rem; background: linear-gradient(135deg, #E0E0E0, #A0A0A0); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 8px; }
-.login-header p { color: #7A7A7A; font-size: 0.85rem; margin-bottom: 32px; }
-.login-card .form-group { text-align: left; margin-bottom: 24px; }
-.login-card .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #C0C0C0; }
-.login-card input { width: 100%; padding: 14px 18px; background: #141414; border: 1px solid #3A3A3A; border-radius: 40px; color: #F0F0F0; font-size: 1rem; }
-.login-btn { width: 100%; justify-content: center; background: #2C2C2C; border-color: #5A5A5A; font-size: 1rem; padding: 14px; margin-top: 8px; }
-.login-error { background: rgba(231, 76, 60, 0.15); color: #E74C3C; padding: 12px; border-radius: 40px; font-size: 0.85rem; margin-bottom: 20px; display: none; border-left: 3px solid #E74C3C; text-align: left; }
-.login-footer { margin-top: 28px; color: #5A5A5A; font-size: 0.7rem; }
-
-.user-info { display: flex; align-items: center; gap: 16px; margin-left: auto; }
-.user-name { background: #1A1A1A; padding: 6px 16px; border-radius: 40px; font-size: 0.8rem; font-weight: 500; border: 1px solid #3A3A3A; }
-.btn-logout { background: #2A2A2A; border-color: #5A3A3A; padding: 8px 20px; }
-.btn-logout:hover { background: #3A2A2A; border-color: #8B5A5A; }
+/* REMOVIDO ESTILOS DE LOGIN (não mais utilizados) */
 
 /* PAGINAÇÃO */
 .paginacao-container { margin-top: 24px; display: flex; justify-content: center; }
