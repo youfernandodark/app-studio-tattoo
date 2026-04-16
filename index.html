@@ -90,10 +90,8 @@
         <section id="caixa" class="section">
             <div class="card">
                 <h2><i class="fas fa-exchange-alt"></i> Fluxo de Caixa</h2>
-                <div class="filters">
-                    <button class="btn btn-primary" onclick="CaixaModule.abrirModal()"><i class="fas fa-plus"></i> Novo Lançamento</button>
-                    <input type="text" id="search-caixa" placeholder="Buscar por descrição..." oninput="aplicarFiltrosCaixa()" style="flex:1; min-width:200px;">
-                </div>
+                <button class="btn btn-primary" onclick="abrirModalCaixa()"><i class="fas fa-plus"></i> Novo Lançamento</button>
+                <input type="text" id="search-caixa" placeholder="Buscar por descrição..." style="width:100%; margin: 20px 0;">
                 <div class="table-wrapper">
                     <table>
                         <thead>
@@ -102,7 +100,6 @@
                         <tbody id="caixa-tbody"><tr><td colspan="5">Carregando...</td></tr></tbody>
                     </table>
                 </div>
-                <div id="caixa-paginacao" class="paginacao-container"></div>
             </div>
         </section>
 
@@ -110,28 +107,15 @@
         <section id="servicos" class="section">
             <div class="card">
                 <h2><i class="fas fa-paint-brush"></i> Serviços Realizados</h2>
+                <button class="btn btn-primary" onclick="abrirModalServico()">+ Novo Serviço</button>
                 <div class="filters">
-                    <button class="btn btn-primary" onclick="ServicosModule.abrirModal()">+ Novo Serviço</button>
-                    <select id="filtro-tatuador-servico" onchange="aplicarFiltrosServicos()">
-                        <option value="">Tatuador: Todos</option>
-                        <option>Fernando Dark</option>
-                        <option>Thalia</option>
-                    </select>
-                    <select id="filtro-tipo-servico" onchange="aplicarFiltrosServicos()">
-                        <option value="">Tipo: Todos</option>
-                        <option>Tatuagem</option>
-                        <option>Piercing</option>
-                    </select>
-                    <select id="filtro-pagamento" onchange="aplicarFiltrosServicos()">
-                        <option value="">Pagamento: Todas</option>
-                        <option>PIX</option>
-                        <option>Dinheiro</option>
-                        <option>Cartão</option>
-                    </select>
-                    <input type="date" id="filtro-data-servico" onchange="aplicarFiltrosServicos()">
+                    <select id="filtro-tatuador-servico"><option value="">Tatuador: Todos</option><option>Fernando Dark</option><option>Thalia</option></select>
+                    <select id="filtro-tipo-servico"><option value="">Tipo: Todos</option><option>Tatuagem</option><option>Piercing</option></select>
+                    <select id="filtro-pagamento"><option value="">Pagamento: Todas</option><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select>
+                    <input type="date" id="filtro-data-servico">
                     <button class="btn btn-info btn-sm" onclick="limparFiltrosServicos()">Limpar</button>
-                    <input type="text" id="search-servicos" placeholder="Buscar serviços..." oninput="aplicarFiltrosServicos()" style="flex:1.5; min-width:180px;">
                 </div>
+                <input type="text" id="search-servicos" placeholder="Buscar serviços...">
                 <div class="table-wrapper">
                     <table>
                         <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30%)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead>
@@ -139,7 +123,6 @@
                         <tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
                     </table>
                 </div>
-                <div id="servicos-paginacao" class="paginacao-container"></div>
             </div>
         </section>
 
@@ -147,13 +130,13 @@
         <section id="agenda" class="section">
             <div class="card">
                 <h2><i class="fas fa-calendar-alt"></i> Agenda</h2>
+                <button class="btn btn-primary" onclick="abrirModalAgendamento()">+ Novo Agendamento</button>
                 <div class="filters">
-                    <button class="btn btn-primary" onclick="AgendaModule.abrirModal()">+ Novo Agendamento</button>
-                    <select id="filtro-tatuador-agenda" onchange="AgendaModule.filtrar()"><option value="">Tatuador: Todos</option><option>Fernando Dark</option><option>Thalia</option></select>
-                    <select id="filtro-status-agenda" onchange="AgendaModule.filtrar()"><option value="">Status: Todos</option><option>Agendado</option><option>Confirmado</option><option>Concluído</option><option>Cancelado</option></select>
-                    <input type="date" id="filtro-data-agenda" onchange="AgendaModule.filtrar()">
-                    <button class="btn btn-info btn-sm" onclick="AgendaModule.filtrarHoje()">Hoje</button>
-                    <button class="btn btn-warning btn-sm" onclick="AgendaModule.limparFiltros()">Limpar</button>
+                    <select id="filtro-tatuador-agenda"><option value="">Tatuador: Todos</option><option>Fernando Dark</option><option>Thalia</option></select>
+                    <select id="filtro-status-agenda"><option value="">Status: Todos</option><option>Agendado</option><option>Confirmado</option><option>Concluído</option><option>Cancelado</option></select>
+                    <input type="date" id="filtro-data-agenda">
+                    <button class="btn btn-info btn-sm" onclick="filtrarAgendaHoje()">Hoje</button>
+                    <button class="btn btn-warning btn-sm" onclick="limparFiltrosAgenda()">Limpar</button>
                 </div>
                 <div class="table-wrapper">
                     <table>
@@ -161,7 +144,6 @@
                         <tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
                     </table>
                 </div>
-                <div id="agenda-paginacao" class="paginacao-container"></div>
             </div>
         </section>
 
@@ -169,8 +151,8 @@
         <section id="piercing" class="section">
             <div class="card">
                 <h2><i class="fas fa-gem"></i> Piercings</h2>
-                <button class="btn btn-primary" onclick="PiercingModule.abrirModal()">+ Adicionar Estoque</button>
-                <button class="btn btn-info" onclick="ExemplosModule.popularPiercings()">Popular exemplos</button>
+                <button class="btn btn-primary" onclick="abrirModalPiercing()">+ Adicionar Estoque</button>
+                <button class="btn btn-info" onclick="popularPiercingsExemplo()">Popular exemplos</button>
                 <h3>Estoque</h3>
                 <div class="table-wrapper">
                     <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Preço Venda</th><th>Custo Unitário</th><th>Ações</th></tr></thead>
@@ -182,7 +164,7 @@
                     <div class="form-group"><label>Quantidade</label><input type="number" id="venda-qtd" value="1" min="1"></div>
                     <div class="form-group"><label>Cliente</label><input type="text" id="venda-cliente" placeholder="Cliente (opcional)"></div>
                 </div>
-                <button class="btn btn-success" onclick="PiercingModule.registrarVenda()">Finalizar Venda</button>
+                <button class="btn btn-success" onclick="registrarVendaPiercing()">Finalizar Venda</button>
                 <h3>Histórico de Vendas</h3>
                 <div class="table-wrapper">
                     <table><thead><tr><th>Data</th><th>Piercing</th><th>Qtd</th><th>Valor Total</th><th>Cliente</th></tr></thead>
@@ -195,8 +177,8 @@
         <section id="materiais" class="section">
             <div class="card">
                 <h2><i class="fas fa-boxes"></i> Materiais</h2>
-                <button class="btn btn-primary" onclick="MateriaisModule.abrirModal()">+ Adicionar Material</button>
-                <button class="btn btn-info" onclick="ExemplosModule.popularMateriais()">Popular exemplos</button>
+                <button class="btn btn-primary" onclick="abrirModalMaterial()">+ Adicionar Material</button>
+                <button class="btn btn-info" onclick="popularMateriaisExemplo()">Popular exemplos</button>
                 <h3>Estoque</h3>
                 <div class="table-wrapper">
                     <table><thead><tr><th>Nome</th><th>Quantidade</th><th>Valor Unitário</th><th>Ações</th></tr></thead>
@@ -208,7 +190,7 @@
                     <div class="form-group"><label>Quantidade</label><input type="number" id="uso-qtd" value="1" min="1"></div>
                     <div class="form-group"><label>Observação</label><input type="text" id="uso-obs" placeholder="Ex: Tatuagem"></div>
                 </div>
-                <button class="btn btn-warning" onclick="MateriaisModule.registrarUso()">Usar Material</button>
+                <button class="btn btn-warning" onclick="registrarUsoMaterial()">Usar Material</button>
                 <h3>Histórico de Usos</h3>
                 <div class="table-wrapper">
                     <table><thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead>
@@ -237,8 +219,8 @@
                     <button class="btn btn-primary" onclick="sincronizarAgora()">Sincronizar agora</button>
                 </div>
                 <div style="background:#0F0F18; border-radius:24px; padding:20px;">
-                    <button class="btn btn-success" onclick="BackupModule.exportar()">Exportar Backup (.json)</button>
-                    <input type="file" id="import-backup" accept=".json" style="display:none" onchange="BackupModule.importar(this)">
+                    <button class="btn btn-success" onclick="exportarBackup()">Exportar Backup (.json)</button>
+                    <input type="file" id="import-backup" accept=".json" style="display:none" onchange="importarBackup(this)">
                     <button class="btn btn-warning" onclick="document.getElementById('import-backup').click()">Importar Backup</button>
                 </div>
             </div>
@@ -246,7 +228,7 @@
     </main>
 </div>
 
-<!-- MODAIS -->
+<!-- MODAIS (mantidos fora do app-content para funcionamento global) -->
 <div id="modal-caixa" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-caixa')">&times;</span>
@@ -262,7 +244,7 @@
             <div class="form-group"><label>Descrição</label><input type="text" id="caixa-descricao"></div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-success" onclick="CaixaModule.salvar()">Salvar</button>
+            <button class="btn btn-success" onclick="salvarCaixa()">Salvar</button>
         </div>
     </div>
 </div>
@@ -274,12 +256,12 @@
         <input type="hidden" id="servico-id">
         <div class="form-scrollable">
             <div class="form-group"><label>Data</label><input type="date" id="servico-data"></div>
-            <div class="form-group"><label>Tatuador</label><select id="servico-tatuador" onchange="ServicosModule.calcularRepasse()"><option>Fernando Dark</option><option>Thalia</option></select></div>
+            <div class="form-group"><label>Tatuador</label><select id="servico-tatuador" onchange="calcularRepasse()"><option>Fernando Dark</option><option>Thalia</option></select></div>
             <div class="form-group"><label>Descrição</label><input type="text" id="servico-descricao" placeholder="Ex: Tatuagem no braço"></div>
             <div class="form-group"><label>Cliente</label><input type="text" id="servico-cliente" placeholder="Nome do cliente"></div>
             <div class="form-group"><label>Tipo</label><select id="servico-tipo"><option>Tatuagem</option><option>Piercing</option></select></div>
             <div class="form-row">
-                <div class="form-group"><label>Valor Total</label><input type="number" id="servico-valor" oninput="ServicosModule.calcularRepasse()" placeholder="R$ 0,00" step="0.01"></div>
+                <div class="form-group"><label>Valor Total</label><input type="number" id="servico-valor" oninput="calcularRepasse()" placeholder="R$ 0,00" step="0.01"></div>
                 <div class="form-group"><label>Pagamento</label><select id="servico-pagamento"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select></div>
             </div>
             <div id="repasse-info" style="background:#14141E; padding:12px; border-radius:20px; margin-top: 8px;">
@@ -288,7 +270,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-success" onclick="ServicosModule.salvar()">Salvar</button>
+            <button class="btn btn-success" onclick="salvarServico()">Salvar</button>
         </div>
     </div>
 </div>
@@ -314,7 +296,7 @@
             <div class="form-group"><label>Observações</label><textarea id="agenda-obs" rows="3"></textarea></div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-success" onclick="AgendaModule.salvar()">Salvar</button>
+            <button class="btn btn-success" onclick="salvarAgenda()">Salvar</button>
         </div>
     </div>
 </div>
@@ -333,7 +315,7 @@
             <div class="form-group"><label>Valor de Custo (R$)</label><input type="number" id="piercing-custo" step="0.01" value="0"></div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-success" onclick="PiercingModule.salvar()">Salvar</button>
+            <button class="btn btn-success" onclick="salvarPiercing()">Salvar</button>
         </div>
     </div>
 </div>
@@ -351,7 +333,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-success" onclick="MateriaisModule.salvar()">Salvar</button>
+            <button class="btn btn-success" onclick="salvarMaterial()">Salvar</button>
         </div>
     </div>
 </div>
