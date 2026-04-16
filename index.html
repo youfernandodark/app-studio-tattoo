@@ -90,8 +90,11 @@
         <section id="caixa" class="section">
             <div class="card">
                 <h2><i class="fas fa-exchange-alt"></i> Fluxo de Caixa</h2>
-                <button class="btn btn-primary" onclick="CaixaModule.abrirModal()"><i class="fas fa-plus"></i> Novo Lançamento</button>
-                <input type="text" id="search-caixa" placeholder="Buscar por descrição..." oninput="aplicarFiltrosCaixa()" style="width:100%; margin: 20px 0;">
+                <!-- Alterado: container .filters para padronizar -->
+                <div class="filters">
+                    <button class="btn btn-primary" onclick="CaixaModule.abrirModal()"><i class="fas fa-plus"></i> Novo Lançamento</button>
+                    <input type="text" id="search-caixa" placeholder="Buscar por descrição..." oninput="aplicarFiltrosCaixa()" style="flex:1; min-width:200px;">
+                </div>
                 <div class="table-wrapper">
                     <table>
                         <thead>
@@ -108,8 +111,9 @@
         <section id="servicos" class="section">
             <div class="card">
                 <h2><i class="fas fa-paint-brush"></i> Serviços Realizados</h2>
-                <button class="btn btn-primary" onclick="ServicosModule.abrirModal()">+ Novo Serviço</button>
+                <!-- .filters já existe, apenas mantemos a estrutura e confiamos no CSS ajustado -->
                 <div class="filters">
+                    <button class="btn btn-primary" onclick="ServicosModule.abrirModal()">+ Novo Serviço</button>
                     <select id="filtro-tatuador-servico" onchange="aplicarFiltrosServicos()">
                         <option value="">Tatuador: Todos</option>
                         <option>Fernando Dark</option>
@@ -128,8 +132,8 @@
                     </select>
                     <input type="date" id="filtro-data-servico" onchange="aplicarFiltrosServicos()">
                     <button class="btn btn-info btn-sm" onclick="limparFiltrosServicos()">Limpar</button>
+                    <input type="text" id="search-servicos" placeholder="Buscar serviços..." oninput="aplicarFiltrosServicos()" style="flex:1.5; min-width:180px;">
                 </div>
-                <input type="text" id="search-servicos" placeholder="Buscar serviços..." oninput="aplicarFiltrosServicos()">
                 <div class="table-wrapper">
                     <table>
                         <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30%)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead>
@@ -145,8 +149,8 @@
         <section id="agenda" class="section">
             <div class="card">
                 <h2><i class="fas fa-calendar-alt"></i> Agenda</h2>
-                <button class="btn btn-primary" onclick="AgendaModule.abrirModal()">+ Novo Agendamento</button>
                 <div class="filters">
+                    <button class="btn btn-primary" onclick="AgendaModule.abrirModal()">+ Novo Agendamento</button>
                     <select id="filtro-tatuador-agenda" onchange="AgendaModule.filtrar()"><option value="">Tatuador: Todos</option><option>Fernando Dark</option><option>Thalia</option></select>
                     <select id="filtro-status-agenda" onchange="AgendaModule.filtrar()"><option value="">Status: Todos</option><option>Agendado</option><option>Confirmado</option><option>Concluído</option><option>Cancelado</option></select>
                     <input type="date" id="filtro-data-agenda" onchange="AgendaModule.filtrar()">
