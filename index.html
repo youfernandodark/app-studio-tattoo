@@ -47,7 +47,6 @@
             <p>Gestão profissional com sincronização na nuvem | Dark Mode Studio</p>
             <div class="status-bar">
                 <span id="status-nuvem" class="status-badge"><i class="fas fa-spinner fa-pulse"></i> Conectando...</span>
-                <!-- O user-info será inserido dinamicamente via JS -->
             </div>
         </header>
 
@@ -106,7 +105,7 @@
             </div>
         </section>
 
-        <!-- SERVIÇOS -->
+        <!-- SERVIÇOS (ATUALIZADO CONFORME SOLICITADO) -->
         <section id="servicos" class="section">
             <div class="card">
                 <h2><i class="fas fa-paint-brush"></i> Serviços Realizados</h2>
@@ -134,9 +133,28 @@
                 </div>
                 <div class="table-wrapper">
                     <table>
-                        <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30%)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead>
-                        <tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody>
-                        <tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Tipo</th>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Estúdio (30%)</th>
+                                <th>Repasse</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="servicos-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4"><strong>TOTAIS</strong></td>
+                                <td id="servicos-total-valor">R$0</td>
+                                <td id="servicos-total-estudio">R$0</td>
+                                <td id="servicos-total-repasse">R$0</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
                 <div id="servicos-paginacao" class="paginacao-container"></div>
@@ -246,7 +264,7 @@
     </main>
 </div>
 
-<!-- MODAIS -->
+<!-- MODAIS (mantidos iguais) -->
 <div id="modal-caixa" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-caixa')">&times;</span>
