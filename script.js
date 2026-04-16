@@ -168,6 +168,15 @@ const DataService = {
         return { data: data || [], count };
     },
 
+    // NOVO: Busca todos os registros sem limite (para cálculos totais)
+    async fetchAll(table, orderBy = null, ascending = true) {
+        let query = supabaseClient.from(table).select('*');
+        if (orderBy) query = query.order(orderBy, { ascending });
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+    },
+
     async saveRecord(table, record, id = null) {
         let error;
         if (id) {
@@ -181,6 +190,22 @@ const DataService = {
     async deleteRecord(table, id) {
         const { error } = await supabaseClient.from(table).delete().eq('id', id);
         if (error) throw error;
+    },
+
+    // Carrega todos os serviços (para cálculos globais)
+    async loadAllServicos() {
+        try {
+            const data = await this.fetchAll('servicos', 'data', false);
+            AppState.servicos = data;
+        } catch (e) { ErrorHandler.handle('carregar todos serviços', e); }
+    },
+
+    // Carrega todos os lançamentos de caixa (para cálculos globais)
+    async loadAllCaixa() {
+        try {
+            const data = await this.fetchAll('caixa', 'data', false);
+            AppState.caixa = data;
+        } catch (e) { ErrorHandler.handle('carregar todo caixa', e); }
     },
 
     async loadCaixa(pagina = 1, itensPorPagina = 10) {
@@ -454,7 +479,11 @@ function escapeHtml(str) {
 }
 
 // ==================== DASHBOARD E RELATÓRIOS ====================
-function atualizarDashboard() {
+async function atualizarDashboard() {
+    // Carrega TODOS os registros para cálculos precisos
+    await DataService.loadAllServicos();
+    await DataService.loadAllCaixa();
+
     const totalEntradas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.entradas), 0);
     const totalSaidas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.saidas), 0);
     const saldoAtual = AppState.caixa.length ? AppState.caixa[0].saldo_final : 0;
@@ -477,6 +506,7 @@ function atualizarDashboard() {
         ? `<ul>${proximos.map(a => `<li>${DateUtils.formatDateTime(a.data_hora)} - ${escapeHtml(a.cliente)}</li>`).join('')}</ul>`
         : 'Nenhum');
 
+    // Gráfico de faturamento mensal (CORRIGIDO: sem problemas de fuso horário)
     const canvasFaturamento = DomUtils.get('chart-faturamento');
     if (canvasFaturamento) {
         const ctx = canvasFaturamento.getContext('2d');
@@ -485,9 +515,10 @@ function atualizarDashboard() {
             const d = new Date();
             d.setMonth(d.getMonth() - i);
             meses.push(d.toLocaleDateString('pt-BR', { month: 'short' }));
+            // Filtro seguro: compara ano e mês diretamente da string "YYYY-MM-DD"
             const soma = AppState.servicos.filter(s => {
-                const data = new Date(s.data + 'T00:00:00');
-                return data.getMonth() === d.getMonth() && data.getFullYear() === d.getFullYear();
+                const [ano, mes] = s.data.split('-');
+                return parseInt(mes) - 1 === d.getMonth() && parseInt(ano) === d.getFullYear();
             }).reduce((acc, sv) => acc + MoneyUtils.parse(sv.valor_total), 0);
             valores.push(soma);
         }
@@ -522,8 +553,8 @@ function atualizarDashboard() {
 }
 
 async function carregarRelatorios() {
-    await DataService.loadServicos();
-    await DataService.loadCaixa();
+    await DataService.loadAllServicos();
+    await DataService.loadAllCaixa();
 
     const faturamentoPorTatuador = {};
     AppState.servicos.forEach(s => {
@@ -630,8 +661,9 @@ const ServicosModule = {
             await DataService.saveRecord('servicos', record, id || null);
             DomUtils.setDisplay('modal-servico', 'none');
             await DataService.loadServicos(AppState.paginacao.servicos.pagina);
-            atualizarDashboard();
+            await atualizarDashboard(); // atualiza dashboard com todos os dados
 
+            // Se houver agendamento pendente, marca como Concluído
             if (window.pendingAgendaId) {
                 try {
                     await DataService.saveRecord('agenda', { status: 'Concluído' }, window.pendingAgendaId);
@@ -643,6 +675,31 @@ const ServicosModule = {
                 }
                 delete window.pendingAgendaId;
             }
+
+            // (OPCIONAL) Registrar automaticamente a entrada no caixa
+            try {
+                // Busca último saldo para calcular novo saldo_final
+                const { data: ultimoCaixa } = await supabaseClient.from('caixa')
+                    .select('saldo_final')
+                    .order('data', { ascending: false })
+                    .limit(1);
+                const ultimoSaldo = ultimoCaixa && ultimoCaixa.length ? ultimoCaixa[0].saldo_final : 0;
+                const entradaCaixa = {
+                    data: record.data,
+                    saldo_inicial: ultimoSaldo,
+                    entradas: record.valor_total,
+                    saidas: 0,
+                    saldo_final: ultimoSaldo + record.valor_total,
+                    descricao: `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`
+                };
+                await DataService.saveRecord('caixa', entradaCaixa);
+                await DataService.loadCaixa(AppState.paginacao.caixa.pagina);
+                AlertUtils.show('Entrada registrada no caixa automaticamente.', 'info');
+            } catch (e) {
+                console.warn('Não foi possível registrar entrada automática no caixa:', e);
+                AlertUtils.show('Serviço salvo, mas erro ao registrar no caixa. Registre manualmente.', 'warning');
+            }
+
             AlertUtils.show(id ? 'Serviço atualizado' : 'Serviço salvo', 'success');
         } catch (e) {
             ErrorHandler.handle('salvar serviço', e);
@@ -668,7 +725,7 @@ const ServicosModule = {
             LoadingUtils.show('Excluindo...');
             await DataService.deleteRecord('servicos', id);
             await DataService.loadServicos(AppState.paginacao.servicos.pagina);
-            atualizarDashboard();
+            await atualizarDashboard();
             AlertUtils.show('Serviço excluído', 'success');
         } catch (e) { ErrorHandler.handle('excluir serviço', e); }
         finally { LoadingUtils.hide(); }
@@ -1086,8 +1143,8 @@ async function testarConexao() {
 async function carregarDadosSecao(sectionId) {
     const carregamentos = {
         dashboard: async () => {
-            await DataService.loadCaixa(1, 100);
-            await DataService.loadServicos(1, 100);
+            await DataService.loadAllServicos();
+            await DataService.loadAllCaixa();
             await DataService.loadAgenda(1, 100);
             atualizarDashboard();
         },
