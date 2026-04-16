@@ -568,16 +568,43 @@ async function carregarRelatorios() {
     DomUtils.setHtml('relatorio-lucro-liquido', `<strong>Lucro Líquido (Estúdio):</strong> ${MoneyUtils.format(lucroLiquido)}`);
 }
 
-// ==================== FUNÇÃO AUXILIAR PARA REGISTRAR SAÍDA NO CAIXA ====================
-async function registrarSaidaCaixa(data, valor, descricao) {
+// ==================== FUNÇÕES AUXILIARES PARA CAIXA ====================
+async function registrarEntradaCaixa(data, valor, descricao) {
     if (valor <= 0) return;
     try {
-        const { data: ultimoCaixa } = await supabaseClient.from('caixa')
+        const { data: ultimoCaixa } = await supabaseClient
+            .from('caixa')
             .select('saldo_final')
             .order('data', { ascending: false })
             .limit(1);
         const ultimoSaldo = ultimoCaixa && ultimoCaixa.length ? ultimoCaixa[0].saldo_final : 0;
-        const entradaCaixa = {
+        const entrada = {
+            data: data,
+            saldo_inicial: ultimoSaldo,
+            entradas: valor,
+            saidas: 0,
+            saldo_final: ultimoSaldo + valor,
+            descricao: descricao
+        };
+        await DataService.saveRecord('caixa', entrada);
+        await DataService.loadCaixa(AppState.paginacao.caixa.pagina);
+        AlertUtils.show(`Entrada registrada no caixa: ${MoneyUtils.format(valor)}`, 'info');
+    } catch (e) {
+        console.warn('Erro ao registrar entrada no caixa:', e);
+        AlertUtils.show('Erro ao registrar entrada no caixa. Registre manualmente.', 'warning');
+    }
+}
+
+async function registrarSaidaCaixa(data, valor, descricao) {
+    if (valor <= 0) return;
+    try {
+        const { data: ultimoCaixa } = await supabaseClient
+            .from('caixa')
+            .select('saldo_final')
+            .order('data', { ascending: false })
+            .limit(1);
+        const ultimoSaldo = ultimoCaixa && ultimoCaixa.length ? ultimoCaixa[0].saldo_final : 0;
+        const saida = {
             data: data,
             saldo_inicial: ultimoSaldo,
             entradas: 0,
@@ -585,7 +612,7 @@ async function registrarSaidaCaixa(data, valor, descricao) {
             saldo_final: ultimoSaldo - valor,
             descricao: descricao
         };
-        await DataService.saveRecord('caixa', entradaCaixa);
+        await DataService.saveRecord('caixa', saida);
         await DataService.loadCaixa(AppState.paginacao.caixa.pagina);
         AlertUtils.show(`Saída registrada no caixa: ${MoneyUtils.format(valor)}`, 'info');
     } catch (e) {
@@ -898,16 +925,64 @@ const PiercingModule = {
         const quantidade = parseInt(DomUtils.getValue('piercing-qtd')) || 0;
         const preco_venda = MoneyUtils.parse(DomUtils.getValue('piercing-preco'));
         const custo_unitario = MoneyUtils.parse(DomUtils.getValue('piercing-custo'));
+
         if (!nome) return AlertUtils.show('Nome obrigatório', 'error');
+
         try {
             LoadingUtils.show('Salvando piercing...');
-            await DataService.saveRecord('piercings_estoque', { nome, quantidade, preco_venda, custo_unitario }, id || null);
+
+            // Obter quantidade anterior para cálculo de diferença (se edição)
+            let quantidadeAnterior = 0;
+            if (id) {
+                const { data } = await supabaseClient
+                    .from('piercings_estoque')
+                    .select('quantidade')
+                    .eq('id', id)
+                    .single();
+                quantidadeAnterior = data?.quantidade || 0;
+            }
+
+            await DataService.saveRecord(
+                'piercings_estoque',
+                { nome, quantidade, preco_venda, custo_unitario },
+                id || null
+            );
+
+            const dataHoje = DateUtils.nowDate();
+
+            if (!id) {
+                // Novo piercing: registrar saída do custo total
+                const custoTotal = quantidade * custo_unitario;
+                if (custoTotal > 0) {
+                    await registrarSaidaCaixa(
+                        dataHoje,
+                        custoTotal,
+                        `Compra de estoque: ${quantidade} un. de ${nome}`
+                    );
+                }
+            } else {
+                // Edição: se quantidade aumentou, registrar saída da diferença
+                const aumento = quantidade - quantidadeAnterior;
+                if (aumento > 0) {
+                    const custoAdicional = aumento * custo_unitario;
+                    await registrarSaidaCaixa(
+                        dataHoje,
+                        custoAdicional,
+                        `Adição ao estoque: +${aumento} un. de ${nome}`
+                    );
+                }
+                // Reduções manuais não geram entrada automática (devem ser feitas via venda)
+            }
+
             DomUtils.setDisplay('modal-piercing', 'none');
             await DataService.loadPiercings();
             await DataService.loadVendasPiercing();
             AlertUtils.show('Piercing salvo', 'success');
-        } catch (e) { ErrorHandler.handle('salvar piercing', e); }
-        finally { LoadingUtils.hide(); }
+        } catch (e) {
+            ErrorHandler.handle('salvar piercing', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     },
     editar: (id) => PiercingModule.abrirModal(id),
     excluir: async (id) => {
@@ -925,42 +1000,82 @@ const PiercingModule = {
         const piercingId = DomUtils.getValue('venda-piercing-id');
         const quantidade = parseInt(DomUtils.getValue('venda-qtd')) || 0;
         const cliente = DomUtils.getValue('venda-cliente');
+
         if (!piercingId) return AlertUtils.show('Selecione um piercing', 'error');
         if (quantidade <= 0) return AlertUtils.show('Quantidade deve ser maior que zero', 'error');
+
         try {
             LoadingUtils.show('Registrando venda...');
-            const { data: piercing, error } = await supabaseClient.from('piercings_estoque').select('*').eq('id', piercingId).single();
+            const { data: piercing, error } = await supabaseClient
+                .from('piercings_estoque')
+                .select('*')
+                .eq('id', piercingId)
+                .single();
             if (error) throw error;
-            if (!piercing || piercing.quantidade < quantidade) throw new Error('Estoque insuficiente');
+            if (!piercing || piercing.quantidade < quantidade)
+                throw new Error('Estoque insuficiente');
+
             const valorTotal = quantidade * piercing.preco_venda;
             const custoTotal = quantidade * (piercing.custo_unitario || 0);
-            
-            const { error: updateError } = await supabaseClient.from('piercings_estoque')
-                .update({ quantidade: piercing.quantidade - quantidade }).eq('id', piercingId);
+            const dataHoje = DateUtils.nowDate();
+
+            // Atualiza estoque
+            const { error: updateError } = await supabaseClient
+                .from('piercings_estoque')
+                .update({ quantidade: piercing.quantidade - quantidade })
+                .eq('id', piercingId);
             if (updateError) throw updateError;
-            
-            const { error: insertError } = await supabaseClient.from('vendas_piercing').insert([{ 
-                piercing_id: piercingId, quantidade, valor_total: valorTotal, cliente: cliente || null,
-                data: new Date().toISOString()
-            }]);
+
+            // Registra venda
+            const { error: insertError } = await supabaseClient
+                .from('vendas_piercing')
+                .insert([{
+                    piercing_id: piercingId,
+                    quantidade,
+                    valor_total: valorTotal,
+                    cliente: cliente || null,
+                    data: new Date().toISOString()
+                }]);
             if (insertError) {
-                await supabaseClient.from('piercings_estoque').update({ quantidade: piercing.quantidade }).eq('id', piercingId);
+                // Rollback do estoque
+                await supabaseClient
+                    .from('piercings_estoque')
+                    .update({ quantidade: piercing.quantidade })
+                    .eq('id', piercingId);
                 throw insertError;
             }
-            
-            // Registrar saída do custo no caixa
-            if (custoTotal > 0) {
-                const dataHoje = DateUtils.nowDate();
-                await registrarSaidaCaixa(dataHoje, custoTotal, `Custo de venda: ${quantidade} un. de ${piercing.nome}`);
+
+            // Registrar ENTRADA no caixa (valor da venda)
+            if (valorTotal > 0) {
+                await registrarEntradaCaixa(
+                    dataHoje,
+                    valorTotal,
+                    `Venda: ${quantidade} un. de ${piercing.nome}${cliente ? ' - ' + cliente : ''}`
+                );
             }
-            
+
+            // Registrar SAÍDA do custo da mercadoria vendida
+            if (custoTotal > 0) {
+                await registrarSaidaCaixa(
+                    dataHoje,
+                    custoTotal,
+                    `Custo de venda: ${quantidade} un. de ${piercing.nome}`
+                );
+            }
+
             await DataService.loadPiercings();
             await DataService.loadVendasPiercing();
             DomUtils.setValue('venda-qtd', 1);
             DomUtils.setValue('venda-cliente', '');
-            AlertUtils.show(`Venda registrada: ${MoneyUtils.format(valorTotal)} (custo: ${MoneyUtils.format(custoTotal)})`, 'success');
-        } catch (e) { ErrorHandler.handle('venda piercing', e); }
-        finally { LoadingUtils.hide(); }
+            AlertUtils.show(
+                `Venda registrada: ${MoneyUtils.format(valorTotal)} (custo: ${MoneyUtils.format(custoTotal)})`,
+                'success'
+            );
+        } catch (e) {
+            ErrorHandler.handle('venda piercing', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     }
 };
 
