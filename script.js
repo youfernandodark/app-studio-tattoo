@@ -614,23 +614,28 @@ const AgendaModule = {
     limparFiltros: () => { DomUtils.setValue('filtro-tatuador-agenda', ''); DomUtils.setValue('filtro-status-agenda', ''); DomUtils.setValue('filtro-data-agenda', ''); DataService.loadAgenda(1); }
 };
 
-// ==================== FUNÇÃO PARA GERAR PDF DO AGENDAMENTO ====================
+// ==================== FUNÇÃO PARA GERAR PDF DO AGENDAMENTO (CORRIGIDA) ====================
 async function gerarComprovanteAgendamentoPDF(dados) {
+    let element = null;
     try {
         LoadingUtils.show('Gerando comprovante PDF...');
         
-        // Criar um elemento temporário para estilizar o conteúdo do PDF
-        const element = document.createElement('div');
-        element.style.backgroundColor = '#0C0C0C';
-        element.style.color = '#F0F0F0';
-        element.style.fontFamily = 'Inter, sans-serif';
-        element.style.padding = '30px';
-        element.style.borderRadius = '20px';
-        element.style.maxWidth = '600px';
-        element.style.margin = '0 auto';
-        element.style.border = '1px solid #3A3A3A';
+        // Criar elemento temporário
+        element = document.createElement('div');
+        element.style.cssText = `
+            background-color: #0C0C0C;
+            color: #F0F0F0;
+            font-family: 'Inter', 'Helvetica', sans-serif;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #3A3A3A;
+            position: fixed;
+            left: -9999px;
+            top: 0;
+        `;
         
-        // Formatar data e hora
         const dataHora = new Date(dados.data_hora);
         const dataFormatada = dataHora.toLocaleDateString('pt-BR');
         const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -656,37 +661,50 @@ async function gerarComprovanteAgendamentoPDF(dados) {
             </div>
         `;
         
-        // Usar html2canvas para renderizar o elemento e gerar o PDF
+        // ADICIONAR AO DOM (CRUCIAL)
+        document.body.appendChild(element);
+        
         const canvas = await html2canvas(element, {
             scale: 2,
             backgroundColor: '#0C0C0C',
             logging: false,
-            useCORS: false
+            allowTaint: false,
+            useCORS: true
         });
         
+        // Remover elemento após captura
+        document.body.removeChild(element);
+        element = null;
+        
         const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({
+        // Acesso correto ao jsPDF (versão UMD)
+        const pdf = new window.jspdf.jsPDF({
             orientation: 'portrait',
             unit: 'mm',
             format: 'a4'
         });
         
-        const imgWidth = 190; // mm
-        const pageHeight = 297;
+        const imgWidth = 190; // largura em mm
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let position = 10;
         
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
         pdf.save(`comprovante_${dados.cliente.replace(/\s/g, '_')}_${dataFormatada.replace(/\//g, '-')}.pdf`);
         
         AlertUtils.show('Comprovante PDF gerado com sucesso!', 'success');
     } catch (error) {
+        console.error('Erro detalhado ao gerar PDF:', error);
         ErrorHandler.handle('gerar PDF', error);
+        // Garantir remoção do elemento em caso de erro
+        if (element && element.parentNode) {
+            document.body.removeChild(element);
+        }
     } finally {
         LoadingUtils.hide();
     }
 }
+
+// ==================== MÓDULOS RESTANTES (Piercing, Materiais, Backup, Exemplos) ====================
+// ... (manter exatamente como no original) ...
 
 const PiercingModule = {
     abrirModal: (id = null) => {
