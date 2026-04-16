@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Bibliotecas para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -107,7 +110,8 @@
                         <thead>
                             <tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30%)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr>
                         </thead>
-                        <tbody id="servicos-tbody"><tr><td colspan="10" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Carregando serviços...</td></tr></tbody>
+                        <tbody id="servicos-tbody"><tr><td colspan="10" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Carregando serviços...</td></tr>
+                        </tbody>
                         <tfoot>
                             <tr><th colspan="5"><strong>TOTAIS</strong></th><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><th colspan="2"></th></tr>
                         </tfoot>
@@ -133,7 +137,7 @@
                 <div class="table-wrapper">
                     <table>
                         <thead><tr><th>Data</th><th>Hora</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Status</th><th>Obs</th><th>Ações</th></tr></thead>
-                        <tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr></tbody>
+                        <tbody id="agenda-tbody"><tr><td colspan="8">Carregando...</td></tr>
                     </table>
                 </div>
                 <div id="agenda-paginacao" class="paginacao-container"></div>

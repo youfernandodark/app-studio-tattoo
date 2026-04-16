@@ -243,12 +243,14 @@ const Renderer = {
         const linhas = data.map(item => {
             const ent = MoneyUtils.parse(item.entradas), sai = MoneyUtils.parse(item.saidas);
             const icon = ent > 0 ? '↑' : (sai > 0 ? '↓' : '•');
-            return `<tr><td>${DateUtils.formatDate(item.data)}</td>
+            return `<tr>
+                <td>${DateUtils.formatDate(item.data)}</td>
                 <td style="color:#34D399; font-weight:600;">${icon} ${MoneyUtils.format(ent)}</td>
                 <td style="color:#F87171; font-weight:600;">${icon} ${MoneyUtils.format(sai)}</td>
                 <td title="${escapeHtml(item.descricao)}" style="max-width:250px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(item.descricao) || '-'}</td>
                 <td class="actions-cell"><button class="btn-icon" data-acao="editar-caixa" data-id="${item.id}" title="Editar"><i class="fas fa-edit"></i></button>
-                <button class="btn-icon" data-acao="excluir-caixa" data-id="${item.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td></tr>`;
+                <button class="btn-icon" data-acao="excluir-caixa" data-id="${item.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
+            </tr>`;
         }).join('');
         this._renderTable('caixa-tbody', data.length ? linhas : null);
     },
@@ -259,12 +261,19 @@ const Renderer = {
             const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : val;
             const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : 0;
             totalValor += val; totalEstudio += estudio; totalRepasse += repasse;
-            return `<tr><td>${DateUtils.formatDate(s.data)}</td><td>${escapeHtml(s.cliente)}</td><td>${escapeHtml(s.tatuador_nome)}</td>
-                <td>${escapeHtml(s.tipo)}</td><td title="${escapeHtml(s.descricao)}">${escapeHtml(s.descricao) || '-'}</td>
-                <td class="valor">${MoneyUtils.format(val)}</td><td class="valor">${MoneyUtils.format(estudio)}</td>
-                <td class="valor repasse">${MoneyUtils.format(repasse)}</td><td>${escapeHtml(s.forma_pagamento)}</td>
+            return `<tr>
+                <td>${DateUtils.formatDate(s.data)}</td>
+                <td>${escapeHtml(s.cliente)}</td>
+                <td>${escapeHtml(s.tatuador_nome)}</td>
+                <td>${escapeHtml(s.tipo)}</td>
+                <td title="${escapeHtml(s.descricao)}">${escapeHtml(s.descricao) || '-'}</td>
+                <td class="valor">${MoneyUtils.format(val)}</td>
+                <td class="valor">${MoneyUtils.format(estudio)}</td>
+                <td class="valor repasse">${MoneyUtils.format(repasse)}</td>
+                <td>${escapeHtml(s.forma_pagamento)}</td>
                 <td class="actions-cell"><button class="btn-icon" data-acao="editar-servico" data-id="${s.id}" title="Editar"><i class="fas fa-edit"></i></button>
-                <button class="btn-icon" data-acao="excluir-servico" data-id="${s.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td></tr>`;
+                <button class="btn-icon" data-acao="excluir-servico" data-id="${s.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
+            </tr>`;
         }).join('');
         this._renderTable('servicos-tbody', data.length ? linhas : null);
         DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(totalValor));
@@ -278,38 +287,64 @@ const Renderer = {
             const dt = new Date(a.data_hora);
             const dataStr = !isNaN(dt.getTime()) ? dt.toLocaleDateString('pt-BR') : '-';
             const horaStr = !isNaN(dt.getTime()) ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
-            return `<tr><td>${dataStr}</td><td>${horaStr}</td><td>${escapeHtml(a.cliente)}</td><td>${escapeHtml(a.tatuador_nome)}</td>
-                <td>${escapeHtml(a.tipo_servico)}</td><td><span class="status-badge-item ${statusClass}">${escapeHtml(a.status)}</span></td>
+            return `<tr>
+                <td>${dataStr}</td>
+                <td>${horaStr}</td>
+                <td>${escapeHtml(a.cliente)}</td>
+                <td>${escapeHtml(a.tatuador_nome)}</td>
+                <td>${escapeHtml(a.tipo_servico)}</td>
+                <td><span class="status-badge-item ${statusClass}">${escapeHtml(a.status)}</span></td>
                 <td title="${escapeHtml(a.observacoes)}">${escapeHtml(a.observacoes) || '-'}</td>
                 <td class="actions-cell">${realizarBtn}<button class="btn-icon" data-acao="editar-agenda" data-id="${a.id}" title="Editar"><i class="fas fa-edit"></i></button>
-                <button class="btn-icon" data-acao="excluir-agenda" data-id="${a.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td></tr>`;
+                <button class="btn-icon" data-acao="excluir-agenda" data-id="${a.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
+            </tr>`;
         }).join('');
         this._renderTable('agenda-tbody', data.length ? linhas : null);
     },
     renderEstoquePiercing(piercings) {
         const tbody = DomUtils.get('estoque-piercing-tbody');
         if (!tbody) return;
-        tbody.innerHTML = piercings.length ? piercings.map(p => `<tr><td>${escapeHtml(p.nome)}</td><td>${p.quantidade}</td><td>${MoneyUtils.format(p.preco_venda)}</td><td>${MoneyUtils.format(p.custo_unitario || 0)}</td>
+        tbody.innerHTML = piercings.length ? piercings.map(p => `<tr>
+            <td>${escapeHtml(p.nome)}</td>
+            <td>${p.quantidade}</td>
+            <td>${MoneyUtils.format(p.preco_venda)}</td>
+            <td>${MoneyUtils.format(p.custo_unitario || 0)}</td>
             <td class="actions-cell"><button class="btn-icon" data-acao="editar-piercing" data-id="${p.id}" title="Editar"><i class="fas fa-edit"></i></button>
-            <button class="btn-icon" data-acao="excluir-piercing" data-id="${p.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td></tr>`).join('') : '<tr><td colspan="5">Nenhum piercing</td></tr>';
+            <button class="btn-icon" data-acao="excluir-piercing" data-id="${p.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
+        </tr>`).join('') : '<tr><td colspan="5">Nenhum piercing</td></tr>';
         const select = DomUtils.get('venda-piercing-id');
         if (select) select.innerHTML = '<option value="">Selecione</option>' + piercings.filter(p => p.quantidade > 0).map(p => `<option value="${p.id}" data-preco="${p.preco_venda}" data-custo="${p.custo_unitario || 0}">${escapeHtml(p.nome)} - Venda: ${MoneyUtils.format(p.preco_venda)} | Estoque: ${p.quantidade}</option>`).join('');
     },
     renderVendasPiercing(vendas) {
         const tbody = DomUtils.get('vendas-piercing-tbody');
-        if (tbody) tbody.innerHTML = vendas.length ? vendas.map(v => `<tr><td>${DateUtils.formatDate(v.data)}</td><td>${escapeHtml(v.piercing?.nome || '?')}</td><td>${v.quantidade}</td><td>${MoneyUtils.format(v.valor_total)}</td><td>${escapeHtml(v.cliente || '-')}</td></tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td></tr>';
+        if (tbody) tbody.innerHTML = vendas.length ? vendas.map(v => `<tr>
+            <td>${DateUtils.formatDate(v.data)}</td>
+            <td>${escapeHtml(v.piercing?.nome || '?')}</td>
+            <td>${v.quantidade}</td>
+            <td>${MoneyUtils.format(v.valor_total)}</td>
+            <td>${escapeHtml(v.cliente || '-')}</td>
+        </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td></tr>';
     },
     renderEstoqueMaterial(materiais) {
         const tbody = DomUtils.get('estoque-material-tbody');
-        if (tbody) tbody.innerHTML = materiais.length ? materiais.map(m => `<tr><td>${escapeHtml(m.nome)}</td><td>${m.quantidade}</td><td>${MoneyUtils.format(m.valor_unitario)}</td>
+        if (tbody) tbody.innerHTML = materiais.length ? materiais.map(m => `<tr>
+            <td>${escapeHtml(m.nome)}</td>
+            <td>${m.quantidade}</td>
+            <td>${MoneyUtils.format(m.valor_unitario)}</td>
             <td class="actions-cell"><button class="btn-icon" data-acao="editar-material" data-id="${m.id}" title="Editar"><i class="fas fa-edit"></i></button>
-            <button class="btn-icon" data-acao="excluir-material" data-id="${m.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td></tr>`).join('') : '<tr><td colspan="4">Nenhum material</td></tr>';
+            <button class="btn-icon" data-acao="excluir-material" data-id="${m.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td></tr>';
         const select = DomUtils.get('uso-material-id');
         if (select) select.innerHTML = '<option value="">Selecione</option>' + materiais.filter(m => m.quantidade > 0).map(m => `<option value="${m.id}" data-custo="${m.valor_unitario}">${escapeHtml(m.nome)} (${m.quantidade} un.) - Custo un: ${MoneyUtils.format(m.valor_unitario)}</option>`).join('');
     },
     renderUsosMateriais(usos) {
         const tbody = DomUtils.get('usos-materiais-tbody');
-        if (tbody) tbody.innerHTML = usos.length ? usos.map(u => `<tr><td>${DateUtils.formatDate(u.data)}</td><td>${escapeHtml(u.material?.nome || '?')}</td><td>${u.quantidade}</td><td>${escapeHtml(u.observacao || '-')}</td></tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td></tr>';
+        if (tbody) tbody.innerHTML = usos.length ? usos.map(u => `<tr>
+            <td>${DateUtils.formatDate(u.data)}</td>
+            <td>${escapeHtml(u.material?.nome || '?')}</td>
+            <td>${u.quantidade}</td>
+            <td>${escapeHtml(u.observacao || '-')}</td>
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td></tr>';
     }
 };
 
@@ -519,6 +554,24 @@ const AgendaModule = {
             await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
             atualizarDashboard();
             AlertUtils.show(id ? 'Agendamento atualizado' : 'Agendamento salvo', 'success');
+            
+            // Gerar PDF de confirmação para o cliente (apenas se for novo agendamento)
+            if (!id) {
+                // Recuperar o ID do agendamento recém-criado (último do cliente nesta data/hora)
+                const { data: novoAgendamento } = await supabaseClient
+                    .from('agenda')
+                    .select('id')
+                    .eq('cliente', record.cliente)
+                    .eq('data_hora', record.data_hora)
+                    .order('id', { ascending: false })
+                    .limit(1);
+                const novoId = novoAgendamento?.[0]?.id;
+                await gerarComprovanteAgendamentoPDF({
+                    id: novoId,
+                    ...record,
+                    data_hora: dataHoraLocal
+                });
+            }
         } catch (e) { ErrorHandler.handle('salvar agenda', e); } finally { LoadingUtils.hide(); }
     },
     editar: async (id) => {
@@ -560,6 +613,80 @@ const AgendaModule = {
     filtrarHoje: () => { DomUtils.setValue('filtro-data-agenda', DateUtils.nowDate()); DataService.loadAgenda(1); },
     limparFiltros: () => { DomUtils.setValue('filtro-tatuador-agenda', ''); DomUtils.setValue('filtro-status-agenda', ''); DomUtils.setValue('filtro-data-agenda', ''); DataService.loadAgenda(1); }
 };
+
+// ==================== FUNÇÃO PARA GERAR PDF DO AGENDAMENTO ====================
+async function gerarComprovanteAgendamentoPDF(dados) {
+    try {
+        LoadingUtils.show('Gerando comprovante PDF...');
+        
+        // Criar um elemento temporário para estilizar o conteúdo do PDF
+        const element = document.createElement('div');
+        element.style.backgroundColor = '#0C0C0C';
+        element.style.color = '#F0F0F0';
+        element.style.fontFamily = 'Inter, sans-serif';
+        element.style.padding = '30px';
+        element.style.borderRadius = '20px';
+        element.style.maxWidth = '600px';
+        element.style.margin = '0 auto';
+        element.style.border = '1px solid #3A3A3A';
+        
+        // Formatar data e hora
+        const dataHora = new Date(dados.data_hora);
+        const dataFormatada = dataHora.toLocaleDateString('pt-BR');
+        const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const protocolo = `DARK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        
+        element.innerHTML = `
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h1 style="color: #A0A0A0; margin: 0;">DARK013TATTOO</h1>
+                <p style="color: #B0B0B0; margin: 5px 0 0;">Comprovante de Agendamento</p>
+            </div>
+            <div style="border-top: 1px solid #3A3A3A; padding: 15px 0;">
+                <p><strong>Protocolo:</strong> ${protocolo}</p>
+                <p><strong>Data do Agendamento:</strong> ${dataFormatada} às ${horaFormatada}</p>
+                <p><strong>Cliente:</strong> ${escapeHtml(dados.cliente)}</p>
+                <p><strong>Tatuador(a):</strong> ${escapeHtml(dados.tatuador_nome)}</p>
+                <p><strong>Tipo de Serviço:</strong> ${escapeHtml(dados.tipo_servico)}</p>
+                <p><strong>Status:</strong> ${escapeHtml(dados.status)}</p>
+                ${dados.observacoes ? `<p><strong>Observações:</strong> ${escapeHtml(dados.observacoes)}</p>` : ''}
+            </div>
+            <div style="border-top: 1px solid #3A3A3A; margin-top: 15px; padding-top: 15px; text-align: center; font-size: 12px; color: #808080;">
+                <p>Este comprovante é gerado automaticamente. <br> Em caso de dúvidas, entre em contato com o estúdio.</p>
+                <p>© DARK013TATTOO - Gestão Profissional</p>
+            </div>
+        `;
+        
+        // Usar html2canvas para renderizar o elemento e gerar o PDF
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            backgroundColor: '#0C0C0C',
+            logging: false,
+            useCORS: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        const imgWidth = 190; // mm
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let position = 10;
+        
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        pdf.save(`comprovante_${dados.cliente.replace(/\s/g, '_')}_${dataFormatada.replace(/\//g, '-')}.pdf`);
+        
+        AlertUtils.show('Comprovante PDF gerado com sucesso!', 'success');
+    } catch (error) {
+        ErrorHandler.handle('gerar PDF', error);
+    } finally {
+        LoadingUtils.hide();
+    }
+}
 
 const PiercingModule = {
     abrirModal: (id = null) => {
