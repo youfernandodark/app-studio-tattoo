@@ -327,16 +327,32 @@ const Renderer = {
         this._renderTable('caixa-tbody', data.length ? linhas : '<tr><td colspan="5">Nenhum lançamento</td></tr>');
     },
 
+    // ========== FUNÇÃO ALTERADA PARA OS ÍCONES E DESTAQUE ==========
     renderServicos(data) {
+        const tbody = DomUtils.get('servicos-tbody');
+        if (!tbody) return;
+
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="10" class="loading-cell">Nenhum serviço encontrado</td></tr>';
+            DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(0));
+            DomUtils.setHtml('servicos-total-estudio', MoneyUtils.format(0));
+            DomUtils.setHtml('servicos-total-repasse', MoneyUtils.format(0));
+            return;
+        }
+
         let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
-        const linhas = data.map(s => {
+        const fragment = document.createDocumentFragment();
+
+        data.forEach(s => {
             const val = MoneyUtils.parse(s.valor_total);
             const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : val;
             const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : 0;
             totalValor += val;
             totalEstudio += estudio;
             totalRepasse += repasse;
-            return `<tr>
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
                 <td>${DateUtils.formatDate(s.data)}</td>
                 <td>${escapeHtml(s.cliente)}</td>
                 <td>${escapeHtml(s.tatuador_nome)}</td>
@@ -346,13 +362,17 @@ const Renderer = {
                 <td>${MoneyUtils.format(estudio)}</td>
                 <td style="color:#34D399">${MoneyUtils.format(repasse)}</td>
                 <td>${escapeHtml(s.forma_pagamento)}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm" data-acao="editar-servico" data-id="${s.id}">Editar</button>
-                    <button class="btn btn-danger btn-sm" data-acao="excluir-servico" data-id="${s.id}">Excluir</button>
+                <td class="acoes">
+                    <button class="btn-icon" data-acao="editar-servico" data-id="${s.id}" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn-icon" data-acao="excluir-servico" data-id="${s.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                 </td>
-            </tr>`;
-        }).join('');
-        this._renderTable('servicos-tbody', data.length ? linhas : '<tr><td colspan="10">Nenhum serviço</td></tr>');
+            `;
+            fragment.appendChild(tr);
+        });
+
+        tbody.innerHTML = '';
+        tbody.appendChild(fragment);
+
         DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(totalValor));
         DomUtils.setHtml('servicos-total-estudio', MoneyUtils.format(totalEstudio));
         DomUtils.setHtml('servicos-total-repasse', MoneyUtils.format(totalRepasse));
@@ -1457,5 +1477,5 @@ window.importarBackup = (input) => BackupModule.importar(input);
 window.sincronizarAgora = () => location.reload();
 window.fecharModal = (modalId) => DomUtils.setDisplay(modalId, 'none');
 
-// Inicialização direta (sem autenticação)
+// Inicialização
 document.addEventListener('DOMContentLoaded', inicializarApp);

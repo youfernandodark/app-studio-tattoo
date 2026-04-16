@@ -11,7 +11,7 @@
 </head>
 <body>
 
-<!-- CONTEÚDO PRINCIPAL (ACESSO DIRETO) -->
+<!-- CONTEÚDO PRINCIPAL -->
 <div id="app-content">
     <main class="container">
         <header>
@@ -19,7 +19,6 @@
             <p>Gestão profissional com sincronização na nuvem | Dark Mode Studio</p>
             <div class="status-bar">
                 <span id="status-nuvem" class="status-badge"><i class="fas fa-spinner fa-pulse"></i> Conectando...</span>
-                <!-- O user-info foi removido -->
             </div>
         </header>
 
@@ -78,7 +77,7 @@
             </div>
         </section>
 
-        <!-- SERVIÇOS -->
+        <!-- SERVIÇOS (MELHORADO) -->
         <section id="servicos" class="section">
             <div class="card">
                 <h2><i class="fas fa-paint-brush"></i> Serviços Realizados</h2>
@@ -105,11 +104,37 @@
                     <input type="text" id="search-servicos" placeholder="Buscar serviços..." oninput="aplicarFiltrosServicos()" style="flex:1.5; min-width:180px;">
                 </div>
                 <div class="table-wrapper">
-                    <table>
-                        <thead><tr><th>Data</th><th>Cliente</th><th>Tatuador</th><th>Tipo</th><th>Descrição</th><th>Valor</th><th>Estúdio (30%)</th><th>Repasse</th><th>Pagamento</th><th>Ações</th></tr></thead>
-                        <tbody id="servicos-tbody"><tr><td colspan="10">Carregando...</td></tr></tbody>
-                        <tfoot><tr><td colspan="5"><strong>TOTAIS</strong></td><td id="servicos-total-valor">R$0</td><td id="servicos-total-estudio">R$0</td><td id="servicos-total-repasse">R$0</td><td colspan="2"></td></tr></tfoot>
+                    <table id="tabela-servicos">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Tatuador</th>
+                                <th>Tipo</th>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Estúdio (30%)</th>
+                                <th>Repasse</th>
+                                <th>Pagamento</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="servicos-tbody">
+                            <tr><td colspan="10" class="loading-cell"><i class="fas fa-spinner fa-pulse"></i> Carregando serviços...</td></tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5"><strong>TOTAIS</strong></td>
+                                <td id="servicos-total-valor">R$0</td>
+                                <td id="servicos-total-estudio">R$0</td>
+                                <td id="servicos-total-repasse">R$0</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
                     </table>
+                </div>
+                <div class="scroll-hint">
+                    <i class="fas fa-arrows-alt-h"></i> Deslize para ver mais colunas
                 </div>
                 <div id="servicos-paginacao" class="paginacao-container"></div>
             </div>
@@ -218,7 +243,7 @@
     </main>
 </div>
 
-<!-- MODAIS (mantidos) -->
+<!-- MODAIS -->
 <div id="modal-caixa" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-caixa')">&times;</span>
