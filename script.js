@@ -327,32 +327,16 @@ const Renderer = {
         this._renderTable('caixa-tbody', data.length ? linhas : '<tr><td colspan="5">Nenhum lançamento</td></tr>');
     },
 
-    // ========== FUNÇÃO ALTERADA PARA OS ÍCONES E DESTAQUE ==========
     renderServicos(data) {
-        const tbody = DomUtils.get('servicos-tbody');
-        if (!tbody) return;
-
-        if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="10" class="loading-cell">Nenhum serviço encontrado</td></tr>';
-            DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(0));
-            DomUtils.setHtml('servicos-total-estudio', MoneyUtils.format(0));
-            DomUtils.setHtml('servicos-total-repasse', MoneyUtils.format(0));
-            return;
-        }
-
         let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
-        const fragment = document.createDocumentFragment();
-
-        data.forEach(s => {
+        const linhas = data.map(s => {
             const val = MoneyUtils.parse(s.valor_total);
             const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : val;
             const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : 0;
             totalValor += val;
             totalEstudio += estudio;
             totalRepasse += repasse;
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
+            return `<tr>
                 <td>${DateUtils.formatDate(s.data)}</td>
                 <td>${escapeHtml(s.cliente)}</td>
                 <td>${escapeHtml(s.tatuador_nome)}</td>
@@ -362,17 +346,13 @@ const Renderer = {
                 <td>${MoneyUtils.format(estudio)}</td>
                 <td style="color:#34D399">${MoneyUtils.format(repasse)}</td>
                 <td>${escapeHtml(s.forma_pagamento)}</td>
-                <td class="acoes">
-                    <button class="btn-icon" data-acao="editar-servico" data-id="${s.id}" title="Editar"><i class="fas fa-edit"></i></button>
-                    <button class="btn-icon" data-acao="excluir-servico" data-id="${s.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button>
+                <td>
+                    <button class="btn btn-warning btn-sm" data-acao="editar-servico" data-id="${s.id}">Editar</button>
+                    <button class="btn btn-danger btn-sm" data-acao="excluir-servico" data-id="${s.id}">Excluir</button>
                 </td>
-            `;
-            fragment.appendChild(tr);
-        });
-
-        tbody.innerHTML = '';
-        tbody.appendChild(fragment);
-
+            </tr>`;
+        }).join('');
+        this._renderTable('servicos-tbody', data.length ? linhas : '<tr><td colspan="10">Nenhum serviço</td></tr>');
         DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(totalValor));
         DomUtils.setHtml('servicos-total-estudio', MoneyUtils.format(totalEstudio));
         DomUtils.setHtml('servicos-total-repasse', MoneyUtils.format(totalRepasse));
@@ -741,27 +721,7 @@ const ServicosModule = {
                 delete window.pendingAgendaId;
             }
 
-            try {
-                const { data: ultimoCaixa } = await supabaseClient.from('caixa')
-                    .select('saldo_final')
-                    .order('data', { ascending: false })
-                    .limit(1);
-                const ultimoSaldo = ultimoCaixa && ultimoCaixa.length ? ultimoCaixa[0].saldo_final : 0;
-                const entradaCaixa = {
-                    data: record.data,
-                    saldo_inicial: ultimoSaldo,
-                    entradas: record.valor_total,
-                    saidas: 0,
-                    saldo_final: ultimoSaldo + record.valor_total,
-                    descricao: `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`
-                };
-                await DataService.saveRecord('caixa', entradaCaixa);
-                await DataService.loadCaixa(AppState.paginacao.caixa.pagina);
-                AlertUtils.show('Entrada registrada no caixa automaticamente.', 'info');
-            } catch (e) {
-                console.warn('Não foi possível registrar entrada automática no caixa:', e);
-                AlertUtils.show('Serviço salvo, mas erro ao registrar no caixa. Registre manualmente.', 'warning');
-            }
+            // REMOVIDO: bloco que registrava automaticamente entrada no caixa
 
             AlertUtils.show(id ? 'Serviço atualizado' : 'Serviço salvo', 'success');
         } catch (e) {
@@ -1477,5 +1437,5 @@ window.importarBackup = (input) => BackupModule.importar(input);
 window.sincronizarAgora = () => location.reload();
 window.fecharModal = (modalId) => DomUtils.setDisplay(modalId, 'none');
 
-// Inicialização
+// Inicialização direta (sem autenticação)
 document.addEventListener('DOMContentLoaded', inicializarApp);
