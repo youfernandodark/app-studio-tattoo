@@ -656,8 +656,8 @@ async function gerarComprovanteAgendamentoPDF(dados) {
                 ${dados.observacoes ? `<p><strong>Observações:</strong> ${escapeHtml(dados.observacoes)}</p>` : ''}
             </div>
             <div style="border-top: 1px solid #3A3A3A; margin-top: 15px; padding-top: 15px; text-align: center; font-size: 12px; color: #808080;">
-                <p>Este comprovante é gerado automaticamente. <br> Em caso de dúvidas, entre em contato com o estúdio.</p>
-                <p>© DARK013TATTOO - Gestão Profissional</p>
+                <p>Em caso de cancelamento ou reagendar a tattoo. <br> Avisar um dia antes o tatuador(a) responsável.</p>
+                <p>@DARK013TATTOO - Gestão Profissional</p>
             </div>
         `;
         
