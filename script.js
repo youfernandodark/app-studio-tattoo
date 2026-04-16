@@ -9,52 +9,70 @@ if (typeof supabase !== 'undefined') {
     console.error('Supabase não carregou.');
 }
 
-// ==================== AUTENTICAÇÃO VIA SUPABASE ====================
+// ==================== AUTENTICAÇÃO ====================
 const Auth = {
-    async login(email, password) {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email,
-            password
-        });
-        if (error) throw error;
-        return data.session;
+    SESSION_KEY: 'dark013_session',
+    
+    // Usuários autorizados (para demonstração)
+    users: [
+        { email: 'fernando@dark013.com', senha: 'dark013', nome: 'Fernando Dark' },
+        { email: 'thalia@dark013.com', senha: 'thalia123', nome: 'Thalia' },
+        { email: 'admin@dark013.com', senha: 'admin013', nome: 'Administrador' }
+    ],
+    
+    login(email, senha) {
+        const user = this.users.find(u => u.email === email && u.senha === senha);
+        if (user) {
+            const session = {
+                email: user.email,
+                nome: user.nome,
+                loggedInAt: new Date().toISOString()
+            };
+            sessionStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+            return session;
+        }
+        return null;
     },
-
-    async logout() {
-        await supabaseClient.auth.signOut();
+    
+    logout() {
+        sessionStorage.removeItem(this.SESSION_KEY);
         this.redirecionarParaLogin();
     },
-
-    async getCurrentUser() {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        return user;
+    
+    getCurrentUser() {
+        const data = sessionStorage.getItem(this.SESSION_KEY);
+        if (data) {
+            try {
+                return JSON.parse(data);
+            } catch(e) { return null; }
+        }
+        return null;
     },
-
-    async isLoggedIn() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        return !!session;
+    
+    isLoggedIn() {
+        return !!this.getCurrentUser();
     },
-
+    
     redirecionarParaLogin() {
         const loginDiv = document.getElementById('login-container');
         const appDiv = document.getElementById('app-content');
         if (loginDiv) loginDiv.style.display = 'flex';
         if (appDiv) appDiv.style.display = 'none';
-
+        
         const emailInput = document.getElementById('login-email');
         const pwdInput = document.getElementById('login-password');
         if (emailInput) emailInput.value = '';
         if (pwdInput) pwdInput.value = '';
     },
-
-    async redirecionarParaApp() {
-        const user = await this.getCurrentUser();
+    
+    redirecionarParaApp() {
+        const loginDiv = document.getElementById('login-container');
+        const appDiv = document.getElementById('app-content');
+        if (loginDiv) loginDiv.style.display = 'none';
+        if (appDiv) appDiv.style.display = 'block';
+        
+        const user = this.getCurrentUser();
         if (user) {
-            const loginDiv = document.getElementById('login-container');
-            const appDiv = document.getElementById('app-content');
-            if (loginDiv) loginDiv.style.display = 'none';
-            if (appDiv) appDiv.style.display = 'block';
-
             let userInfoDiv = document.querySelector('.user-info');
             if (!userInfoDiv) {
                 const statusBar = document.querySelector('.status-bar');
@@ -62,24 +80,23 @@ const Auth = {
                     userInfoDiv = document.createElement('div');
                     userInfoDiv.className = 'user-info';
                     userInfoDiv.innerHTML = `
-                        <span class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(user.user_metadata?.nome || user.email)}</span>
+                        <span class="user-name"><i class="fas fa-user-circle"></i> ${escapeHtml(user.nome)}</span>
                         <button class="btn btn-sm btn-logout" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</button>
                     `;
                     statusBar.appendChild(userInfoDiv);
+                    
                     document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
                 }
             } else {
                 const nameSpan = userInfoDiv.querySelector('.user-name');
-                if (nameSpan) {
-                    nameSpan.innerHTML = `<i class="fas fa-user-circle"></i> ${escapeHtml(user.user_metadata?.nome || user.email)}`;
-                }
+                if (nameSpan) nameSpan.innerHTML = `<i class="fas fa-user-circle"></i> ${escapeHtml(user.nome)}`;
             }
         }
     },
-
-    async verificarSessao() {
-        if (await this.isLoggedIn()) {
-            await this.redirecionarParaApp();
+    
+    verificarSessao() {
+        if (this.isLoggedIn()) {
+            this.redirecionarParaApp();
             return true;
         } else {
             this.redirecionarParaLogin();
@@ -1409,7 +1426,7 @@ async function testarConexao() {
 }
 
 async function carregarDadosPrincipais() {
-    if (!await Auth.isLoggedIn()) return;
+    if (!Auth.isLoggedIn()) return;
     await DataService.loadCaixa(1, 100);
     await DataService.loadServicos(1, 100);
     await DataService.loadAgenda(1, 100);
@@ -1504,20 +1521,19 @@ function setupLoginForm() {
             return;
         }
         
-        try {
-            await Auth.login(email, senha);
+        const user = Auth.login(email, senha);
+        if (user) {
             errorDiv.style.display = 'none';
-            await Auth.redirecionarParaApp();
+            Auth.redirecionarParaApp();
             const conectado = await testarConexao();
             if (conectado) {
                 await carregarDadosPrincipais();
                 setupNavigation();
                 setupGlobalDelegation();
             }
-        } catch (error) {
+        } else {
             errorDiv.style.display = 'block';
             errorDiv.innerText = 'E-mail ou senha incorretos.';
-            console.error('Erro no login:', error);
         }
     });
 }
@@ -1563,16 +1579,18 @@ window.sincronizarAgora = () => location.reload();
 window.fecharModal = (modalId) => DomUtils.setDisplay(modalId, 'none');
 
 // Inicialização da autenticação
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     setupLoginForm();
-    if (await Auth.isLoggedIn()) {
-        await Auth.redirecionarParaApp();
-        const conectado = await testarConexao();
-        if (conectado) {
-            await carregarDadosPrincipais();
-            setupNavigation();
-            setupGlobalDelegation();
-        }
+    if (Auth.isLoggedIn()) {
+        Auth.redirecionarParaApp();
+        testarConexao().then(conectado => {
+            if (conectado) {
+                carregarDadosPrincipais().then(() => {
+                    setupNavigation();
+                    setupGlobalDelegation();
+                });
+            }
+        });
     } else {
         Auth.redirecionarParaLogin();
     }
