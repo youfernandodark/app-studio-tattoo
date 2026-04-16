@@ -693,7 +693,6 @@ textarea:focus-visible {
         font-size: 1.8rem;
     }
 
-    /* As tabelas já possuem min-width e overflow-x auto */
     .table-wrapper {
         margin: 16px 0;
     }
@@ -729,5 +728,50 @@ textarea:focus-visible {
         width: calc(100% - 32px);
         right: 16px;
         top: 16px;
+    }
+}
+
+/* ========== ESTILOS EXCLUSIVOS PARA A AGENDA ========== */
+/* Cabeçalho da tabela da agenda como barra fixa */
+.table-wrapper table th {
+    background: #1A1A1A;
+    color: #E0E0E0;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #3A3A3A;
+    white-space: nowrap;
+}
+
+/* Garantir que todas as células da agenda fiquem alinhadas verticalmente */
+.table-wrapper table td,
+.table-wrapper table th {
+    vertical-align: middle;
+    text-align: left;
+    padding: 14px 12px;
+}
+
+/* Botões da agenda na mesma linha (sem quebrar) */
+.acoes-agenda {
+    white-space: nowrap;
+}
+
+.acoes-agenda .btn {
+    margin-right: 6px;
+    margin-bottom: 0;
+}
+
+.acoes-agenda .btn:last-child {
+    margin-right: 0;
+}
+
+/* Para telas pequenas, mantém a rolagem horizontal */
+@media (max-width: 768px) {
+    .table-wrapper {
+        overflow-x: auto;
+    }
+    .table-wrapper table {
+        min-width: 800px;
     }
 }

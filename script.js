@@ -367,6 +367,7 @@ const Renderer = {
         DomUtils.setHtml('servicos-total-repasse', MoneyUtils.format(totalRepasse));
     },
 
+    // Função renderAgenda modificada: Data e Hora em colunas separadas
     renderAgenda(data) {
         const linhas = data.map(a => {
             const statusClass = {
@@ -376,23 +377,34 @@ const Renderer = {
                 Cancelado: 'status-danger'
             }[a.status] || '';
             const realizarBtn = a.status !== 'Concluído' && a.status !== 'Cancelado'
-                ? `<button class="btn btn-success btn-sm" data-acao="realizar-servico" data-id="${a.id}"><i class="fas fa-check"></i> Realizar</button> `
+                ? `<button class="btn btn-success btn-sm" data-acao="realizar-servico" data-id="${a.id}"><i class="fas fa-check"></i> Realizar</button>`
                 : '';
+            
+            // Extrai data e hora separadamente
+            const dt = new Date(a.data_hora);
+            const dataStr = !isNaN(dt.getTime()) ? dt.toLocaleDateString('pt-BR') : '-';
+            const horaStr = !isNaN(dt.getTime()) ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
+            
             return `<tr>
-                <td>${DateUtils.formatDateTime(a.data_hora)}</td>
+                <td>${dataStr}</td>
+                <td>${horaStr}</td>
                 <td>${escapeHtml(a.cliente)}</td>
                 <td>${escapeHtml(a.tatuador_nome)}</td>
                 <td>${escapeHtml(a.tipo_servico)}</td>
                 <td><span class="status-badge-item ${statusClass}">${escapeHtml(a.status)}</span></td>
                 <td>${escapeHtml(a.observacoes) || '-'}</td>
-                <td>
+                <td class="acoes-agenda">
                     ${realizarBtn}
                     <button class="btn btn-warning btn-sm" data-acao="editar-agenda" data-id="${a.id}">Editar</button>
                     <button class="btn btn-danger btn-sm" data-acao="excluir-agenda" data-id="${a.id}">Excluir</button>
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('agenda-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum agendamento</td></tr>');
+        
+        const tbody = DomUtils.get('agenda-tbody');
+        if (tbody) {
+            tbody.innerHTML = data.length ? linhas : '<tr><td colspan="8">Nenhum agendamento</td></tr>';
+        }
     },
 
     renderEstoquePiercing(piercings) {
@@ -928,7 +940,6 @@ const PiercingModule = {
 
         if (!nome) return AlertUtils.show('Nome obrigatório', 'error');
 
-        // --- VALIDAÇÃO PARA NOVO PIERCING ---
         if (!id && (!custo_unitario || custo_unitario <= 0)) {
             return AlertUtils.show('Para novo piercing, o Valor de Custo é obrigatório e deve ser maior que zero.', 'error');
         }
