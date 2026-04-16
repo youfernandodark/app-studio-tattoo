@@ -353,6 +353,26 @@
         </div>
     </div>
 </div>
+<!-- Modal Piercing (trecho modificado) -->
+<div id="modal-piercing" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal('modal-piercing')">&times;</span>
+        <h2>Piercing</h2>
+        <input type="hidden" id="piercing-id">
+        <div class="form-scrollable">
+            <div class="form-group"><label>Nome</label><input id="piercing-nome"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Quantidade</label><input type="number" id="piercing-qtd"></div>
+                <div class="form-group"><label>Preço Venda (R$)</label><input type="number" id="piercing-preco" step="0.01"></div>
+            </div>
+            <!-- NOVO CAMPO: Valor de Custo -->
+            <div class="form-group"><label>Valor de Custo (R$)</label><input type="number" id="piercing-custo" step="0.01" value="0"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-success" onclick="salvarPiercing()">Salvar</button>
+        </div>
+    </div>
+</div>
 
 <script src="script.js"></script>
 </body>

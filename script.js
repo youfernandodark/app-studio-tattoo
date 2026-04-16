@@ -168,7 +168,6 @@ const DataService = {
         return { data: data || [], count };
     },
 
-    // NOVO: Busca todos os registros sem limite (para cálculos totais)
     async fetchAll(table, orderBy = null, ascending = true) {
         let query = supabaseClient.from(table).select('*');
         if (orderBy) query = query.order(orderBy, { ascending });
@@ -192,7 +191,6 @@ const DataService = {
         if (error) throw error;
     },
 
-    // Carrega todos os serviços (para cálculos globais)
     async loadAllServicos() {
         try {
             const data = await this.fetchAll('servicos', 'data', false);
@@ -200,7 +198,6 @@ const DataService = {
         } catch (e) { ErrorHandler.handle('carregar todos serviços', e); }
     },
 
-    // Carrega todos os lançamentos de caixa (para cálculos globais)
     async loadAllCaixa() {
         try {
             const data = await this.fetchAll('caixa', 'data', false);
@@ -332,7 +329,7 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('caixa-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum lançamento</td></tr>');
+        this._renderTable('caixa-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum lançamento</td</tr>');
         DomUtils.setHtml('caixa-total-entradas', MoneyUtils.format(totalEntradas));
         DomUtils.setHtml('caixa-total-saidas', MoneyUtils.format(totalSaidas));
         const ultimoSaldo = data.length ? data[0].saldo_final : 0;
@@ -343,7 +340,6 @@ const Renderer = {
         let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
         const linhas = data.map(s => {
             const val = MoneyUtils.parse(s.valor_total);
-            // CORREÇÃO: Estúdio fica com 100% para outros tatuadores, repasse 0
             const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : val;
             const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : 0;
             totalValor += val;
@@ -365,7 +361,7 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('servicos-tbody', data.length ? linhas : '<tr><td colspan="10">Nenhum serviço</td></tr>');
+        this._renderTable('servicos-tbody', data.length ? linhas : '<tr><td colspan="10">Nenhum serviço</td</tr>');
         DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(totalValor));
         DomUtils.setHtml('servicos-total-estudio', MoneyUtils.format(totalEstudio));
         DomUtils.setHtml('servicos-total-repasse', MoneyUtils.format(totalRepasse));
@@ -396,7 +392,7 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('agenda-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum agendamento</td></tr>');
+        this._renderTable('agenda-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum agendamento</td</tr>');
     },
 
     renderEstoquePiercing(piercings) {
@@ -409,6 +405,7 @@ const Renderer = {
                 <td>${escapeHtml(p.nome)}</td>
                 <td>${p.quantidade}</td>
                 <td>${MoneyUtils.format(p.preco_venda)}</td>
+                <td>${MoneyUtils.format(p.custo_unitario || 0)}</td>
                 <td>
                     <button class="btn btn-warning btn-sm" data-acao="editar-piercing" data-id="${p.id}">Editar</button>
                     <button class="btn btn-danger btn-sm" data-acao="excluir-piercing" data-id="${p.id}">Excluir</button>
@@ -418,13 +415,13 @@ const Renderer = {
         });
         tbody.innerHTML = '';
         if (piercings.length) tbody.appendChild(fragment);
-        else tbody.innerHTML = '<tr><td colspan="4">Nenhum piercing</td></tr>';
+        else tbody.innerHTML = '<tr><td colspan="5">Nenhum piercing</td</tr>';
 
         const select = DomUtils.get('venda-piercing-id');
         if (select) {
             select.innerHTML = '<option value="">Selecione</option>' +
                 piercings.filter(p => p.quantidade > 0)
-                    .map(p => `<option value="${p.id}" data-preco="${p.preco_venda}">${escapeHtml(p.nome)} - ${MoneyUtils.format(p.preco_venda)} (Estoque: ${p.quantidade})</option>`)
+                    .map(p => `<option value="${p.id}" data-preco="${p.preco_venda}" data-custo="${p.custo_unitario || 0}">${escapeHtml(p.nome)} - Venda: ${MoneyUtils.format(p.preco_venda)} | Custo: ${MoneyUtils.format(p.custo_unitario || 0)} (Estoque: ${p.quantidade})</option>`)
                     .join('');
         }
     },
@@ -438,7 +435,7 @@ const Renderer = {
             <td>${v.quantidade}</td>
             <td>${MoneyUtils.format(v.valor_total)}</td>
             <td>${escapeHtml(v.cliente || '-')}</td>
-        </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td></tr>';
+        </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td</tr>';
     },
 
     renderEstoqueMaterial(materiais) {
@@ -452,12 +449,12 @@ const Renderer = {
                 <button class="btn btn-warning btn-sm" data-acao="editar-material" data-id="${m.id}">Editar</button>
                 <button class="btn btn-danger btn-sm" data-acao="excluir-material" data-id="${m.id}">Excluir</button>
             </td>
-        </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td></tr>';
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td</tr>';
         const select = DomUtils.get('uso-material-id');
         if (select) {
             select.innerHTML = '<option value="">Selecione</option>' +
                 materiais.filter(m => m.quantidade > 0)
-                    .map(m => `<option value="${m.id}">${escapeHtml(m.nome)} (${m.quantidade} un.)</option>`)
+                    .map(m => `<option value="${m.id}" data-custo="${m.valor_unitario}">${escapeHtml(m.nome)} (${m.quantidade} un.) - Custo un: ${MoneyUtils.format(m.valor_unitario)}</option>`)
                     .join('');
         }
     },
@@ -470,7 +467,7 @@ const Renderer = {
             <td>${escapeHtml(u.material?.nome || '?')}</td>
             <td>${u.quantidade}</td>
             <td>${escapeHtml(u.observacao || '-')}</td>
-        </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td></tr>';
+        </tr>`).join('') : '<td><td colspan="4">Nenhum uso</td</tr>';
     }
 };
 
@@ -481,7 +478,6 @@ function escapeHtml(str) {
 
 // ==================== DASHBOARD E RELATÓRIOS ====================
 async function atualizarDashboard() {
-    // Carrega TODOS os registros para cálculos precisos
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
 
@@ -507,7 +503,6 @@ async function atualizarDashboard() {
         ? `<ul>${proximos.map(a => `<li>${DateUtils.formatDateTime(a.data_hora)} - ${escapeHtml(a.cliente)}</li>`).join('')}</ul>`
         : 'Nenhum');
 
-    // Gráfico de faturamento mensal (CORRIGIDO: sem problemas de fuso horário)
     const canvasFaturamento = DomUtils.get('chart-faturamento');
     if (canvasFaturamento) {
         const ctx = canvasFaturamento.getContext('2d');
@@ -516,7 +511,6 @@ async function atualizarDashboard() {
             const d = new Date();
             d.setMonth(d.getMonth() - i);
             meses.push(d.toLocaleDateString('pt-BR', { month: 'short' }));
-            // Filtro seguro: compara ano e mês diretamente da string "YYYY-MM-DD"
             const soma = AppState.servicos.filter(s => {
                 const [ano, mes] = s.data.split('-');
                 return parseInt(mes) - 1 === d.getMonth() && parseInt(ano) === d.getFullYear();
@@ -572,6 +566,32 @@ async function carregarRelatorios() {
     const totalSaidas = AppState.caixa.reduce((s, c) => s + MoneyUtils.parse(c.saidas), 0);
     const lucroLiquido = estudioThalia - totalSaidas;
     DomUtils.setHtml('relatorio-lucro-liquido', `<strong>Lucro Líquido (Estúdio):</strong> ${MoneyUtils.format(lucroLiquido)}`);
+}
+
+// ==================== FUNÇÃO AUXILIAR PARA REGISTRAR SAÍDA NO CAIXA ====================
+async function registrarSaidaCaixa(data, valor, descricao) {
+    if (valor <= 0) return;
+    try {
+        const { data: ultimoCaixa } = await supabaseClient.from('caixa')
+            .select('saldo_final')
+            .order('data', { ascending: false })
+            .limit(1);
+        const ultimoSaldo = ultimoCaixa && ultimoCaixa.length ? ultimoCaixa[0].saldo_final : 0;
+        const entradaCaixa = {
+            data: data,
+            saldo_inicial: ultimoSaldo,
+            entradas: 0,
+            saidas: valor,
+            saldo_final: ultimoSaldo - valor,
+            descricao: descricao
+        };
+        await DataService.saveRecord('caixa', entradaCaixa);
+        await DataService.loadCaixa(AppState.paginacao.caixa.pagina);
+        AlertUtils.show(`Saída registrada no caixa: ${MoneyUtils.format(valor)}`, 'info');
+    } catch (e) {
+        console.warn('Erro ao registrar saída no caixa:', e);
+        AlertUtils.show('Erro ao registrar saída no caixa. Registre manualmente.', 'warning');
+    }
 }
 
 // ==================== MÓDULOS CRUD ====================
@@ -641,7 +661,6 @@ const ServicosModule = {
     calcularRepasse: () => {
         const valor = MoneyUtils.parse(DomUtils.getValue('servico-valor'));
         const tatuador = DomUtils.getValue('servico-tatuador');
-        // CORREÇÃO: Estúdio fica com 100% para outros tatuadores, repasse 0
         const estudio = tatuador === 'Thalia' ? valor * 0.3 : valor;
         const repasse = tatuador === 'Thalia' ? valor * 0.7 : 0;
         DomUtils.setHtml('valor-estudio', MoneyUtils.format(estudio));
@@ -663,9 +682,8 @@ const ServicosModule = {
             await DataService.saveRecord('servicos', record, id || null);
             DomUtils.setDisplay('modal-servico', 'none');
             await DataService.loadServicos(AppState.paginacao.servicos.pagina);
-            await atualizarDashboard(); // atualiza dashboard com todos os dados
+            await atualizarDashboard();
 
-            // Se houver agendamento pendente, marca como Concluído
             if (window.pendingAgendaId) {
                 try {
                     await DataService.saveRecord('agenda', { status: 'Concluído' }, window.pendingAgendaId);
@@ -678,9 +696,7 @@ const ServicosModule = {
                 delete window.pendingAgendaId;
             }
 
-            // (OPCIONAL) Registrar automaticamente a entrada no caixa
             try {
-                // Busca último saldo para calcular novo saldo_final
                 const { data: ultimoCaixa } = await supabaseClient.from('caixa')
                     .select('saldo_final')
                     .order('data', { ascending: false })
@@ -745,7 +761,7 @@ const ServicosModule = {
     }
 };
 
-// --- AGENDA (com correção de fuso horário) ---
+// --- AGENDA ---
 const AgendaModule = {
     abrirModal: () => {
         DomUtils.clearForm('form-agenda');
@@ -754,21 +770,20 @@ const AgendaModule = {
     },
     salvar: async () => {
         const id = DomUtils.getValue('agenda-id');
-        const dataLocal = DomUtils.getValue('agenda-data');      // YYYY-MM-DD
-        const horaLocal = DomUtils.getValue('agenda-horario');   // HH:MM
+        const dataLocal = DomUtils.getValue('agenda-data');
+        const horaLocal = DomUtils.getValue('agenda-horario');
 
         if (!dataLocal || !horaLocal) {
             AlertUtils.show('Data e horário são obrigatórios', 'error');
             return;
         }
 
-        // Cria objeto Date no fuso local e converte para UTC
         const dataHoraLocal = new Date(`${dataLocal}T${horaLocal}:00`);
         if (isNaN(dataHoraLocal.getTime())) {
             AlertUtils.show('Data/hora inválida', 'error');
             return;
         }
-        const dataHoraUTC = dataHoraLocal.toISOString(); // Ex: "2025-01-15T17:00:00.000Z"
+        const dataHoraUTC = dataHoraLocal.toISOString();
 
         const record = {
             data_hora: dataHoraUTC,
@@ -868,6 +883,7 @@ const PiercingModule = {
                         DomUtils.setValue('piercing-nome', data.nome);
                         DomUtils.setValue('piercing-qtd', data.quantidade);
                         DomUtils.setValue('piercing-preco', data.preco_venda);
+                        DomUtils.setValue('piercing-custo', data.custo_unitario || 0);
                         DomUtils.setDisplay('modal-piercing', 'block');
                     }
                 })
@@ -881,10 +897,11 @@ const PiercingModule = {
         const nome = DomUtils.getValue('piercing-nome');
         const quantidade = parseInt(DomUtils.getValue('piercing-qtd')) || 0;
         const preco_venda = MoneyUtils.parse(DomUtils.getValue('piercing-preco'));
+        const custo_unitario = MoneyUtils.parse(DomUtils.getValue('piercing-custo'));
         if (!nome) return AlertUtils.show('Nome obrigatório', 'error');
         try {
             LoadingUtils.show('Salvando piercing...');
-            await DataService.saveRecord('piercings_estoque', { nome, quantidade, preco_venda }, id || null);
+            await DataService.saveRecord('piercings_estoque', { nome, quantidade, preco_venda, custo_unitario }, id || null);
             DomUtils.setDisplay('modal-piercing', 'none');
             await DataService.loadPiercings();
             await DataService.loadVendasPiercing();
@@ -916,6 +933,7 @@ const PiercingModule = {
             if (error) throw error;
             if (!piercing || piercing.quantidade < quantidade) throw new Error('Estoque insuficiente');
             const valorTotal = quantidade * piercing.preco_venda;
+            const custoTotal = quantidade * (piercing.custo_unitario || 0);
             
             const { error: updateError } = await supabaseClient.from('piercings_estoque')
                 .update({ quantidade: piercing.quantidade - quantidade }).eq('id', piercingId);
@@ -930,11 +948,17 @@ const PiercingModule = {
                 throw insertError;
             }
             
+            // Registrar saída do custo no caixa
+            if (custoTotal > 0) {
+                const dataHoje = DateUtils.nowDate();
+                await registrarSaidaCaixa(dataHoje, custoTotal, `Custo de venda: ${quantidade} un. de ${piercing.nome}`);
+            }
+            
             await DataService.loadPiercings();
             await DataService.loadVendasPiercing();
             DomUtils.setValue('venda-qtd', 1);
             DomUtils.setValue('venda-cliente', '');
-            AlertUtils.show(`Venda registrada: ${MoneyUtils.format(valorTotal)}`, 'success');
+            AlertUtils.show(`Venda registrada: ${MoneyUtils.format(valorTotal)} (custo: ${MoneyUtils.format(custoTotal)})`, 'success');
         } catch (e) { ErrorHandler.handle('venda piercing', e); }
         finally { LoadingUtils.hide(); }
     }
@@ -1000,6 +1024,8 @@ const MateriaisModule = {
             if (error) throw error;
             if (!material || material.quantidade < quantidade) throw new Error('Quantidade insuficiente');
             
+            const custoTotal = quantidade * material.valor_unitario;
+            
             await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade - quantidade }).eq('id', materialId);
             const { error: insertError } = await supabaseClient.from('usos_materiais').insert([{ 
                 material_id: materialId, quantidade, observacao: observacao || null,
@@ -1010,11 +1036,17 @@ const MateriaisModule = {
                 throw insertError;
             }
             
+            // Registrar saída do custo no caixa
+            if (custoTotal > 0) {
+                const dataHoje = DateUtils.nowDate();
+                await registrarSaidaCaixa(dataHoje, custoTotal, `Uso de material: ${quantidade} un. de ${material.nome} - ${observacao || ''}`);
+            }
+            
             await DataService.loadMateriais();
             await DataService.loadUsosMateriais();
             DomUtils.setValue('uso-qtd', 1);
             DomUtils.setValue('uso-obs', '');
-            AlertUtils.show(`Uso de ${quantidade} unidade(s) de ${material.nome} registrado`, 'success');
+            AlertUtils.show(`Uso de ${quantidade} unidade(s) de ${material.nome} registrado (custo: ${MoneyUtils.format(custoTotal)})`, 'success');
         } catch (e) { ErrorHandler.handle('uso material', e); }
         finally { LoadingUtils.hide(); }
     }
@@ -1070,11 +1102,11 @@ const ExemplosModule = {
     popularPiercings: async () => {
         if (!await ConfirmModal.show('Isso irá adicionar piercings de exemplo (não remove os existentes). Continuar?')) return;
         const exemplos = [
-            { nome: 'Piercing Nariz Cristal', quantidade: 10, preco_venda: 80.00 },
-            { nome: 'Piercing Septo Aço', quantidade: 8, preco_venda: 120.00 },
-            { nome: 'Piercing Lábio Argola', quantidade: 5, preco_venda: 70.00 },
-            { nome: 'Piercing Tragus Pérola', quantidade: 12, preco_venda: 90.00 },
-            { nome: 'Piercing Indústrial Barra', quantidade: 6, preco_venda: 110.00 }
+            { nome: 'Piercing Nariz Cristal', quantidade: 10, preco_venda: 80.00, custo_unitario: 25.00 },
+            { nome: 'Piercing Septo Aço', quantidade: 8, preco_venda: 120.00, custo_unitario: 35.00 },
+            { nome: 'Piercing Lábio Argola', quantidade: 5, preco_venda: 70.00, custo_unitario: 20.00 },
+            { nome: 'Piercing Tragus Pérola', quantidade: 12, preco_venda: 90.00, custo_unitario: 28.00 },
+            { nome: 'Piercing Indústrial Barra', quantidade: 6, preco_venda: 110.00, custo_unitario: 32.00 }
         ];
         try {
             LoadingUtils.show('Adicionando exemplos...');
