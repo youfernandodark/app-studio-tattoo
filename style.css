@@ -664,7 +664,7 @@ textarea:focus-visible {
     opacity: 0.8;
 }
 
-/* Responsividade - mantém tabelas com rolagem horizontal */
+/* Responsividade */
 @media (max-width: 768px) {
     body {
         padding: 16px;
@@ -731,8 +731,7 @@ textarea:focus-visible {
     }
 }
 
-/* ========== ESTILOS EXCLUSIVOS PARA A AGENDA ========== */
-/* Cabeçalho da tabela da agenda como barra fixa */
+/* ========== ESTILOS ESPECÍFICOS PARA AGENDA ========== */
 .table-wrapper table th {
     background: #1A1A1A;
     color: #E0E0E0;
@@ -744,7 +743,6 @@ textarea:focus-visible {
     white-space: nowrap;
 }
 
-/* Garantir que todas as células da agenda fiquem alinhadas verticalmente */
 .table-wrapper table td,
 .table-wrapper table th {
     vertical-align: middle;
@@ -752,7 +750,6 @@ textarea:focus-visible {
     padding: 14px 12px;
 }
 
-/* Botões da agenda na mesma linha (sem quebrar) */
 .acoes-agenda {
     white-space: nowrap;
 }
@@ -766,7 +763,6 @@ textarea:focus-visible {
     margin-right: 0;
 }
 
-/* Para telas pequenas, mantém a rolagem horizontal */
 @media (max-width: 768px) {
     .table-wrapper {
         overflow-x: auto;

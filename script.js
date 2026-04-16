@@ -309,19 +309,15 @@ const Renderer = {
         });
     },
 
+    // CAIXA: sem saldo inicial/final e sem rodapé de totais
     renderCaixa(data) {
-        let totalEntradas = 0, totalSaidas = 0;
         const linhas = data.map(item => {
             const ent = MoneyUtils.parse(item.entradas);
             const sai = MoneyUtils.parse(item.saidas);
-            totalEntradas += ent;
-            totalSaidas += sai;
             return `<tr>
                 <td>${DateUtils.formatDate(item.data)}</td>
-                <td>${MoneyUtils.format(item.saldo_inicial)}</td>
                 <td style="color:#34D399">+${MoneyUtils.format(ent)}</td>
                 <td style="color:#F87171">-${MoneyUtils.format(sai)}</td>
-                <td>${MoneyUtils.format(item.saldo_final)}</td>
                 <td>${escapeHtml(item.descricao) || '-'}</td>
                 <td>
                     <button class="btn btn-warning btn-sm" data-acao="editar-caixa" data-id="${item.id}">Editar</button>
@@ -329,11 +325,7 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('caixa-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum lançamento</td></tr>');
-        DomUtils.setHtml('caixa-total-entradas', MoneyUtils.format(totalEntradas));
-        DomUtils.setHtml('caixa-total-saidas', MoneyUtils.format(totalSaidas));
-        const ultimoSaldo = data.length ? data[0].saldo_final : 0;
-        DomUtils.setHtml('caixa-saldo-final', MoneyUtils.format(ultimoSaldo));
+        this._renderTable('caixa-tbody', data.length ? linhas : '<tr><td colspan="5">Nenhum lançamento</td</tr>');
     },
 
     renderServicos(data) {
@@ -361,13 +353,13 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('servicos-tbody', data.length ? linhas : '<tr><td colspan="10">Nenhum serviço</td></tr>');
+        this._renderTable('servicos-tbody', data.length ? linhas : '<tr><td colspan="10">Nenhum serviço</td</tr>');
         DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(totalValor));
         DomUtils.setHtml('servicos-total-estudio', MoneyUtils.format(totalEstudio));
         DomUtils.setHtml('servicos-total-repasse', MoneyUtils.format(totalRepasse));
     },
 
-    // Função renderAgenda modificada: Data e Hora em colunas separadas
+    // AGENDA: Data e Hora separadas, botões alinhados
     renderAgenda(data) {
         const linhas = data.map(a => {
             const statusClass = {
@@ -379,12 +371,9 @@ const Renderer = {
             const realizarBtn = a.status !== 'Concluído' && a.status !== 'Cancelado'
                 ? `<button class="btn btn-success btn-sm" data-acao="realizar-servico" data-id="${a.id}"><i class="fas fa-check"></i> Realizar</button>`
                 : '';
-            
-            // Extrai data e hora separadamente
             const dt = new Date(a.data_hora);
             const dataStr = !isNaN(dt.getTime()) ? dt.toLocaleDateString('pt-BR') : '-';
             const horaStr = !isNaN(dt.getTime()) ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
-            
             return `<tr>
                 <td>${dataStr}</td>
                 <td>${horaStr}</td>
@@ -400,10 +389,9 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        
         const tbody = DomUtils.get('agenda-tbody');
         if (tbody) {
-            tbody.innerHTML = data.length ? linhas : '<tr><td colspan="8">Nenhum agendamento</td></tr>';
+            tbody.innerHTML = data.length ? linhas : '<tr><td colspan="8">Nenhum agendamento</td</tr>';
         }
     },
 
@@ -427,7 +415,7 @@ const Renderer = {
         });
         tbody.innerHTML = '';
         if (piercings.length) tbody.appendChild(fragment);
-        else tbody.innerHTML = '<tr><td colspan="5">Nenhum piercing</td></tr>';
+        else tbody.innerHTML = '<tr><td colspan="5">Nenhum piercing</td</tr>';
 
         const select = DomUtils.get('venda-piercing-id');
         if (select) {
@@ -447,7 +435,7 @@ const Renderer = {
             <td>${v.quantidade}</td>
             <td>${MoneyUtils.format(v.valor_total)}</td>
             <td>${escapeHtml(v.cliente || '-')}</td>
-        </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td></tr>';
+        </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td</tr>';
     },
 
     renderEstoqueMaterial(materiais) {
@@ -461,7 +449,7 @@ const Renderer = {
                 <button class="btn btn-warning btn-sm" data-acao="editar-material" data-id="${m.id}">Editar</button>
                 <button class="btn btn-danger btn-sm" data-acao="excluir-material" data-id="${m.id}">Excluir</button>
             </td>
-        </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td></tr>';
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td</tr>';
         const select = DomUtils.get('uso-material-id');
         if (select) {
             select.innerHTML = '<option value="">Selecione</option>' +
@@ -479,7 +467,7 @@ const Renderer = {
             <td>${escapeHtml(u.material?.nome || '?')}</td>
             <td>${u.quantidade}</td>
             <td>${escapeHtml(u.observacao || '-')}</td>
-        </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td></tr>';
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td</tr>';
     }
 };
 
