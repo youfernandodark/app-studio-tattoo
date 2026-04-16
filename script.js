@@ -329,7 +329,7 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('caixa-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum lançamento</td</tr>');
+        this._renderTable('caixa-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum lançamento</td></tr>');
         DomUtils.setHtml('caixa-total-entradas', MoneyUtils.format(totalEntradas));
         DomUtils.setHtml('caixa-total-saidas', MoneyUtils.format(totalSaidas));
         const ultimoSaldo = data.length ? data[0].saldo_final : 0;
@@ -361,7 +361,7 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('servicos-tbody', data.length ? linhas : '<tr><td colspan="10">Nenhum serviço</td</tr>');
+        this._renderTable('servicos-tbody', data.length ? linhas : '<tr><td colspan="10">Nenhum serviço</td></tr>');
         DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(totalValor));
         DomUtils.setHtml('servicos-total-estudio', MoneyUtils.format(totalEstudio));
         DomUtils.setHtml('servicos-total-repasse', MoneyUtils.format(totalRepasse));
@@ -392,7 +392,7 @@ const Renderer = {
                 </td>
             </tr>`;
         }).join('');
-        this._renderTable('agenda-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum agendamento</td</tr>');
+        this._renderTable('agenda-tbody', data.length ? linhas : '<tr><td colspan="7">Nenhum agendamento</td></tr>');
     },
 
     renderEstoquePiercing(piercings) {
@@ -415,7 +415,7 @@ const Renderer = {
         });
         tbody.innerHTML = '';
         if (piercings.length) tbody.appendChild(fragment);
-        else tbody.innerHTML = '<tr><td colspan="5">Nenhum piercing</td</tr>';
+        else tbody.innerHTML = '<tr><td colspan="5">Nenhum piercing</td></tr>';
 
         const select = DomUtils.get('venda-piercing-id');
         if (select) {
@@ -435,7 +435,7 @@ const Renderer = {
             <td>${v.quantidade}</td>
             <td>${MoneyUtils.format(v.valor_total)}</td>
             <td>${escapeHtml(v.cliente || '-')}</td>
-        </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td</tr>';
+        </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td></tr>';
     },
 
     renderEstoqueMaterial(materiais) {
@@ -449,7 +449,7 @@ const Renderer = {
                 <button class="btn btn-warning btn-sm" data-acao="editar-material" data-id="${m.id}">Editar</button>
                 <button class="btn btn-danger btn-sm" data-acao="excluir-material" data-id="${m.id}">Excluir</button>
             </td>
-        </tr>`).join('') : ' hilab<td colspan="4">Nenhum material</td</tr>';
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td></tr>';
         const select = DomUtils.get('uso-material-id');
         if (select) {
             select.innerHTML = '<option value="">Selecione</option>' +
@@ -467,7 +467,7 @@ const Renderer = {
             <td>${escapeHtml(u.material?.nome || '?')}</td>
             <td>${u.quantidade}</td>
             <td>${escapeHtml(u.observacao || '-')}</td>
-        </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td</tr>';
+        </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td></tr>';
     }
 };
 
@@ -898,7 +898,7 @@ const AgendaModule = {
     }
 };
 
-// --- PIERCING (sem saída de caixa na compra/adição) ---
+// --- PIERCING ---
 const PiercingModule = {
     abrirModal: (id = null) => {
         DomUtils.clearForm('form-piercing');
@@ -928,20 +928,59 @@ const PiercingModule = {
 
         if (!nome) return AlertUtils.show('Nome obrigatório', 'error');
 
+        // --- VALIDAÇÃO PARA NOVO PIERCING ---
+        if (!id && (!custo_unitario || custo_unitario <= 0)) {
+            return AlertUtils.show('Para novo piercing, o Valor de Custo é obrigatório e deve ser maior que zero.', 'error');
+        }
+
         try {
             LoadingUtils.show('Salvando piercing...');
 
-            // Salva no banco (sem qualquer registro de saída de caixa)
+            let quantidadeAnterior = 0;
+            if (id) {
+                const { data } = await supabaseClient
+                    .from('piercings_estoque')
+                    .select('quantidade')
+                    .eq('id', id)
+                    .single();
+                quantidadeAnterior = data?.quantidade || 0;
+            }
+
             await DataService.saveRecord(
                 'piercings_estoque',
                 { nome, quantidade, preco_venda, custo_unitario },
                 id || null
             );
 
+            const dataHoje = DateUtils.nowDate();
+
+            if (!id) {
+                const custoTotal = quantidade * custo_unitario;
+                if (custoTotal > 0) {
+                    await registrarSaidaCaixa(
+                        dataHoje,
+                        custoTotal,
+                        `Compra de estoque: ${quantidade} un. de ${nome}`
+                    );
+                }
+            } else {
+                const aumento = quantidade - quantidadeAnterior;
+                if (aumento > 0) {
+                    const custoAdicional = aumento * custo_unitario;
+                    if (custoAdicional > 0) {
+                        await registrarSaidaCaixa(
+                            dataHoje,
+                            custoAdicional,
+                            `Adição ao estoque: +${aumento} un. de ${nome}`
+                        );
+                    }
+                }
+            }
+
             DomUtils.setDisplay('modal-piercing', 'none');
             await DataService.loadPiercings();
             await DataService.loadVendasPiercing();
-            AlertUtils.show('Piercing salvo (nenhum impacto no caixa)', 'success');
+            AlertUtils.show('Piercing salvo', 'success');
         } catch (e) {
             ErrorHandler.handle('salvar piercing', e);
         } finally {
@@ -980,6 +1019,7 @@ const PiercingModule = {
                 throw new Error('Estoque insuficiente');
 
             const valorTotal = quantidade * piercing.preco_venda;
+            const custoTotal = quantidade * (piercing.custo_unitario || 0);
             const dataHoje = DateUtils.nowDate();
 
             const { error: updateError } = await supabaseClient
@@ -998,7 +1038,6 @@ const PiercingModule = {
                     data: new Date().toISOString()
                 }]);
             if (insertError) {
-                // rollback estoque
                 await supabaseClient
                     .from('piercings_estoque')
                     .update({ quantidade: piercing.quantidade })
@@ -1006,7 +1045,6 @@ const PiercingModule = {
                 throw insertError;
             }
 
-            // Apenas entrada da venda (sem saída de custo)
             if (valorTotal > 0) {
                 await registrarEntradaCaixa(
                     dataHoje,
@@ -1015,11 +1053,22 @@ const PiercingModule = {
                 );
             }
 
+            if (custoTotal > 0) {
+                await registrarSaidaCaixa(
+                    dataHoje,
+                    custoTotal,
+                    `Custo de venda: ${quantidade} un. de ${piercing.nome}`
+                );
+            }
+
             await DataService.loadPiercings();
             await DataService.loadVendasPiercing();
             DomUtils.setValue('venda-qtd', 1);
             DomUtils.setValue('venda-cliente', '');
-            AlertUtils.show(`Venda registrada: ${MoneyUtils.format(valorTotal)}`, 'success');
+            AlertUtils.show(
+                `Venda registrada: ${MoneyUtils.format(valorTotal)} (custo: ${MoneyUtils.format(custoTotal)})`,
+                'success'
+            );
         } catch (e) {
             ErrorHandler.handle('venda piercing', e);
         } finally {
@@ -1028,7 +1077,7 @@ const PiercingModule = {
     }
 };
 
-// --- MATERIAIS (sem saída de caixa na compra/adição) ---
+// --- MATERIAIS ---
 const MateriaisModule = {
     abrirModal: (id = null) => {
         DomUtils.clearForm('form-material');
@@ -1059,16 +1108,51 @@ const MateriaisModule = {
         try {
             LoadingUtils.show('Salvando material...');
 
+            let quantidadeAnterior = 0;
+            if (id) {
+                const { data } = await supabaseClient
+                    .from('materiais_estoque')
+                    .select('quantidade')
+                    .eq('id', id)
+                    .single();
+                quantidadeAnterior = data?.quantidade || 0;
+            }
+
             await DataService.saveRecord(
                 'materiais_estoque',
                 { nome, quantidade, valor_unitario },
                 id || null
             );
 
+            const dataHoje = DateUtils.nowDate();
+
+            if (!id) {
+                const custoTotal = quantidade * valor_unitario;
+                if (custoTotal > 0) {
+                    await registrarSaidaCaixa(
+                        dataHoje,
+                        custoTotal,
+                        `Compra de material: ${quantidade} un. de ${nome}`
+                    );
+                }
+            } else {
+                const aumento = quantidade - quantidadeAnterior;
+                if (aumento > 0) {
+                    const custoAdicional = aumento * valor_unitario;
+                    if (custoAdicional > 0) {
+                        await registrarSaidaCaixa(
+                            dataHoje,
+                            custoAdicional,
+                            `Adição ao estoque de material: +${aumento} un. de ${nome}`
+                        );
+                    }
+                }
+            }
+
             DomUtils.setDisplay('modal-material', 'none');
             await DataService.loadMateriais();
             await DataService.loadUsosMateriais();
-            AlertUtils.show('Material salvo (nenhum impacto no caixa)', 'success');
+            AlertUtils.show('Material salvo', 'success');
         } catch (e) {
             ErrorHandler.handle('salvar material', e);
         } finally {
@@ -1099,6 +1183,8 @@ const MateriaisModule = {
             if (error) throw error;
             if (!material || material.quantidade < quantidade) throw new Error('Quantidade insuficiente');
             
+            const custoTotal = quantidade * material.valor_unitario;
+            
             await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade - quantidade }).eq('id', materialId);
             const { error: insertError } = await supabaseClient.from('usos_materiais').insert([{ 
                 material_id: materialId, quantidade, observacao: observacao || null,
@@ -1109,12 +1195,16 @@ const MateriaisModule = {
                 throw insertError;
             }
             
-            // Nenhuma saída de caixa registrada para o uso do material
+            if (custoTotal > 0) {
+                const dataHoje = DateUtils.nowDate();
+                await registrarSaidaCaixa(dataHoje, custoTotal, `Uso de material: ${quantidade} un. de ${material.nome} - ${observacao || ''}`);
+            }
+            
             await DataService.loadMateriais();
             await DataService.loadUsosMateriais();
             DomUtils.setValue('uso-qtd', 1);
             DomUtils.setValue('uso-obs', '');
-            AlertUtils.show(`Uso de ${quantidade} unidade(s) de ${material.nome} registrado (sem impacto no caixa)`, 'success');
+            AlertUtils.show(`Uso de ${quantidade} unidade(s) de ${material.nome} registrado (custo: ${MoneyUtils.format(custoTotal)})`, 'success');
         } catch (e) { ErrorHandler.handle('uso material', e); }
         finally { LoadingUtils.hide(); }
     }

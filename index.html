@@ -74,14 +74,14 @@
                         </tr>
                     </thead>
                     <tbody id="caixa-tbody">
-                        <tr><td colspan="7" data-label="Status">Carregando...</td></tr>
+                        <tr><td colspan="7">Carregando...</td></tr>
                     </tbody>
                     <tfoot>
                         <tr>
                             <td colspan="2"><strong>TOTAIS</strong></td>
-                            <td id="caixa-total-entradas" data-label="Total Entradas">R$0</td>
-                            <td id="caixa-total-saidas" data-label="Total Saídas">R$0</td>
-                            <td id="caixa-saldo-final" data-label="Saldo Final">R$0</td>
+                            <td id="caixa-total-entradas">R$0</td>
+                            <td id="caixa-total-saidas">R$0</td>
+                            <td id="caixa-saldo-final">R$0</td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>
@@ -112,14 +112,14 @@
                         </tr>
                     </thead>
                     <tbody id="servicos-tbody">
-                        <tr><td colspan="10" data-label="Status">Carregando...</td></tr>
+                        <tr><td colspan="10">Carregando...</td></tr>
                     </tbody>
                     <tfoot>
                         <tr>
                             <td colspan="5"><strong>TOTAIS</strong></td>
-                            <td id="servicos-total-valor" data-label="Total Valor">R$0</td>
-                            <td id="servicos-total-estudio" data-label="Total Estúdio">R$0</td>
-                            <td id="servicos-total-repasse" data-label="Total Repasse">R$0</td>
+                            <td id="servicos-total-valor">R$0</td>
+                            <td id="servicos-total-estudio">R$0</td>
+                            <td id="servicos-total-repasse">R$0</td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>
@@ -149,7 +149,7 @@
                         </tr>
                     </thead>
                     <tbody id="agenda-tbody">
-                        <tr><td colspan="7" data-label="Status">Carregando...</td></tr>
+                        <tr><td colspan="7">Carregando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -241,6 +241,7 @@
 </main>
 
 <!-- MODAIS -->
+
 <!-- Modal Caixa -->
 <div id="modal-caixa" class="modal">
     <div class="modal-content">
@@ -316,7 +317,7 @@
     </div>
 </div>
 
-<!-- Modal Piercing -->
+<!-- Modal Piercing (único, com campo de custo) -->
 <div id="modal-piercing" class="modal">
     <div class="modal-content">
         <span class="close" onclick="fecharModal('modal-piercing')">&times;</span>
@@ -328,6 +329,7 @@
                 <div class="form-group"><label>Quantidade</label><input type="number" id="piercing-qtd"></div>
                 <div class="form-group"><label>Preço Venda (R$)</label><input type="number" id="piercing-preco" step="0.01"></div>
             </div>
+            <div class="form-group"><label>Valor de Custo (R$)</label><input type="number" id="piercing-custo" step="0.01" value="0"></div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-success" onclick="salvarPiercing()">Salvar</button>
@@ -350,26 +352,6 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-success" onclick="salvarMaterial()">Salvar</button>
-        </div>
-    </div>
-</div>
-<!-- Modal Piercing (trecho modificado) -->
-<div id="modal-piercing" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="fecharModal('modal-piercing')">&times;</span>
-        <h2>Piercing</h2>
-        <input type="hidden" id="piercing-id">
-        <div class="form-scrollable">
-            <div class="form-group"><label>Nome</label><input id="piercing-nome"></div>
-            <div class="form-row">
-                <div class="form-group"><label>Quantidade</label><input type="number" id="piercing-qtd"></div>
-                <div class="form-group"><label>Preço Venda (R$)</label><input type="number" id="piercing-preco" step="0.01"></div>
-            </div>
-            <!-- NOVO CAMPO: Valor de Custo -->
-            <div class="form-group"><label>Valor de Custo (R$)</label><input type="number" id="piercing-custo" step="0.01" value="0"></div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-success" onclick="salvarPiercing()">Salvar</button>
         </div>
     </div>
 </div>
