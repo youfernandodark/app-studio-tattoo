@@ -14,11 +14,75 @@
 </head>
 <body>
 
-<div id="app-content">
+<!-- ==================== CONTAINER DE AUTENTICAÇÃO ==================== -->
+<div id="auth-container" class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1><i class="fas fa-skull"></i> DARK013TATTOO</h1>
+            <p>Acesse sua conta ou crie uma nova</p>
+        </div>
+        
+        <div class="auth-tabs">
+            <button id="tab-login" class="auth-tab active">Login</button>
+            <button id="tab-signup" class="auth-tab">Criar conta</button>
+        </div>
+
+        <!-- Formulário de Login -->
+        <form id="login-form" class="auth-form active">
+            <div class="form-group">
+                <label><i class="fas fa-envelope"></i> E-mail</label>
+                <input type="email" id="login-email" placeholder="seu@email.com" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> Senha</label>
+                <input type="password" id="login-password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fas fa-sign-in-alt"></i> Entrar
+            </button>
+            <p id="login-error" class="auth-error"></p>
+        </form>
+
+        <!-- Formulário de Cadastro -->
+        <form id="signup-form" class="auth-form">
+            <div class="form-group">
+                <label><i class="fas fa-envelope"></i> E-mail</label>
+                <input type="email" id="signup-email" placeholder="seu@email.com" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> Senha</label>
+                <input type="password" id="signup-password" placeholder="Mínimo 6 caracteres" required>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-check-circle"></i> Confirmar senha</label>
+                <input type="password" id="signup-password-confirm" placeholder="Repita a senha" required>
+            </div>
+            <button type="submit" class="btn btn-success btn-block">
+                <i class="fas fa-user-plus"></i> Criar conta
+            </button>
+            <p id="signup-error" class="auth-error"></p>
+        </form>
+
+        <div class="auth-footer">
+            <small>🔒 Seus dados estão seguros com Supabase</small>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== CONTEÚDO PRINCIPAL (visível após login) ==================== -->
+<div id="app-content" style="display: none;">
     <main class="container">
         <header>
-            <h1><i class="fas fa-skull"></i> DARK013TATTOO</h1>
-            <p>Gestão profissional com sincronização na nuvem | Dark Mode Studio</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <h1><i class="fas fa-skull"></i> DARK013TATTOO</h1>
+                    <p>Gestão profissional com sincronização na nuvem | Dark Mode Studio</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span id="user-email-display" style="color: var(--text-secondary); font-size: 0.9rem;"></span>
+                    <button id="btn-logout" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                </div>
+            </div>
             <div class="status-bar">
                 <span id="status-nuvem" class="status-badge"><i class="fas fa-spinner fa-pulse"></i> Conectando...</span>
             </div>
@@ -209,68 +273,61 @@
         </section>
 
         <!-- BACKUP -->
-    <!-- BACKUP -->
-<section id="backup" class="section">
-    <div class="card">
-        <h2><i class="fas fa-database"></i> Backup e Sincronização</h2>
-        <p style="margin-bottom: 24px; color: var(--text-secondary);">Gerencie backups locais e sincronize os dados com a nuvem.</p>
-        
-        <div style="display: grid; gap: 20px;">
-            <!-- Bloco Sincronização -->
-            <div style="background: #0F0F18; border-radius: 24px; padding: 24px;">
-                <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
-                    <div style="flex:1; min-width: 200px;">
-                        <h3 style="margin-top: 0; margin-bottom: 8px;"><i class="fas fa-cloud-upload-alt"></i> Sincronização</h3>
-                        <p style="color: var(--text-muted); font-size: 0.9rem;">Atualiza os dados locais com as últimas informações do servidor.</p>
+        <section id="backup" class="section">
+            <div class="card">
+                <h2><i class="fas fa-database"></i> Backup e Sincronização</h2>
+                <p style="margin-bottom: 24px; color: var(--text-secondary);">Gerencie backups locais e sincronize os dados com a nuvem.</p>
+                
+                <div style="display: grid; gap: 20px;">
+                    <div style="background: #0F0F18; border-radius: 24px; padding: 24px;">
+                        <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+                            <div style="flex:1; min-width: 200px;">
+                                <h3 style="margin-top: 0; margin-bottom: 8px;"><i class="fas fa-cloud-upload-alt"></i> Sincronização</h3>
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">Atualiza os dados locais com as últimas informações do servidor.</p>
+                            </div>
+                            <button class="btn btn-primary" id="btn-sincronizar" style="white-space: nowrap;">
+                                <i class="fas fa-sync-alt"></i> Sincronizar agora
+                            </button>
+                        </div>
                     </div>
-                    <button class="btn btn-primary" id="btn-sincronizar" style="white-space: nowrap;">
-                        <i class="fas fa-sync-alt"></i> Sincronizar agora
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Bloco Backup Manual -->
-            <div style="background: #0F0F18; border-radius: 24px; padding: 24px;">
-                <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
-                    <div style="flex:1; min-width: 200px;">
-                        <h3 style="margin-top: 0; margin-bottom: 8px;"><i class="fas fa-download"></i> Backup Local</h3>
-                        <p style="color: var(--text-muted); font-size: 0.9rem;">Exporta todos os dados (serviços, agenda, caixa, estoques) para um arquivo .json que pode ser salvo em seu dispositivo.</p>
+                    
+                    <div style="background: #0F0F18; border-radius: 24px; padding: 24px;">
+                        <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+                            <div style="flex:1; min-width: 200px;">
+                                <h3 style="margin-top: 0; margin-bottom: 8px;"><i class="fas fa-download"></i> Backup Local</h3>
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">Exporta todos os dados para um arquivo .json.</p>
+                            </div>
+                            <button class="btn btn-success" id="btn-exportar-backup">
+                                <i class="fas fa-file-export"></i> Exportar Backup (.json)
+                            </button>
+                        </div>
                     </div>
-                    <button class="btn btn-success" id="btn-exportar-backup">
-                        <i class="fas fa-file-export"></i> Exportar Backup (.json)
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Bloco Importação -->
-            <div style="background: #0F0F18; border-radius: 24px; padding: 24px;">
-                <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
-                    <div style="flex:1; min-width: 200px;">
-                        <h3 style="margin-top: 0; margin-bottom: 8px;"><i class="fas fa-upload"></i> Restaurar Backup</h3>
-                        <p style="color: var(--text-muted); font-size: 0.9rem;">Importa um arquivo de backup (.json) previamente exportado. Atenção: isso pode duplicar registros existentes.</p>
-                    </div>
-                    <div>
-                        <input type="file" id="import-backup" accept=".json" style="display:none">
-                        <button class="btn btn-warning" id="btn-importar-backup">
-                            <i class="fas fa-file-import"></i> Importar Backup
-                        </button>
+                    
+                    <div style="background: #0F0F18; border-radius: 24px; padding: 24px;">
+                        <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+                            <div style="flex:1; min-width: 200px;">
+                                <h3 style="margin-top: 0; margin-bottom: 8px;"><i class="fas fa-upload"></i> Restaurar Backup</h3>
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">Importa um arquivo de backup (.json).</p>
+                            </div>
+                            <div>
+                                <input type="file" id="import-backup" accept=".json" style="display:none">
+                                <button class="btn btn-warning" id="btn-importar-backup">
+                                    <i class="fas fa-file-import"></i> Importar Backup
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
         </section>
     </main>
-            <!-- Rodapé com assinatura -->
-        <footer style="margin-top: 40px; text-align: center; padding: 24px 0; border-top: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.85rem;">
-            <p><i class="fas fa-code"></i> APP WEB desenvolvido por Fernando Dark usando IA -2026-</p>
-        </footer>
-    </main>
-</div>
+
+    <footer style="margin-top: 40px; text-align: center; padding: 24px 0; border-top: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.85rem;">
+        <p><i class="fas fa-code"></i> APP WEB desenvolvido por Fernando Dark usando IA -2026-</p>
+    </footer>
 </div>
 
-<!-- MODAIS (mantidos exatamente como no original) -->
+<!-- MODAIS -->
 <div id="modal-caixa" class="modal">
     <div class="modal-content"><span class="close" data-modal="modal-caixa">&times;</span>
         <h2>Lançamento</h2><input type="hidden" id="caixa-id">

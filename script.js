@@ -9,6 +9,121 @@ if (typeof supabase !== 'undefined') {
     console.error('Supabase não carregou.');
 }
 
+// ==================== AUTENTICAÇÃO ====================
+let currentUser = null;
+const authContainer = document.getElementById('auth-container');
+const appContent = document.getElementById('app-content');
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+const tabLogin = document.getElementById('tab-login');
+const tabSignup = document.getElementById('tab-signup');
+const btnLogout = document.getElementById('btn-logout');
+const userEmailDisplay = document.getElementById('user-email-display');
+
+if (tabLogin && tabSignup) {
+    tabLogin.addEventListener('click', () => {
+        tabLogin.classList.add('active');
+        tabSignup.classList.remove('active');
+        loginForm.classList.add('active');
+        signupForm.classList.remove('active');
+        document.getElementById('login-error').textContent = '';
+    });
+    tabSignup.addEventListener('click', () => {
+        tabSignup.classList.add('active');
+        tabLogin.classList.remove('active');
+        signupForm.classList.add('active');
+        loginForm.classList.remove('active');
+        document.getElementById('signup-error').textContent = '';
+    });
+}
+
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+        const errorEl = document.getElementById('login-error');
+        if (!email || !password) return errorEl.textContent = 'Preencha todos os campos.';
+        try {
+            LoadingUtils.show('Autenticando...');
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            currentUser = data.user;
+            authContainer.style.display = 'none';
+            appContent.style.display = 'block';
+            userEmailDisplay.textContent = currentUser.email;
+            await inicializarApp();
+        } catch (error) {
+            errorEl.textContent = error.message || 'Falha no login.';
+        } finally {
+            LoadingUtils.hide();
+        }
+    });
+}
+
+if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('signup-email').value.trim();
+        const password = document.getElementById('signup-password').value;
+        const confirm = document.getElementById('signup-password-confirm').value;
+        const errorEl = document.getElementById('signup-error');
+        if (!email || !password || !confirm) return errorEl.textContent = 'Preencha todos os campos.';
+        if (password !== confirm) return errorEl.textContent = 'As senhas não coincidem.';
+        if (password.length < 6) return errorEl.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+        try {
+            LoadingUtils.show('Criando conta...');
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) throw error;
+            if (data.user && !data.session) {
+                AlertUtils.show('Conta criada! Verifique seu e-mail para confirmar.', 'success');
+                tabLogin.click();
+            } else {
+                currentUser = data.user;
+                authContainer.style.display = 'none';
+                appContent.style.display = 'block';
+                userEmailDisplay.textContent = currentUser.email;
+                await inicializarApp();
+                AlertUtils.show('Conta criada com sucesso!', 'success');
+            }
+        } catch (error) {
+            errorEl.textContent = error.message || 'Erro ao criar conta.';
+        } finally {
+            LoadingUtils.hide();
+        }
+    });
+}
+
+if (btnLogout) {
+    btnLogout.addEventListener('click', async () => {
+        if (!await ConfirmModal.show('Deseja realmente sair?')) return;
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        authContainer.style.display = 'flex';
+        appContent.style.display = 'none';
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
+        document.getElementById('signup-email').value = '';
+        document.getElementById('signup-password').value = '';
+        document.getElementById('signup-password-confirm').value = '';
+        tabLogin.click();
+    });
+}
+
+async function checkSession() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session?.user) {
+        currentUser = session.user;
+        authContainer.style.display = 'none';
+        appContent.style.display = 'block';
+        userEmailDisplay.textContent = currentUser.email;
+        await inicializarApp();
+    } else {
+        authContainer.style.display = 'flex';
+        appContent.style.display = 'none';
+    }
+}
+
 // ==================== UTILITÁRIOS ====================
 const DomUtils = {
     get: (id) => document.getElementById(id),
@@ -176,14 +291,12 @@ const DataService = {
             const pagamento = DomUtils.getValue('filtro-pagamento');
             const data = DomUtils.getValue('filtro-data-servico');
             const search = DomUtils.getValue('search-servicos')?.toLowerCase();
-            
             let query = supabaseClient.from('servicos').select('*', { count: 'exact' });
             if (tatuador) query = query.eq('tatuador_nome', tatuador);
             if (tipo) query = query.eq('tipo', tipo);
             if (pagamento) query = query.eq('forma_pagamento', pagamento);
             if (data) query = query.eq('data', data);
             if (search) query = query.ilike('cliente', `%${search}%`);
-            
             query = query.order('data', { ascending: false }).range(offset, offset + itensPorPagina - 1);
             const { data: servicos, error, count } = await query;
             if (error) throw error;
@@ -390,6 +503,7 @@ async function atualizarDashboard() {
         else { AppState.chartTipos.data.datasets[0].data = [tatuagens, piercingsServ]; AppState.chartTipos.update(); }
     }
 }
+
 async function carregarRelatorios() {
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
@@ -414,6 +528,7 @@ async function registrarEntradaCaixa(data, valor, descricao) {
         AlertUtils.show(`Entrada registrada: ${MoneyUtils.format(valor)}`, 'info');
     } catch (e) { console.warn(e); AlertUtils.show('Erro ao registrar entrada', 'warning'); }
 }
+
 async function registrarSaidaCaixa(data, valor, descricao) {
     if (valor <= 0) return;
     try {
@@ -554,23 +669,10 @@ const AgendaModule = {
             await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
             atualizarDashboard();
             AlertUtils.show(id ? 'Agendamento atualizado' : 'Agendamento salvo', 'success');
-            
-            // Gerar PDF de confirmação para o cliente (apenas se for novo agendamento)
             if (!id) {
-                // Recuperar o ID do agendamento recém-criado (último do cliente nesta data/hora)
-                const { data: novoAgendamento } = await supabaseClient
-                    .from('agenda')
-                    .select('id')
-                    .eq('cliente', record.cliente)
-                    .eq('data_hora', record.data_hora)
-                    .order('id', { ascending: false })
-                    .limit(1);
+                const { data: novoAgendamento } = await supabaseClient.from('agenda').select('id').eq('cliente', record.cliente).eq('data_hora', record.data_hora).order('id', { ascending: false }).limit(1);
                 const novoId = novoAgendamento?.[0]?.id;
-                await gerarComprovanteAgendamentoPDF({
-                    id: novoId,
-                    ...record,
-                    data_hora: dataHoraLocal
-                });
+                await gerarComprovanteAgendamentoPDF({ id: novoId, ...record, data_hora: dataHoraLocal });
             }
         } catch (e) { ErrorHandler.handle('salvar agenda', e); } finally { LoadingUtils.hide(); }
     },
@@ -614,33 +716,16 @@ const AgendaModule = {
     limparFiltros: () => { DomUtils.setValue('filtro-tatuador-agenda', ''); DomUtils.setValue('filtro-status-agenda', ''); DomUtils.setValue('filtro-data-agenda', ''); DataService.loadAgenda(1); }
 };
 
-// ==================== FUNÇÃO PARA GERAR PDF DO AGENDAMENTO (CORRIGIDA) ====================
 async function gerarComprovanteAgendamentoPDF(dados) {
     let element = null;
     try {
         LoadingUtils.show('Gerando comprovante PDF...');
-        
-        // Criar elemento temporário
         element = document.createElement('div');
-        element.style.cssText = `
-            background-color: #0C0C0C;
-            color: #F0F0F0;
-            font-family: 'Inter', 'Helvetica', sans-serif;
-            padding: 30px;
-            border-radius: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-            border: 1px solid #3A3A3A;
-            position: fixed;
-            left: -9999px;
-            top: 0;
-        `;
-        
+        element.style.cssText = `background-color: #0C0C0C; color: #F0F0F0; font-family: 'Inter', sans-serif; padding: 30px; border-radius: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #3A3A3A; position: fixed; left: -9999px; top: 0;`;
         const dataHora = new Date(dados.data_hora);
         const dataFormatada = dataHora.toLocaleDateString('pt-BR');
         const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const protocolo = `DARK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-        
         element.innerHTML = `
             <div style="text-align: center; margin-bottom: 25px;">
                 <h1 style="color: #A0A0A0; margin: 0;">DARK013TATTOO</h1>
@@ -660,51 +745,21 @@ async function gerarComprovanteAgendamentoPDF(dados) {
                 <p>@DARK013TATTOO - Gestão Profissional</p>
             </div>
         `;
-        
-        // ADICIONAR AO DOM (CRUCIAL)
         document.body.appendChild(element);
-        
-        const canvas = await html2canvas(element, {
-            scale: 2,
-            backgroundColor: '#0C0C0C',
-            logging: false,
-            allowTaint: false,
-            useCORS: true
-        });
-        
-        // Remover elemento após captura
-        document.body.removeChild(element);
-        element = null;
-        
+        const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#0C0C0C', logging: false });
+        document.body.removeChild(element); element = null;
         const imgData = canvas.toDataURL('image/png');
-        // Acesso correto ao jsPDF (versão UMD)
-        const pdf = new window.jspdf.jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
-        
-        const imgWidth = 190; // largura em mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
+        const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const imgWidth = 190; const imgHeight = (canvas.height * imgWidth) / canvas.width;
         pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
         pdf.save(`comprovante_${dados.cliente.replace(/\s/g, '_')}_${dataFormatada.replace(/\//g, '-')}.pdf`);
-        
         AlertUtils.show('Comprovante PDF gerado com sucesso!', 'success');
     } catch (error) {
-        console.error('Erro detalhado ao gerar PDF:', error);
+        console.error('Erro ao gerar PDF:', error);
         ErrorHandler.handle('gerar PDF', error);
-        // Garantir remoção do elemento em caso de erro
-        if (element && element.parentNode) {
-            document.body.removeChild(element);
-        }
-    } finally {
-        LoadingUtils.hide();
-    }
+        if (element && element.parentNode) document.body.removeChild(element);
+    } finally { LoadingUtils.hide(); }
 }
-
-// ==================== MÓDULOS RESTANTES (Piercing, Materiais, Backup, Exemplos) ====================
-// ... (manter exatamente como no original) ...
 
 const PiercingModule = {
     abrirModal: (id = null) => {
@@ -922,7 +977,6 @@ async function carregarDadosSecao(sectionId) {
 }
 
 function setupEventListeners() {
-    // Navegação
     document.querySelectorAll('.nav button').forEach(btn => {
         btn.addEventListener('click', () => {
             const sectionId = btn.getAttribute('data-section');
@@ -934,49 +988,36 @@ function setupEventListeners() {
             carregarDadosSecao(sectionId);
         });
     });
-    // Modais: fechar com X
     document.querySelectorAll('.close').forEach(close => {
         close.addEventListener('click', () => { const modalId = close.getAttribute('data-modal'); if (modalId) DomUtils.setDisplay(modalId, 'none'); });
     });
-    // Botões CRUD
     DomUtils.get('btn-novo-caixa')?.addEventListener('click', () => CaixaModule.abrirModal());
     DomUtils.get('btn-salvar-caixa')?.addEventListener('click', () => CaixaModule.salvar());
     DomUtils.get('search-caixa')?.addEventListener('input', () => CaixaModule.filtrar());
-    
     DomUtils.get('btn-novo-servico')?.addEventListener('click', () => ServicosModule.abrirModal());
     DomUtils.get('btn-salvar-servico')?.addEventListener('click', () => ServicosModule.salvar());
     DomUtils.get('limpar-filtros-servicos')?.addEventListener('click', () => ServicosModule.limparFiltros());
     DomUtils.get('search-servicos')?.addEventListener('input', () => ServicosModule.filtrar());
-    ['filtro-tatuador-servico', 'filtro-tipo-servico', 'filtro-pagamento', 'filtro-data-servico'].forEach(id => {
-        DomUtils.get(id)?.addEventListener('change', () => ServicosModule.filtrar());
-    });
+    ['filtro-tatuador-servico', 'filtro-tipo-servico', 'filtro-pagamento', 'filtro-data-servico'].forEach(id => DomUtils.get(id)?.addEventListener('change', () => ServicosModule.filtrar()));
     DomUtils.get('servico-tatuador')?.addEventListener('change', () => ServicosModule.calcularRepasse());
     DomUtils.get('servico-valor')?.addEventListener('input', () => ServicosModule.calcularRepasse());
-    
     DomUtils.get('btn-novo-agendamento')?.addEventListener('click', () => AgendaModule.abrirModal());
     DomUtils.get('btn-salvar-agenda')?.addEventListener('click', () => AgendaModule.salvar());
     DomUtils.get('filtrar-agenda-hoje')?.addEventListener('click', () => AgendaModule.filtrarHoje());
     DomUtils.get('limpar-filtros-agenda')?.addEventListener('click', () => AgendaModule.limparFiltros());
-    ['filtro-tatuador-agenda', 'filtro-status-agenda', 'filtro-data-agenda'].forEach(id => {
-        DomUtils.get(id)?.addEventListener('change', () => AgendaModule.filtrar());
-    });
-    
+    ['filtro-tatuador-agenda', 'filtro-status-agenda', 'filtro-data-agenda'].forEach(id => DomUtils.get(id)?.addEventListener('change', () => AgendaModule.filtrar()));
     DomUtils.get('btn-add-piercing')?.addEventListener('click', () => PiercingModule.abrirModal());
     DomUtils.get('btn-salvar-piercing')?.addEventListener('click', () => PiercingModule.salvar());
     DomUtils.get('btn-registrar-venda')?.addEventListener('click', () => PiercingModule.registrarVenda());
     DomUtils.get('btn-popular-piercings')?.addEventListener('click', () => ExemplosModule.popularPiercings());
-    
     DomUtils.get('btn-add-material')?.addEventListener('click', () => MateriaisModule.abrirModal());
     DomUtils.get('btn-salvar-material')?.addEventListener('click', () => MateriaisModule.salvar());
     DomUtils.get('btn-usar-material')?.addEventListener('click', () => MateriaisModule.registrarUso());
     DomUtils.get('btn-popular-materiais')?.addEventListener('click', () => ExemplosModule.popularMateriais());
-    
     DomUtils.get('btn-exportar-backup')?.addEventListener('click', () => BackupModule.exportar());
     DomUtils.get('btn-importar-backup')?.addEventListener('click', () => document.getElementById('import-backup')?.click());
     DomUtils.get('import-backup')?.addEventListener('change', (e) => BackupModule.importar(e.target));
     DomUtils.get('btn-sincronizar')?.addEventListener('click', () => location.reload());
-    
-    // Delegação de eventos para botões dinâmicos (editar/excluir)
     document.body.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
@@ -1003,4 +1044,4 @@ async function inicializarApp() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', inicializarApp);
+document.addEventListener('DOMContentLoaded', checkSession);
