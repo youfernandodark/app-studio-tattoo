@@ -209,20 +209,65 @@
         </section>
 
         <!-- BACKUP -->
-        <section id="backup" class="section">
-            <div class="card">
-                <h2><i class="fas fa-database"></i> Backup e Sincronização</h2>
-                <div style="background:#0F0F18; border-radius:24px; padding:20px; margin-bottom:20px;">
-                    <button class="btn btn-primary" id="btn-sincronizar">Sincronizar agora</button>
-                </div>
-                <div style="background:#0F0F18; border-radius:24px; padding:20px;">
-                    <button class="btn btn-success" id="btn-exportar-backup">Exportar Backup (.json)</button>
-                    <input type="file" id="import-backup" accept=".json" style="display:none">
-                    <button class="btn btn-warning" id="btn-importar-backup">Importar Backup</button>
+    <!-- BACKUP -->
+<section id="backup" class="section">
+    <div class="card">
+        <h2><i class="fas fa-database"></i> Backup e Sincronização</h2>
+        <p style="margin-bottom: 24px; color: var(--text-secondary);">Gerencie backups locais e sincronize os dados com a nuvem.</p>
+        
+        <div style="display: grid; gap: 20px;">
+            <!-- Bloco Sincronização -->
+            <div style="background: #0F0F18; border-radius: 24px; padding: 24px;">
+                <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+                    <div style="flex:1; min-width: 200px;">
+                        <h3 style="margin-top: 0; margin-bottom: 8px;"><i class="fas fa-cloud-upload-alt"></i> Sincronização</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Atualiza os dados locais com as últimas informações do servidor.</p>
+                    </div>
+                    <button class="btn btn-primary" id="btn-sincronizar" style="white-space: nowrap;">
+                        <i class="fas fa-sync-alt"></i> Sincronizar agora
+                    </button>
                 </div>
             </div>
+            
+            <!-- Bloco Backup Manual -->
+            <div style="background: #0F0F18; border-radius: 24px; padding: 24px;">
+                <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+                    <div style="flex:1; min-width: 200px;">
+                        <h3 style="margin-top: 0; margin-bottom: 8px;"><i class="fas fa-download"></i> Backup Local</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Exporta todos os dados (serviços, agenda, caixa, estoques) para um arquivo .json que pode ser salvo em seu dispositivo.</p>
+                    </div>
+                    <button class="btn btn-success" id="btn-exportar-backup">
+                        <i class="fas fa-file-export"></i> Exportar Backup (.json)
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Bloco Importação -->
+            <div style="background: #0F0F18; border-radius: 24px; padding: 24px;">
+                <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+                    <div style="flex:1; min-width: 200px;">
+                        <h3 style="margin-top: 0; margin-bottom: 8px;"><i class="fas fa-upload"></i> Restaurar Backup</h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Importa um arquivo de backup (.json) previamente exportado. Atenção: isso pode duplicar registros existentes.</p>
+                    </div>
+                    <div>
+                        <input type="file" id="import-backup" accept=".json" style="display:none">
+                        <button class="btn btn-warning" id="btn-importar-backup">
+                            <i class="fas fa-file-import"></i> Importar Backup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
         </section>
     </main>
+            <!-- Rodapé com assinatura -->
+        <footer style="margin-top: 40px; text-align: center; padding: 24px 0; border-top: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.85rem;">
+            <p><i class="fas fa-code"></i> APP WEB desenvolvido por Fernando Dark usando IA – primeira versão</p>
+        </footer>
+    </main>
+</div>
 </div>
 
 <!-- MODAIS (mantidos exatamente como no original) -->
