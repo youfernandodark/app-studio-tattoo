@@ -261,7 +261,6 @@ const DataService = {
         if (error) throw error;
         return data || [];
     },
-    // Melhoria: tratamento de erro mais detalhado
     async saveRecord(table, record, id = null) {
         try {
             let result;
@@ -831,7 +830,6 @@ const ServicosModule = {
             forma_pagamento: DomUtils.getValue('servico-pagamento')
         };
         
-        // Validação básica
         if (!record.data || !record.cliente || !record.tatuador_nome || !record.tipo) {
             AlertUtils.show('Preencha todos os campos obrigatórios.', 'error');
             return;
@@ -841,7 +839,6 @@ const ServicosModule = {
             LoadingUtils.show(id ? 'Atualizando serviço...' : 'Criando serviço...');
             
             if (id) {
-                // Edição: buscar serviço original para calcular diferença
                 const servicoAntigo = AppState.servicos.find(s => s.id == id);
                 if (!servicoAntigo) {
                     throw new Error('Serviço não encontrado. Recarregue a lista e tente novamente.');
@@ -849,10 +846,8 @@ const ServicosModule = {
                 const valorAntigo = MoneyUtils.parse(servicoAntigo.valor_total);
                 const diferenca = record.valor_total - valorAntigo;
                 
-                // Atualiza o serviço
                 await DataService.saveRecord('servicos', record, id);
                 
-                // Ajusta o caixa apenas se o valor foi alterado
                 if (Math.abs(diferenca) > 0.01) {
                     if (diferenca > 0) {
                         await registrarEntradaCaixa(record.data, diferenca,
@@ -863,7 +858,6 @@ const ServicosModule = {
                     }
                 }
             } else {
-                // Novo serviço: insere e registra entrada completa
                 await DataService.saveRecord('servicos', record, null);
                 await registrarEntradaCaixa(record.data, record.valor_total,
                     `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`);
@@ -885,13 +879,11 @@ const ServicosModule = {
         } catch (e) {
             ErrorHandler.handle('salvar serviço', e);
             AlertUtils.show('Falha ao salvar serviço: ' + (e.message || 'Erro desconhecido'), 'error');
-            // Não fecha o modal para que o usuário possa corrigir
         } finally {
             LoadingUtils.hide();
         }
     },
     editar: async (id) => {
-        // Verifica se a lista está vazia e recarrega se necessário
         if (!AppState.servicos.length) {
             await DataService.loadServicos(1, 10);
         }
@@ -1006,49 +998,78 @@ const AgendaModule = {
     limparFiltros: () => { DomUtils.setValue('filtro-tatuador-agenda', ''); DomUtils.setValue('filtro-status-agenda', ''); DomUtils.setValue('filtro-data-agenda', ''); DataService.loadAgenda(1); }
 };
 
+// ==================== FUNÇÃO DE PDF MODIFICADA ====================
 async function gerarComprovanteAgendamentoPDF(dados) {
-    let element = null;
-    try {
-        LoadingUtils.show('Gerando comprovante PDF...');
-        element = document.createElement('div');
-        element.style.cssText = `background-color: #0C0C0C; color: #F0F0F0; font-family: 'Inter', sans-serif; padding: 30px; border-radius: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #3A3A3A; position: fixed; left: -9999px; top: 0;`;
-        const dataHora = new Date(dados.data_hora);
-        const dataFormatada = dataHora.toLocaleDateString('pt-BR');
-        const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const protocolo = `DARK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-        element.innerHTML = `
-            <div style="text-align: center; margin-bottom: 25px;">
-                <h1 style="color: #A0A0A0; margin: 0;">DARK013TATTOO</h1>
-                <p style="color: #B0B0B0; margin: 5px 0 0;">Comprovante de Agendamento</p>
-            </div>
-            <div style="border-top: 1px solid #3A3A3A; padding: 15px 0;">
-                <p><strong>Protocolo:</strong> ${protocolo}</p>
-                <p><strong>Data do Agendamento:</strong> ${dataFormatada} às ${horaFormatada}</p>
-                <p><strong>Cliente:</strong> ${escapeHtml(dados.cliente)}</p>
-                <p><strong>Tatuador(a):</strong> ${escapeHtml(dados.tatuador_nome)}</p>
-                <p><strong>Tipo de Serviço:</strong> ${escapeHtml(dados.tipo_servico)}</p>
-                <p><strong>Status:</strong> ${escapeHtml(dados.status)}</p>
-                ${dados.observacoes ? `<p><strong>Observações:</strong> ${escapeHtml(dados.observacoes)}</p>` : ''}
-            </div>
-            <div style="border-top: 1px solid #3A3A3A; margin-top: 15px; padding-top: 15px; text-align: center; font-size: 12px; color: #808080;">
-                <p>Em caso de cancelamento ou reagendar a tattoo. <br> Avisar um dia antes o tatuador(a) responsável.</p>
-                <p>@DARK013TATTOO - Gestão Profissional</p>
-            </div>
-        `;
-        document.body.appendChild(element);
-        const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#0C0C0C', logging: false });
-        document.body.removeChild(element); element = null;
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const imgWidth = 190; const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-        pdf.save(`comprovante_${dados.cliente.replace(/\s/g, '_')}_${dataFormatada.replace(/\//g, '-')}.pdf`);
-        AlertUtils.show('Comprovante PDF gerado com sucesso!', 'success');
-    } catch (error) {
-        console.error('Erro ao gerar PDF:', error);
-        ErrorHandler.handle('gerar PDF', error);
-        if (element && element.parentNode) document.body.removeChild(element);
-    } finally { LoadingUtils.hide(); }
+  let element = null;
+  try {
+    LoadingUtils.show('Gerando comprovante PDF...');
+
+    // Buscar dados do estúdio diretamente do Supabase
+    const { data: studio, error } = await supabaseClient
+      .from('studio_config')
+      .select('nome, endereco, instagram, whatsapp')
+      .eq('id', 1)
+      .single();
+
+    if (error) throw new Error('Erro ao buscar dados do estúdio: ' + error.message);
+
+    const nomeStudio = studio?.nome || 'DARK013TATTOO';
+    const endereco = studio?.endereco || '';
+    const instagram = studio?.instagram || '';
+    const whatsapp = studio?.whatsapp || '';
+
+    element = document.createElement('div');
+    element.style.cssText = `background-color: #0C0C0C; color: #F0F0F0; font-family: 'Inter', sans-serif; padding: 30px; border-radius: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #3A3A3A; position: fixed; left: -9999px; top: 0;`;
+
+    const dataHora = new Date(dados.data_hora);
+    const dataFormatada = dataHora.toLocaleDateString('pt-BR');
+    const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const protocolo = `DARK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+    element.innerHTML = `
+      <div style="text-align: center; margin-bottom: 25px;">
+        <h1 style="color: #A0A0A0; margin: 0;">${escapeHtml(nomeStudio)}</h1>
+        ${endereco ? `<p style="color: #B0B0B0; margin: 5px 0 0; font-size: 14px;">${escapeHtml(endereco)}</p>` : ''}
+        ${instagram ? `<p style="color: #B0B0B0; margin: 2px 0 0; font-size: 14px;">${escapeHtml(instagram)}</p>` : ''}
+        ${whatsapp ? `<p style="color: #B0B0B0; margin: 2px 0 0; font-size: 14px;">WhatsApp: ${escapeHtml(whatsapp)}</p>` : ''}
+        <p style="color: #B0B0B0; margin: 15px 0 0;">Comprovante de Agendamento</p>
+      </div>
+      <div style="border-top: 1px solid #3A3A3A; padding: 15px 0;">
+        <p><strong>Protocolo:</strong> ${protocolo}</p>
+        <p><strong>Data do Agendamento:</strong> ${dataFormatada} às ${horaFormatada}</p>
+        <p><strong>Cliente:</strong> ${escapeHtml(dados.cliente)}</p>
+        <p><strong>Tatuador(a):</strong> ${escapeHtml(dados.tatuador_nome)}</p>
+        <p><strong>Tipo de Serviço:</strong> ${escapeHtml(dados.tipo_servico)}</p>
+        <p><strong>Status:</strong> ${escapeHtml(dados.status)}</p>
+        ${dados.observacoes ? `<p><strong>Observações:</strong> ${escapeHtml(dados.observacoes)}</p>` : ''}
+      </div>
+      <div style="border-top: 1px solid #3A3A3A; margin-top: 15px; padding-top: 15px; text-align: center; font-size: 12px; color: #808080;">
+        <p>Em caso de cancelamento ou reagendar, avisar com 24h de antecedência.</p>
+        <p>${escapeHtml(nomeStudio)} - Gestão Profissional</p>
+      </div>
+    `;
+
+    document.body.appendChild(element);
+
+    const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#0C0C0C', logging: false });
+    document.body.removeChild(element);
+    element = null;
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const imgWidth = 190;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+    pdf.save(`comprovante_${dados.cliente.replace(/\s/g, '_')}_${dataFormatada.replace(/\//g, '-')}.pdf`);
+
+    AlertUtils.show('Comprovante PDF gerado com sucesso!', 'success');
+  } catch (error) {
+    console.error('Erro ao gerar PDF:', error);
+    ErrorHandler.handle('gerar PDF', error);
+    if (element && element.parentNode) document.body.removeChild(element);
+  } finally {
+    LoadingUtils.hide();
+  }
 }
 
 // ==================== DEMAIS MÓDULOS (inalterados) ====================
