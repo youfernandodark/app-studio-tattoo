@@ -232,7 +232,8 @@ const ConfirmModal = {
 const AppState = {
     servicos: [], agenda: [], caixa: [],
     chartFaturamento: null, chartTipos: null,
-    paginacao: { caixa: { pagina: 1, itensPorPagina: 10, total: 0 }, servicos: { pagina: 1, itensPorPagina: 10, total: 0 }, agenda: { pagina: 1, itensPorPagina: 10, total: 0 } }
+    paginacao: { caixa: { pagina: 1, itensPorPagina: 10, total: 0 }, servicos: { pagina: 1, itensPorPagina: 10, total: 0 }, agenda: { pagina: 1, itensPorPagina: 10, total: 0 } },
+    filtrosCaixa: { dataInicio: '', dataFim: '' } // novo: filtros de período
 };
 
 // ==================== SERVIÇO DE DADOS ====================
@@ -268,11 +269,26 @@ const DataService = {
         const { error } = await supabaseClient.from(table).delete().eq('id', id);
         if (error) throw error;
     },
+    // NOVO: Carregar caixa com filtros de período e busca textual
     async loadCaixa(pagina = 1, itensPorPagina = 10, searchTerm = '') {
         try {
             const offset = (pagina - 1) * itensPorPagina;
-            const filters = searchTerm ? { descricao: searchTerm } : {};
-            const { data, count } = await this.fetchTable('caixa', 'data', false, itensPorPagina, offset, filters);
+            let query = supabaseClient.from('caixa').select('*', { count: 'exact' });
+            
+            // Filtro de data (período)
+            const dataInicio = AppState.filtrosCaixa.dataInicio;
+            const dataFim = AppState.filtrosCaixa.dataFim;
+            if (dataInicio) query = query.gte('data', dataInicio);
+            if (dataFim) query = query.lte('data', dataFim);
+            
+            // Busca textual
+            if (searchTerm) query = query.ilike('descricao', `%${searchTerm}%`);
+            
+            query = query.order('data', { ascending: false }).range(offset, offset + itensPorPagina - 1);
+            
+            const { data, error, count } = await query;
+            if (error) throw error;
+            
             AppState.caixa = data;
             AppState.paginacao.caixa.total = count;
             AppState.paginacao.caixa.pagina = pagina;
@@ -372,6 +388,8 @@ const Renderer = {
                 <td>${DateUtils.formatDate(item.data)}</td>
                 <td style="color:#34D399; font-weight:600;">${icon} ${MoneyUtils.format(ent)}</td>
                 <td style="color:#F87171; font-weight:600;">${icon} ${MoneyUtils.format(sai)}</td>
+                <td>${MoneyUtils.format(item.saldo_inicial)}</td>
+                <td>${MoneyUtils.format(item.saldo_final)}</td>
                 <td title="${escapeHtml(item.descricao)}" style="max-width:250px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(item.descricao) || '-'}</td>
                 <td class="actions-cell"><button class="btn-icon" data-acao="editar-caixa" data-id="${item.id}" title="Editar"><i class="fas fa-edit"></i></button>
                 <button class="btn-icon" data-acao="excluir-caixa" data-id="${item.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
@@ -477,16 +495,12 @@ function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>
 
 // ==================== DASHBOARD (CORRIGIDO) ====================
 async function atualizarDashboard() {
-    // Aguarda o carregamento completo dos dados (todos os registros, sem paginação)
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
 
-    // Agora AppState.caixa contém TODOS os registros, ordenados por data decrescente (mais recente primeiro)
     const saldoAtual = AppState.caixa.length > 0 ? AppState.caixa[0].saldo_final : 0;
-    
     const totalEntradas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.entradas), 0);
     const totalSaidas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.saidas), 0);
-    
     const servicosRealizados = AppState.servicos.length;
     const repasseThalia = AppState.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? MoneyUtils.parse(sv.valor_total) * 0.7 : 0), 0);
     
@@ -538,73 +552,242 @@ async function carregarRelatorios() {
     DomUtils.setHtml('relatorio-lucro-liquido', `<strong>Lucro Líquido (Estúdio):</strong> ${MoneyUtils.format(estudioThalia - totalSaidas)}`);
 }
 
-// ==================== AUXILIARES CAIXA ====================
+// ==================== FUNÇÕES AUXILIARES DO CAIXA (CORRIGIDAS) ====================
+/**
+ * Obtém o último registro de caixa (mais recente) para calcular saldo inicial.
+ * Retorna { data: data_ultimo, saldo_final: valor } ou null se não houver registros.
+ */
+async function obterUltimoCaixa() {
+    const { data, error } = await supabaseClient.from('caixa')
+        .select('data, saldo_final')
+        .order('data', { ascending: false })
+        .limit(1);
+    if (error) throw error;
+    return data?.length ? data[0] : null;
+}
+
+/**
+ * Registra uma entrada no caixa de forma segura.
+ * - Verifica se a data é >= último registro.
+ * - Usa o saldo final do último registro como saldo inicial.
+ * - Se houver conflito de data (outro registro inserido enquanto processava), tenta novamente.
+ */
 async function registrarEntradaCaixa(data, valor, descricao) {
     if (valor <= 0) return;
-    try {
-        const { data: ultimoCaixa } = await supabaseClient.from('caixa').select('saldo_final').order('data', { ascending: false }).limit(1);
-        const ultimoSaldo = ultimoCaixa?.length ? ultimoCaixa[0].saldo_final : 0;
-        await DataService.saveRecord('caixa', { data, saldo_inicial: ultimoSaldo, entradas: valor, saidas: 0, saldo_final: ultimoSaldo + valor, descricao });
-        await DataService.loadCaixa(AppState.paginacao.caixa.pagina, 10, DomUtils.getValue('search-caixa') || '');
-        AlertUtils.show(`Entrada registrada: ${MoneyUtils.format(valor)}`, 'info');
-    } catch (e) { console.warn(e); AlertUtils.show('Erro ao registrar entrada', 'warning'); }
+    const maxTentativas = 3;
+    for (let tentativa = 0; tentativa < maxTentativas; tentativa++) {
+        try {
+            const ultimo = await obterUltimoCaixa();
+            
+            // Validação de data: não permitir data anterior ao último registro
+            if (ultimo && data < ultimo.data) {
+                throw new Error(`Data inválida: não pode ser anterior a ${DateUtils.formatDate(ultimo.data)}.`);
+            }
+            
+            const saldoInicial = ultimo ? ultimo.saldo_final : 0;
+            const novoSaldo = saldoInicial + valor;
+            
+            const { error } = await supabaseClient.from('caixa').insert([{
+                data,
+                saldo_inicial: saldoInicial,
+                entradas: valor,
+                saidas: 0,
+                saldo_final: novoSaldo,
+                descricao
+            }]);
+            
+            if (error) {
+                // Se for erro de chave duplicada (data já existe), podemos tratar ou apenas lançar
+                throw error;
+            }
+            
+            // Sucesso: recarregar caixa e notificar
+            await DataService.loadCaixa(AppState.paginacao.caixa.pagina, 10, DomUtils.getValue('search-caixa') || '');
+            AlertUtils.show(`Entrada registrada: ${MoneyUtils.format(valor)}`, 'success');
+            return;
+            
+        } catch (e) {
+            console.warn(`Tentativa ${tentativa+1} falhou:`, e);
+            if (tentativa === maxTentativas - 1) {
+                ErrorHandler.handle('registrar entrada caixa', e);
+                AlertUtils.show('Erro ao registrar entrada: ' + e.message, 'error');
+                throw e;
+            }
+            // Pequeno delay antes de tentar novamente (evitar condição de corrida)
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+    }
 }
 
+/**
+ * Registra uma saída no caixa de forma segura (similar à entrada).
+ */
 async function registrarSaidaCaixa(data, valor, descricao) {
     if (valor <= 0) return;
-    try {
-        const { data: ultimoCaixa } = await supabaseClient.from('caixa').select('saldo_final').order('data', { ascending: false }).limit(1);
-        const ultimoSaldo = ultimoCaixa?.length ? ultimoCaixa[0].saldo_final : 0;
-        await DataService.saveRecord('caixa', { data, saldo_inicial: ultimoSaldo, entradas: 0, saidas: valor, saldo_final: ultimoSaldo - valor, descricao });
-        await DataService.loadCaixa(AppState.paginacao.caixa.pagina, 10, DomUtils.getValue('search-caixa') || '');
-        AlertUtils.show(`Saída registrada: ${MoneyUtils.format(valor)}`, 'info');
-    } catch (e) { console.warn(e); AlertUtils.show('Erro ao registrar saída', 'warning'); }
+    const maxTentativas = 3;
+    for (let tentativa = 0; tentativa < maxTentativas; tentativa++) {
+        try {
+            const ultimo = await obterUltimoCaixa();
+            
+            if (ultimo && data < ultimo.data) {
+                throw new Error(`Data inválida: não pode ser anterior a ${DateUtils.formatDate(ultimo.data)}.`);
+            }
+            
+            const saldoInicial = ultimo ? ultimo.saldo_final : 0;
+            const novoSaldo = saldoInicial - valor;
+            
+            const { error } = await supabaseClient.from('caixa').insert([{
+                data,
+                saldo_inicial: saldoInicial,
+                entradas: 0,
+                saidas: valor,
+                saldo_final: novoSaldo,
+                descricao
+            }]);
+            
+            if (error) throw error;
+            
+            await DataService.loadCaixa(AppState.paginacao.caixa.pagina, 10, DomUtils.getValue('search-caixa') || '');
+            AlertUtils.show(`Saída registrada: ${MoneyUtils.format(valor)}`, 'success');
+            return;
+            
+        } catch (e) {
+            console.warn(`Tentativa ${tentativa+1} falhou:`, e);
+            if (tentativa === maxTentativas - 1) {
+                ErrorHandler.handle('registrar saída caixa', e);
+                AlertUtils.show('Erro ao registrar saída: ' + e.message, 'error');
+                throw e;
+            }
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+    }
 }
 
-// ==================== MÓDULOS CRUD (inalterados, exceto chamadas que já estão corretas) ====================
-// (Mantive o restante do código idêntico ao original, apenas a função atualizarDashboard foi corrigida)
-
-let pendingAgendaId = null;
-
+// ==================== MÓDULO CAIXA (CORRIGIDO) ====================
 const CaixaModule = {
-    abrirModal: () => { DomUtils.clearForm('form-caixa'); DomUtils.setValue('caixa-data', DateUtils.nowDate()); DomUtils.setDisplay('modal-caixa', 'block'); },
+    abrirModal: async () => {
+        DomUtils.clearForm('form-caixa');
+        DomUtils.setValue('caixa-data', DateUtils.nowDate());
+        
+        // Preencher saldo inicial automaticamente baseado no último registro
+        try {
+            const ultimo = await obterUltimoCaixa();
+            const saldoInicial = ultimo ? ultimo.saldo_final : 0;
+            DomUtils.setValue('caixa-saldo-inicial', saldoInicial);
+            // Tornar campo somente leitura (desabilitado)
+            const saldoInput = DomUtils.get('caixa-saldo-inicial');
+            if (saldoInput) saldoInput.readOnly = true;
+        } catch (e) {
+            ErrorHandler.handle('obter saldo inicial', e);
+        }
+        
+        DomUtils.setDisplay('modal-caixa', 'block');
+    },
     salvar: async () => {
-        const id = DomUtils.getValue('caixa-id'), data = DomUtils.getValue('caixa-data');
-        const saldoInicial = MoneyUtils.parse(DomUtils.getValue('caixa-saldo-inicial'));
+        const id = DomUtils.getValue('caixa-id');
+        const data = DomUtils.getValue('caixa-data');
         const entradas = MoneyUtils.parse(DomUtils.getValue('caixa-entradas'));
         const saidas = MoneyUtils.parse(DomUtils.getValue('caixa-saidas'));
         const descricao = DomUtils.getValue('caixa-descricao');
-        const saldoFinal = saldoInicial + entradas - saidas;
+        
+        // Validação básica
+        if (!data) {
+            AlertUtils.show('Data é obrigatória', 'error');
+            return;
+        }
+        
         try {
             LoadingUtils.show('Salvando...');
-            await DataService.saveRecord('caixa', { data, saldo_inicial: saldoInicial, entradas, saidas, saldo_final: saldoFinal, descricao }, id || null);
+            
+            let saldoInicial;
+            if (id) {
+                // Edição: manter o saldo_inicial original (não recalcular)
+                const registroOriginal = AppState.caixa.find(c => c.id == id);
+                if (!registroOriginal) throw new Error('Registro não encontrado');
+                saldoInicial = registroOriginal.saldo_inicial;
+            } else {
+                // Novo registro: obter último saldo e validar data
+                const ultimo = await obterUltimoCaixa();
+                if (ultimo && data < ultimo.data) {
+                    throw new Error(`A data não pode ser anterior ao último lançamento (${DateUtils.formatDate(ultimo.data)}).`);
+                }
+                saldoInicial = ultimo ? ultimo.saldo_final : 0;
+            }
+            
+            const saldoFinal = saldoInicial + entradas - saidas;
+            
+            await DataService.saveRecord('caixa', {
+                data,
+                saldo_inicial: saldoInicial,
+                entradas,
+                saidas,
+                saldo_final: saldoFinal,
+                descricao
+            }, id || null);
+            
             DomUtils.setDisplay('modal-caixa', 'none');
             await DataService.loadCaixa(AppState.paginacao.caixa.pagina, 10, DomUtils.getValue('search-caixa') || '');
             atualizarDashboard();
             AlertUtils.show(id ? 'Lançamento atualizado' : 'Lançamento salvo', 'success');
-        } catch (e) { ErrorHandler.handle('salvar caixa', e); } finally { LoadingUtils.hide(); }
+        } catch (e) {
+            ErrorHandler.handle('salvar caixa', e);
+            AlertUtils.show(e.message, 'error');
+        } finally {
+            LoadingUtils.hide();
+            // Restaurar readonly caso o modal seja reaberto depois
+            const saldoInput = DomUtils.get('caixa-saldo-inicial');
+            if (saldoInput) saldoInput.readOnly = false;
+        }
     },
     editar: async (id) => {
         const item = AppState.caixa.find(c => c.id == id);
         if (item) {
-            DomUtils.setValue('caixa-id', item.id); DomUtils.setValue('caixa-data', item.data);
-            DomUtils.setValue('caixa-saldo-inicial', item.saldo_inicial); DomUtils.setValue('caixa-entradas', item.entradas);
-            DomUtils.setValue('caixa-saidas', item.saidas); DomUtils.setValue('caixa-descricao', item.descricao || '');
+            DomUtils.setValue('caixa-id', item.id);
+            DomUtils.setValue('caixa-data', item.data);
+            DomUtils.setValue('caixa-saldo-inicial', item.saldo_inicial);
+            DomUtils.setValue('caixa-entradas', item.entradas);
+            DomUtils.setValue('caixa-saidas', item.saidas);
+            DomUtils.setValue('caixa-descricao', item.descricao || '');
+            
+            // Na edição, o saldo inicial pode ser editável? Melhor manter readonly para consistência.
+            const saldoInput = DomUtils.get('caixa-saldo-inicial');
+            if (saldoInput) saldoInput.readOnly = true;
+            
             DomUtils.setDisplay('modal-caixa', 'block');
         }
     },
     excluir: async (id) => {
-        if (!await ConfirmModal.show('Excluir este lançamento?')) return;
+        if (!await ConfirmModal.show('Excluir este lançamento? ATENÇÃO: Isso pode quebrar a sequência de saldos!')) return;
         try {
             LoadingUtils.show('Excluindo...');
             await DataService.deleteRecord('caixa', id);
             await DataService.loadCaixa(1, 10, DomUtils.getValue('search-caixa') || '');
             atualizarDashboard();
-            AlertUtils.show('Lançamento excluído', 'success');
-        } catch (e) { ErrorHandler.handle('excluir caixa', e); } finally { LoadingUtils.hide(); }
+            AlertUtils.show('Lançamento excluído. Verifique os saldos seguintes!', 'warning');
+        } catch (e) {
+            ErrorHandler.handle('excluir caixa', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     },
-    filtrar: () => DataService.loadCaixa(1, 10, DomUtils.getValue('search-caixa') || '')
+    filtrar: () => DataService.loadCaixa(1, 10, DomUtils.getValue('search-caixa') || ''),
+    aplicarFiltroPeriodo: () => {
+        AppState.filtrosCaixa.dataInicio = DomUtils.getValue('filtro-caixa-inicio');
+        AppState.filtrosCaixa.dataFim = DomUtils.getValue('filtro-caixa-fim');
+        DataService.loadCaixa(1, 10, DomUtils.getValue('search-caixa') || '');
+    },
+    limparFiltros: () => {
+        AppState.filtrosCaixa.dataInicio = '';
+        AppState.filtrosCaixa.dataFim = '';
+        DomUtils.setValue('filtro-caixa-inicio', '');
+        DomUtils.setValue('filtro-caixa-fim', '');
+        DomUtils.setValue('search-caixa', '');
+        DataService.loadCaixa(1, 10, '');
+    }
 };
+
+// ==================== DEMAIS MÓDULOS (inalterados, exceto chamadas que usam as novas funções) ====================
+let pendingAgendaId = null;
 
 const ServicosModule = {
     abrirModal: () => { DomUtils.clearForm('form-servico'); DomUtils.setValue('servico-data', DateUtils.nowDate()); DomUtils.setDisplay('modal-servico', 'block'); ServicosModule.calcularRepasse(); },
@@ -636,10 +819,8 @@ const ServicosModule = {
                 AlertUtils.show('Agendamento concluído!', 'success');
                 pendingAgendaId = null;
             }
-            const { data: ultimoCaixa } = await supabaseClient.from('caixa').select('saldo_final').order('data', { ascending: false }).limit(1);
-            const ultimoSaldo = ultimoCaixa?.length ? ultimoCaixa[0].saldo_final : 0;
-            await DataService.saveRecord('caixa', { data: record.data, saldo_inicial: ultimoSaldo, entradas: record.valor_total, saidas: 0, saldo_final: ultimoSaldo + record.valor_total, descricao: `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})` });
-            await DataService.loadCaixa(AppState.paginacao.caixa.pagina, 10, DomUtils.getValue('search-caixa') || '');
+            // Registrar entrada no caixa (usando função segura)
+            await registrarEntradaCaixa(record.data, record.valor_total, `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`);
             AlertUtils.show(id ? 'Serviço atualizado' : 'Serviço salvo', 'success');
         } catch (e) { ErrorHandler.handle('salvar serviço', e); } finally { LoadingUtils.hide(); }
     },
@@ -1014,9 +1195,16 @@ function setupEventListeners() {
     document.querySelectorAll('.close').forEach(close => {
         close.addEventListener('click', () => { const modalId = close.getAttribute('data-modal'); if (modalId) DomUtils.setDisplay(modalId, 'none'); });
     });
+    
+    // --- CAIXA ---
     DomUtils.get('btn-novo-caixa')?.addEventListener('click', () => CaixaModule.abrirModal());
     DomUtils.get('btn-salvar-caixa')?.addEventListener('click', () => CaixaModule.salvar());
     DomUtils.get('search-caixa')?.addEventListener('input', () => CaixaModule.filtrar());
+    // Novos filtros de período
+    DomUtils.get('btn-filtrar-caixa')?.addEventListener('click', () => CaixaModule.aplicarFiltroPeriodo());
+    DomUtils.get('btn-limpar-filtros-caixa')?.addEventListener('click', () => CaixaModule.limparFiltros());
+    
+    // --- SERVIÇOS ---
     DomUtils.get('btn-novo-servico')?.addEventListener('click', () => ServicosModule.abrirModal());
     DomUtils.get('btn-salvar-servico')?.addEventListener('click', () => ServicosModule.salvar());
     DomUtils.get('limpar-filtros-servicos')?.addEventListener('click', () => ServicosModule.limparFiltros());
@@ -1024,23 +1212,34 @@ function setupEventListeners() {
     ['filtro-tatuador-servico', 'filtro-tipo-servico', 'filtro-pagamento', 'filtro-data-servico'].forEach(id => DomUtils.get(id)?.addEventListener('change', () => ServicosModule.filtrar()));
     DomUtils.get('servico-tatuador')?.addEventListener('change', () => ServicosModule.calcularRepasse());
     DomUtils.get('servico-valor')?.addEventListener('input', () => ServicosModule.calcularRepasse());
+    
+    // --- AGENDA ---
     DomUtils.get('btn-novo-agendamento')?.addEventListener('click', () => AgendaModule.abrirModal());
     DomUtils.get('btn-salvar-agenda')?.addEventListener('click', () => AgendaModule.salvar());
     DomUtils.get('filtrar-agenda-hoje')?.addEventListener('click', () => AgendaModule.filtrarHoje());
     DomUtils.get('limpar-filtros-agenda')?.addEventListener('click', () => AgendaModule.limparFiltros());
     ['filtro-tatuador-agenda', 'filtro-status-agenda', 'filtro-data-agenda'].forEach(id => DomUtils.get(id)?.addEventListener('change', () => AgendaModule.filtrar()));
+    
+    // --- PIERCING ---
     DomUtils.get('btn-add-piercing')?.addEventListener('click', () => PiercingModule.abrirModal());
     DomUtils.get('btn-salvar-piercing')?.addEventListener('click', () => PiercingModule.salvar());
     DomUtils.get('btn-registrar-venda')?.addEventListener('click', () => PiercingModule.registrarVenda());
     DomUtils.get('btn-popular-piercings')?.addEventListener('click', () => ExemplosModule.popularPiercings());
+    
+    // --- MATERIAIS ---
     DomUtils.get('btn-add-material')?.addEventListener('click', () => MateriaisModule.abrirModal());
     DomUtils.get('btn-salvar-material')?.addEventListener('click', () => MateriaisModule.salvar());
     DomUtils.get('btn-usar-material')?.addEventListener('click', () => MateriaisModule.registrarUso());
     DomUtils.get('btn-popular-materiais')?.addEventListener('click', () => ExemplosModule.popularMateriais());
+    
+    // --- BACKUP ---
     DomUtils.get('btn-exportar-backup')?.addEventListener('click', () => BackupModule.exportar());
     DomUtils.get('btn-importar-backup')?.addEventListener('click', () => document.getElementById('import-backup')?.click());
     DomUtils.get('import-backup')?.addEventListener('change', (e) => BackupModule.importar(e.target));
+    
     DomUtils.get('btn-sincronizar')?.addEventListener('click', () => location.reload());
+    
+    // Delegação de eventos para botões de ação nas tabelas
     document.body.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
