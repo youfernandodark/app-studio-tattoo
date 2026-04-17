@@ -261,11 +261,21 @@ const DataService = {
         if (error) throw error;
         return data || [];
     },
+    // Melhoria: tratamento de erro mais detalhado
     async saveRecord(table, record, id = null) {
-        let error;
-        if (id) ({ error } = await supabaseClient.from(table).update(record).eq('id', id));
-        else ({ error } = await supabaseClient.from(table).insert([record]));
-        if (error) throw error;
+        try {
+            let result;
+            if (id) {
+                result = await supabaseClient.from(table).update(record).eq('id', id);
+            } else {
+                result = await supabaseClient.from(table).insert([record]);
+            }
+            if (result.error) throw result.error;
+            return result.data;
+        } catch (error) {
+            console.error(`Erro ao salvar em ${table}:`, error);
+            throw new Error(`Falha ao salvar: ${error.message || error}`);
+        }
     },
     async deleteRecord(table, id) {
         const { error } = await supabaseClient.from(table).delete().eq('id', id);
@@ -643,17 +653,16 @@ async function registrarSaidaCaixa(data, valor, descricao) {
     }
 }
 
-// ==================== MÓDULO CAIXA (REFATORADO) ====================
+// ==================== MÓDULO CAIXA (inalterado) ====================
 const CaixaModule = {
     abrirModal: async () => {
         DomUtils.clearForm('form-caixa');
         DomUtils.setValue('caixa-data', DateUtils.nowDate());
         
-        // Habilitar campos (caso tenham sido desabilitados na edição)
         DomUtils.setReadOnly('caixa-data', false);
         DomUtils.setReadOnly('caixa-entradas', false);
         DomUtils.setReadOnly('caixa-saidas', false);
-        DomUtils.setReadOnly('caixa-saldo-inicial', true); // sempre readonly
+        DomUtils.setReadOnly('caixa-saldo-inicial', true);
         
         try {
             const ultimo = await obterUltimoCaixa();
@@ -663,7 +672,6 @@ const CaixaModule = {
             ErrorHandler.handle('obter saldo inicial', e);
         }
         
-        // Remover aviso de edição se existir
         const aviso = DomUtils.get('caixa-edicao-aviso');
         if (aviso) aviso.remove();
         
@@ -686,23 +694,18 @@ const CaixaModule = {
             
             let saldoInicial;
             if (id) {
-                // Edição: não permite alterar valores, apenas descrição
                 const registroOriginal = AppState.caixa.find(c => c.id == id);
                 if (!registroOriginal) throw new Error('Registro não encontrado');
                 
-                // Verificar se houve tentativa de alterar data/valores (ignoramos, mantemos original)
                 const dataOriginal = registroOriginal.data;
                 const entradasOriginal = MoneyUtils.parse(registroOriginal.entradas);
                 const saidasOriginal = MoneyUtils.parse(registroOriginal.saidas);
                 
-                // Se alterou data/valores, alertar e não permitir
                 if (data !== dataOriginal || entradas !== entradasOriginal || saidas !== saidasOriginal) {
                     AlertUtils.show('Edição de data ou valores não é permitida para preservar o histórico. Apenas a descrição será atualizada.', 'warning');
                 }
                 
-                // Usar valores originais
                 saldoInicial = registroOriginal.saldo_inicial;
-                // Atualizar apenas a descrição
                 await DataService.saveRecord('caixa', {
                     data: dataOriginal,
                     saldo_inicial: saldoInicial,
@@ -712,7 +715,6 @@ const CaixaModule = {
                     descricao
                 }, id);
             } else {
-                // Novo registro
                 const ultimo = await obterUltimoCaixa();
                 if (ultimo && data < ultimo.data) {
                     throw new Error(`A data não pode ser anterior ao último lançamento (${DateUtils.formatDate(ultimo.data)}).`);
@@ -751,13 +753,11 @@ const CaixaModule = {
             DomUtils.setValue('caixa-saidas', item.saidas);
             DomUtils.setValue('caixa-descricao', item.descricao || '');
             
-            // Bloquear edição de data e valores
             DomUtils.setReadOnly('caixa-data', true);
             DomUtils.setReadOnly('caixa-entradas', true);
             DomUtils.setReadOnly('caixa-saidas', true);
             DomUtils.setReadOnly('caixa-saldo-inicial', true);
             
-            // Adicionar aviso visual no modal
             let aviso = DomUtils.get('caixa-edicao-aviso');
             if (!aviso) {
                 aviso = document.createElement('div');
@@ -801,11 +801,16 @@ const CaixaModule = {
     }
 };
 
-// ==================== DEMAIS MÓDULOS (inalterados) ====================
+// ==================== MÓDULO SERVIÇOS (COM MELHORIAS) ====================
 let pendingAgendaId = null;
 
 const ServicosModule = {
-    abrirModal: () => { DomUtils.clearForm('form-servico'); DomUtils.setValue('servico-data', DateUtils.nowDate()); DomUtils.setDisplay('modal-servico', 'block'); ServicosModule.calcularRepasse(); },
+    abrirModal: () => {
+        DomUtils.clearForm('form-servico');
+        DomUtils.setValue('servico-data', DateUtils.nowDate());
+        DomUtils.setDisplay('modal-servico', 'block');
+        ServicosModule.calcularRepasse();
+    },
     calcularRepasse: () => {
         const valor = MoneyUtils.parse(DomUtils.getValue('servico-valor'));
         const tatuador = DomUtils.getValue('servico-tatuador');
@@ -817,55 +822,122 @@ const ServicosModule = {
     salvar: async () => {
         const id = DomUtils.getValue('servico-id');
         const record = {
-            data: DomUtils.getValue('servico-data'), cliente: DomUtils.getValue('servico-cliente'),
-            tatuador_nome: DomUtils.getValue('servico-tatuador'), tipo: DomUtils.getValue('servico-tipo'),
-            descricao: DomUtils.getValue('servico-descricao'), valor_total: MoneyUtils.parse(DomUtils.getValue('servico-valor')),
+            data: DomUtils.getValue('servico-data'),
+            cliente: DomUtils.getValue('servico-cliente'),
+            tatuador_nome: DomUtils.getValue('servico-tatuador'),
+            tipo: DomUtils.getValue('servico-tipo'),
+            descricao: DomUtils.getValue('servico-descricao'),
+            valor_total: MoneyUtils.parse(DomUtils.getValue('servico-valor')),
             forma_pagamento: DomUtils.getValue('servico-pagamento')
         };
+        
+        // Validação básica
+        if (!record.data || !record.cliente || !record.tatuador_nome || !record.tipo) {
+            AlertUtils.show('Preencha todos os campos obrigatórios.', 'error');
+            return;
+        }
+        
         try {
-            LoadingUtils.show('Salvando serviço...');
-            await DataService.saveRecord('servicos', record, id || null);
+            LoadingUtils.show(id ? 'Atualizando serviço...' : 'Criando serviço...');
+            
+            if (id) {
+                // Edição: buscar serviço original para calcular diferença
+                const servicoAntigo = AppState.servicos.find(s => s.id == id);
+                if (!servicoAntigo) {
+                    throw new Error('Serviço não encontrado. Recarregue a lista e tente novamente.');
+                }
+                const valorAntigo = MoneyUtils.parse(servicoAntigo.valor_total);
+                const diferenca = record.valor_total - valorAntigo;
+                
+                // Atualiza o serviço
+                await DataService.saveRecord('servicos', record, id);
+                
+                // Ajusta o caixa apenas se o valor foi alterado
+                if (Math.abs(diferenca) > 0.01) {
+                    if (diferenca > 0) {
+                        await registrarEntradaCaixa(record.data, diferenca,
+                            `Ajuste (edição): Serviço ${record.cliente} - valor aumentado em ${MoneyUtils.format(diferenca)}`);
+                    } else {
+                        await registrarSaidaCaixa(record.data, Math.abs(diferenca),
+                            `Ajuste (edição): Serviço ${record.cliente} - valor reduzido em ${MoneyUtils.format(Math.abs(diferenca))}`);
+                    }
+                }
+            } else {
+                // Novo serviço: insere e registra entrada completa
+                await DataService.saveRecord('servicos', record, null);
+                await registrarEntradaCaixa(record.data, record.valor_total,
+                    `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`);
+            }
+            
             DomUtils.setDisplay('modal-servico', 'none');
             await DataService.loadServicos(AppState.paginacao.servicos.pagina);
             await atualizarDashboard();
+            
             if (pendingAgendaId) {
                 await DataService.saveRecord('agenda', { status: 'Concluído' }, pendingAgendaId);
                 await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
                 AlertUtils.show('Agendamento concluído!', 'success');
                 pendingAgendaId = null;
             }
-            await registrarEntradaCaixa(record.data, record.valor_total, `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`);
+            
             AlertUtils.show(id ? 'Serviço atualizado' : 'Serviço salvo', 'success');
-        } catch (e) { ErrorHandler.handle('salvar serviço', e); } finally { LoadingUtils.hide(); }
-    },
-    editar: async (id) => {
-        const item = AppState.servicos.find(s => s.id == id);
-        if (item) {
-            DomUtils.setValue('servico-id', item.id); DomUtils.setValue('servico-data', item.data);
-            DomUtils.setValue('servico-cliente', item.cliente); DomUtils.setValue('servico-tatuador', item.tatuador_nome);
-            DomUtils.setValue('servico-tipo', item.tipo); DomUtils.setValue('servico-descricao', item.descricao || '');
-            DomUtils.setValue('servico-valor', item.valor_total); DomUtils.setValue('servico-pagamento', item.forma_pagamento);
-            DomUtils.setDisplay('modal-servico', 'block'); ServicosModule.calcularRepasse();
+            
+        } catch (e) {
+            ErrorHandler.handle('salvar serviço', e);
+            AlertUtils.show('Falha ao salvar serviço: ' + (e.message || 'Erro desconhecido'), 'error');
+            // Não fecha o modal para que o usuário possa corrigir
+        } finally {
+            LoadingUtils.hide();
         }
     },
+    editar: async (id) => {
+        // Verifica se a lista está vazia e recarrega se necessário
+        if (!AppState.servicos.length) {
+            await DataService.loadServicos(1, 10);
+        }
+        const item = AppState.servicos.find(s => s.id == id);
+        if (!item) {
+            AlertUtils.show('Serviço não encontrado. Recarregue a lista.', 'error');
+            await DataService.loadServicos(AppState.paginacao.servicos.pagina);
+            return;
+        }
+        DomUtils.setValue('servico-id', item.id);
+        DomUtils.setValue('servico-data', item.data);
+        DomUtils.setValue('servico-cliente', item.cliente);
+        DomUtils.setValue('servico-tatuador', item.tatuador_nome);
+        DomUtils.setValue('servico-tipo', item.tipo);
+        DomUtils.setValue('servico-descricao', item.descricao || '');
+        DomUtils.setValue('servico-valor', item.valor_total);
+        DomUtils.setValue('servico-pagamento', item.forma_pagamento);
+        DomUtils.setDisplay('modal-servico', 'block');
+        ServicosModule.calcularRepasse();
+    },
     excluir: async (id) => {
-        if (!await ConfirmModal.show('Excluir este serviço?')) return;
+        if (!await ConfirmModal.show('Excluir este serviço? Esta ação não remove o lançamento correspondente no caixa.')) return;
         try {
             LoadingUtils.show('Excluindo...');
             await DataService.deleteRecord('servicos', id);
             await DataService.loadServicos(AppState.paginacao.servicos.pagina);
             await atualizarDashboard();
             AlertUtils.show('Serviço excluído', 'success');
-        } catch (e) { ErrorHandler.handle('excluir serviço', e); } finally { LoadingUtils.hide(); }
+        } catch (e) {
+            ErrorHandler.handle('excluir serviço', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     },
     filtrar: () => DataService.loadServicos(1),
     limparFiltros: () => {
-        DomUtils.setValue('filtro-tatuador-servico', ''); DomUtils.setValue('filtro-tipo-servico', '');
-        DomUtils.setValue('filtro-pagamento', ''); DomUtils.setValue('filtro-data-servico', '');
-        DomUtils.setValue('search-servicos', ''); DataService.loadServicos(1);
+        DomUtils.setValue('filtro-tatuador-servico', '');
+        DomUtils.setValue('filtro-tipo-servico', '');
+        DomUtils.setValue('filtro-pagamento', '');
+        DomUtils.setValue('filtro-data-servico', '');
+        DomUtils.setValue('search-servicos', '');
+        DataService.loadServicos(1);
     }
 };
 
+// ==================== MÓDULO AGENDA (inalterado) ====================
 const AgendaModule = {
     abrirModal: () => { DomUtils.clearForm('form-agenda'); DomUtils.setValue('agenda-data', DateUtils.nowDate()); DomUtils.setDisplay('modal-agenda', 'block'); },
     salvar: async () => {
@@ -979,6 +1051,7 @@ async function gerarComprovanteAgendamentoPDF(dados) {
     } finally { LoadingUtils.hide(); }
 }
 
+// ==================== DEMAIS MÓDULOS (inalterados) ====================
 const PiercingModule = {
     abrirModal: (id = null) => {
         DomUtils.clearForm('form-piercing');
