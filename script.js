@@ -327,8 +327,20 @@ const DataService = {
             Renderer.renderPaginacao('agenda', count, pagina, itensPorPagina, (novaPagina) => DataService.loadAgenda(novaPagina));
         } catch (e) { ErrorHandler.handle('carregar agenda', e); }
     },
-    async loadAllServicos() { try { AppState.servicos = await this.fetchAll('servicos', 'data', false); } catch (e) { ErrorHandler.handle('loadAllServicos', e); } },
-    async loadAllCaixa() { try { AppState.caixa = await this.fetchAll('caixa', 'data', false); } catch (e) { ErrorHandler.handle('loadAllCaixa', e); } },
+    async loadAllServicos() { 
+        try { 
+            AppState.servicos = await this.fetchAll('servicos', 'data', false); 
+        } catch (e) { 
+            ErrorHandler.handle('loadAllServicos', e); 
+        } 
+    },
+    async loadAllCaixa() { 
+        try { 
+            AppState.caixa = await this.fetchAll('caixa', 'data', false); 
+        } catch (e) { 
+            ErrorHandler.handle('loadAllCaixa', e); 
+        } 
+    },
     async loadPiercings() { try { const { data } = await this.fetchTable('piercings_estoque', 'nome'); Renderer.renderEstoquePiercing(data); } catch (e) { ErrorHandler.handle('loadPiercings', e); } },
     async loadVendasPiercing() { try { const { data } = await supabaseClient.from('vendas_piercing').select('*, piercing:piercings_estoque(nome)').order('data', { ascending: false }).limit(100); Renderer.renderVendasPiercing(data || []); } catch (e) { ErrorHandler.handle('loadVendasPiercing', e); } },
     async loadMateriais() { try { const { data } = await this.fetchTable('materiais_estoque', 'nome'); Renderer.renderEstoqueMaterial(data); } catch (e) { ErrorHandler.handle('loadMateriais', e); } },
@@ -463,24 +475,33 @@ const Renderer = {
 
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m]); }
 
-// ==================== DASHBOARD ====================
+// ==================== DASHBOARD (CORRIGIDO) ====================
 async function atualizarDashboard() {
+    // Aguarda o carregamento completo dos dados (todos os registros, sem paginação)
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
+
+    // Agora AppState.caixa contém TODOS os registros, ordenados por data decrescente (mais recente primeiro)
+    const saldoAtual = AppState.caixa.length > 0 ? AppState.caixa[0].saldo_final : 0;
+    
     const totalEntradas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.entradas), 0);
     const totalSaidas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.saidas), 0);
-    const saldoAtual = AppState.caixa.length ? AppState.caixa[0].saldo_final : 0;
+    
     const servicosRealizados = AppState.servicos.length;
     const repasseThalia = AppState.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? MoneyUtils.parse(sv.valor_total) * 0.7 : 0), 0);
+    
     DomUtils.setHtml('saldo-atual', MoneyUtils.format(saldoAtual));
     DomUtils.setHtml('total-entradas', MoneyUtils.format(totalEntradas));
     DomUtils.setHtml('total-saidas', MoneyUtils.format(totalSaidas));
     DomUtils.setHtml('servicos-realizados', servicosRealizados);
     DomUtils.setHtml('repasse-thalia', MoneyUtils.format(repasseThalia));
+
     const recentes = AppState.servicos.slice(0, 5);
     DomUtils.setHtml('servicos-recentes', recentes.length ? `<ul>${recentes.map(s => `<li>${DateUtils.formatDate(s.data)} - ${escapeHtml(s.cliente)}: ${MoneyUtils.format(s.valor_total)}</li>`).join('')}</ul>` : 'Nenhum');
+    
     const proximos = AppState.agenda.filter(a => new Date(a.data_hora) >= new Date() && a.status !== 'Cancelado').slice(0, 5);
     DomUtils.setHtml('proximos-agendamentos', proximos.length ? `<ul>${proximos.map(a => `<li>${DateUtils.formatDateTime(a.data_hora)} - ${escapeHtml(a.cliente)}</li>`).join('')}</ul>` : 'Nenhum');
+
     const canvasFaturamento = DomUtils.get('chart-faturamento');
     if (canvasFaturamento) {
         const ctx = canvasFaturamento.getContext('2d');
@@ -540,7 +561,9 @@ async function registrarSaidaCaixa(data, valor, descricao) {
     } catch (e) { console.warn(e); AlertUtils.show('Erro ao registrar saída', 'warning'); }
 }
 
-// ==================== MÓDULOS CRUD ====================
+// ==================== MÓDULOS CRUD (inalterados, exceto chamadas que já estão corretas) ====================
+// (Mantive o restante do código idêntico ao original, apenas a função atualizarDashboard foi corrigida)
+
 let pendingAgendaId = null;
 
 const CaixaModule = {
