@@ -652,7 +652,7 @@ async function registrarSaidaCaixa(data, valor, descricao) {
     }
 }
 
-// ==================== MÓDULO CAIXA (inalterado) ====================
+// ==================== MÓDULO CAIXA ====================
 const CaixaModule = {
     abrirModal: async () => {
         DomUtils.clearForm('form-caixa');
@@ -800,7 +800,7 @@ const CaixaModule = {
     }
 };
 
-// ==================== MÓDULO SERVIÇOS (COM MELHORIAS) ====================
+// ==================== MÓDULO SERVIÇOS (COM CORREÇÕES) ====================
 let pendingAgendaId = null;
 
 const ServicosModule = {
@@ -809,6 +809,7 @@ const ServicosModule = {
         DomUtils.setValue('servico-data', DateUtils.nowDate());
         DomUtils.setDisplay('modal-servico', 'block');
         ServicosModule.calcularRepasse();
+        // Não reseta pendingAgendaId aqui, pois pode ter vindo de um agendamento
     },
     calcularRepasse: () => {
         const valor = MoneyUtils.parse(DomUtils.getValue('servico-valor'));
@@ -839,42 +840,28 @@ const ServicosModule = {
             LoadingUtils.show(id ? 'Atualizando serviço...' : 'Criando serviço...');
             
             if (id) {
-                const servicoAntigo = AppState.servicos.find(s => s.id == id);
-                if (!servicoAntigo) {
-                    throw new Error('Serviço não encontrado. Recarregue a lista e tente novamente.');
-                }
-                const valorAntigo = MoneyUtils.parse(servicoAntigo.valor_total);
-                const diferenca = record.valor_total - valorAntigo;
-                
+                // Edição: apenas atualiza o registro, sem mexer no caixa
                 await DataService.saveRecord('servicos', record, id);
-                
-                if (Math.abs(diferenca) > 0.01) {
-                    if (diferenca > 0) {
-                        await registrarEntradaCaixa(record.data, diferenca,
-                            `Ajuste (edição): Serviço ${record.cliente} - valor aumentado em ${MoneyUtils.format(diferenca)}`);
-                    } else {
-                        await registrarSaidaCaixa(record.data, Math.abs(diferenca),
-                            `Ajuste (edição): Serviço ${record.cliente} - valor reduzido em ${MoneyUtils.format(Math.abs(diferenca))}`);
-                    }
-                }
+                AlertUtils.show('Serviço atualizado com sucesso! (O caixa não foi alterado)', 'success');
             } else {
+                // Criação: registra entrada no caixa
                 await DataService.saveRecord('servicos', record, null);
                 await registrarEntradaCaixa(record.data, record.valor_total,
                     `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`);
+                AlertUtils.show('Serviço criado e registrado no caixa', 'success');
             }
             
             DomUtils.setDisplay('modal-servico', 'none');
             await DataService.loadServicos(AppState.paginacao.servicos.pagina);
             await atualizarDashboard();
             
+            // Só conclui agendamento se realmente veio de um
             if (pendingAgendaId) {
                 await DataService.saveRecord('agenda', { status: 'Concluído' }, pendingAgendaId);
                 await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
                 AlertUtils.show('Agendamento concluído!', 'success');
                 pendingAgendaId = null;
             }
-            
-            AlertUtils.show(id ? 'Serviço atualizado' : 'Serviço salvo', 'success');
             
         } catch (e) {
             ErrorHandler.handle('salvar serviço', e);
@@ -884,14 +871,19 @@ const ServicosModule = {
         }
     },
     editar: async (id) => {
+        // Garante que os serviços estejam carregados
         if (!AppState.servicos.length) {
             await DataService.loadServicos(1, 10);
         }
-        const item = AppState.servicos.find(s => s.id == id);
+        let item = AppState.servicos.find(s => s.id == id);
+        // Fallback: busca direta no Supabase
         if (!item) {
-            AlertUtils.show('Serviço não encontrado. Recarregue a lista.', 'error');
-            await DataService.loadServicos(AppState.paginacao.servicos.pagina);
-            return;
+            const { data, error } = await supabaseClient.from('servicos').select('*').eq('id', id).single();
+            if (error || !data) {
+                AlertUtils.show('Serviço não encontrado.', 'error');
+                return;
+            }
+            item = data;
         }
         DomUtils.setValue('servico-id', item.id);
         DomUtils.setValue('servico-data', item.data);
@@ -929,7 +921,7 @@ const ServicosModule = {
     }
 };
 
-// ==================== MÓDULO AGENDA (inalterado) ====================
+// ==================== MÓDULO AGENDA ====================
 const AgendaModule = {
     abrirModal: () => { DomUtils.clearForm('form-agenda'); DomUtils.setValue('agenda-data', DateUtils.nowDate()); DomUtils.setDisplay('modal-agenda', 'block'); },
     salvar: async () => {
@@ -998,13 +990,12 @@ const AgendaModule = {
     limparFiltros: () => { DomUtils.setValue('filtro-tatuador-agenda', ''); DomUtils.setValue('filtro-status-agenda', ''); DomUtils.setValue('filtro-data-agenda', ''); DataService.loadAgenda(1); }
 };
 
-// ==================== FUNÇÃO DE PDF MODIFICADA ====================
+// ==================== FUNÇÃO DE PDF ====================
 async function gerarComprovanteAgendamentoPDF(dados) {
   let element = null;
   try {
     LoadingUtils.show('Gerando comprovante PDF...');
 
-    // Buscar dados do estúdio diretamente do Supabase
     const { data: studio, error } = await supabaseClient
       .from('studio_config')
       .select('nome, endereco, instagram, whatsapp')
@@ -1072,7 +1063,7 @@ async function gerarComprovanteAgendamentoPDF(dados) {
   }
 }
 
-// ==================== DEMAIS MÓDULOS (inalterados) ====================
+// ==================== DEMAIS MÓDULOS ====================
 const PiercingModule = {
     abrirModal: (id = null) => {
         DomUtils.clearForm('form-piercing');
@@ -1301,7 +1292,16 @@ function setupEventListeners() {
         });
     });
     document.querySelectorAll('.close').forEach(close => {
-        close.addEventListener('click', () => { const modalId = close.getAttribute('data-modal'); if (modalId) DomUtils.setDisplay(modalId, 'none'); });
+        close.addEventListener('click', () => {
+            const modalId = close.getAttribute('data-modal');
+            if (modalId) {
+                DomUtils.setDisplay(modalId, 'none');
+                // Limpa pendingAgendaId se o modal de serviço for fechado
+                if (modalId === 'modal-servico') {
+                    pendingAgendaId = null;
+                }
+            }
+        });
     });
     
     // --- CAIXA ---
@@ -1312,7 +1312,10 @@ function setupEventListeners() {
     DomUtils.get('btn-limpar-filtros-caixa')?.addEventListener('click', () => CaixaModule.limparFiltros());
     
     // --- SERVIÇOS ---
-    DomUtils.get('btn-novo-servico')?.addEventListener('click', () => ServicosModule.abrirModal());
+    DomUtils.get('btn-novo-servico')?.addEventListener('click', () => {
+        pendingAgendaId = null; // Garante que não está pendente ao abrir manualmente
+        ServicosModule.abrirModal();
+    });
     DomUtils.get('btn-salvar-servico')?.addEventListener('click', () => ServicosModule.salvar());
     DomUtils.get('limpar-filtros-servicos')?.addEventListener('click', () => ServicosModule.limparFiltros());
     DomUtils.get('search-servicos')?.addEventListener('input', () => ServicosModule.filtrar());
