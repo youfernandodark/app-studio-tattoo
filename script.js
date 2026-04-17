@@ -238,6 +238,135 @@ const AppState = {
     filtrosCaixa: { dataInicio: '', dataFim: '' }
 };
 
+// ==================== NOVO: MÓDULO DE INTEGRIDADE DO CAIXA ====================
+const CaixaIntegrity = {
+    // Recalcula saldos a partir de uma data (ou todos, se fromDate for null)
+    async recalcularSaldos(fromDate = null) {
+        try {
+            LoadingUtils.show('Recalculando saldos do caixa...');
+            
+            // Busca todos os registros ordenados por data ASC
+            let query = supabaseClient.from('caixa').select('*').order('data', { ascending: true });
+            if (fromDate) {
+                query = query.gte('data', fromDate);
+            }
+            const { data: registros, error } = await query;
+            if (error) throw error;
+            
+            if (!registros || registros.length === 0) {
+                AlertUtils.show('Nenhum registro para recalcular.', 'info');
+                return;
+            }
+
+            // Determina o saldo inicial antes do primeiro registro a ser recalculado
+            let saldoAtual = 0;
+            if (fromDate) {
+                // Pega o saldo_final do registro imediatamente anterior à data de início
+                const { data: anterior } = await supabaseClient.from('caixa')
+                    .select('saldo_final')
+                    .lt('data', fromDate)
+                    .order('data', { ascending: false })
+                    .limit(1);
+                if (anterior && anterior.length > 0) {
+                    saldoAtual = anterior[0].saldo_final;
+                }
+            }
+            
+            // Atualiza cada registro sequencialmente
+            const updates = [];
+            for (const reg of registros) {
+                const entradas = MoneyUtils.parse(reg.entradas);
+                const saidas = MoneyUtils.parse(reg.saidas);
+                const saldoInicial = saldoAtual;
+                const saldoFinal = saldoInicial + entradas - saidas;
+                
+                // Só atualiza se houver diferença
+                if (reg.saldo_inicial !== saldoInicial || reg.saldo_final !== saldoFinal) {
+                    updates.push({
+                        id: reg.id,
+                        saldo_inicial: saldoInicial,
+                        saldo_final: saldoFinal
+                    });
+                }
+                saldoAtual = saldoFinal;
+            }
+            
+            if (updates.length === 0) {
+                AlertUtils.show('Saldos já estão consistentes.', 'success');
+                return;
+            }
+            
+            // Aplica as atualizações uma a uma (Supabase não suporta transações em lote)
+            let sucesso = 0;
+            for (const upd of updates) {
+                const { error: updateError } = await supabaseClient
+                    .from('caixa')
+                    .update({ saldo_inicial: upd.saldo_inicial, saldo_final: upd.saldo_final })
+                    .eq('id', upd.id);
+                if (updateError) {
+                    console.error(`Falha ao atualizar registro ${upd.id}:`, updateError);
+                    throw new Error(`Erro ao atualizar registro ${upd.id}`);
+                }
+                sucesso++;
+            }
+            
+            AlertUtils.show(`${sucesso} registro(s) corrigido(s). Saldos recalculados com sucesso!`, 'success');
+            
+            // Recarrega os dados do caixa para refletir mudanças
+            await DataService.loadCaixa(AppState.paginacao.caixa.pagina, 10, DomUtils.getValue('search-caixa') || '');
+            await atualizarDashboard();
+            
+        } catch (error) {
+            ErrorHandler.handle('recalcular saldos', error);
+            AlertUtils.show('Falha ao recalcular saldos. Verifique o console.', 'error');
+        } finally {
+            LoadingUtils.hide();
+        }
+    },
+    
+    // Verifica se há inconsistência e corrige automaticamente
+    async verificarECorrigir(silencioso = true) {
+        try {
+            // Obtém todos os registros ordenados
+            const { data: registros, error } = await supabaseClient
+                .from('caixa')
+                .select('*')
+                .order('data', { ascending: true });
+            
+            if (error || !registros) return false;
+            
+            let saldoCalculado = 0;
+            let inconsistente = false;
+            
+            for (const reg of registros) {
+                const entradas = MoneyUtils.parse(reg.entradas);
+                const saidas = MoneyUtils.parse(reg.saidas);
+                const saldoInicialEsperado = saldoCalculado;
+                const saldoFinalEsperado = saldoInicialEsperado + entradas - saidas;
+                
+                if (reg.saldo_inicial !== saldoInicialEsperado || reg.saldo_final !== saldoFinalEsperado) {
+                    inconsistente = true;
+                    break;
+                }
+                saldoCalculado = saldoFinalEsperado;
+            }
+            
+            if (inconsistente) {
+                if (!silencioso) {
+                    const confirm = await ConfirmModal.show('Foram detectadas inconsistências nos saldos do caixa. Deseja corrigir agora?');
+                    if (!confirm) return false;
+                }
+                await this.recalcularSaldos();
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.warn('Verificação de integridade falhou:', e);
+            return false;
+        }
+    }
+};
+
 // ==================== SERVIÇO DE DADOS ====================
 const DataService = {
     async fetchTable(table, orderBy = null, ascending = true, limit = null, offset = 0, filters = {}) {
@@ -305,6 +434,10 @@ const DataService = {
                 const termo = DomUtils.getValue('search-caixa') || '';
                 DataService.loadCaixa(novaPagina, itensPorPagina, termo);
             });
+            
+            // Verificação silenciosa de integridade após carregar
+            CaixaIntegrity.verificarECorrigir(true);
+            
         } catch (e) { ErrorHandler.handle('carregar caixa', e); }
     },
     async loadServicos(pagina = 1, itensPorPagina = 10) {
@@ -652,7 +785,7 @@ async function registrarSaidaCaixa(data, valor, descricao) {
     }
 }
 
-// ==================== MÓDULO CAIXA ====================
+// ==================== MÓDULO CAIXA (COM BOTÃO DE RECALCULAR) ====================
 const CaixaModule = {
     abrirModal: async () => {
         DomUtils.clearForm('form-caixa');
@@ -771,13 +904,23 @@ const CaixaModule = {
         }
     },
     excluir: async (id) => {
-        if (!await ConfirmModal.show('Excluir este lançamento? ATENÇÃO: Isso pode quebrar a sequência de saldos!')) return;
+        // Encontra o registro antes de excluir para saber a data
+        const registro = AppState.caixa.find(c => c.id == id);
+        if (!registro) return;
+        
+        if (!await ConfirmModal.show('Excluir este lançamento? Os saldos serão recalculados automaticamente a partir desta data.')) return;
         try {
             LoadingUtils.show('Excluindo...');
+            const dataDoRegistro = registro.data;
+            
             await DataService.deleteRecord('caixa', id);
+            
+            // Recalcula saldos a partir da data do registro excluído
+            await CaixaIntegrity.recalcularSaldos(dataDoRegistro);
+            
             await DataService.loadCaixa(1, 10, DomUtils.getValue('search-caixa') || '');
             atualizarDashboard();
-            AlertUtils.show('Lançamento excluído. Verifique os saldos seguintes!', 'warning');
+            AlertUtils.show('Lançamento excluído e saldos recalculados.', 'success');
         } catch (e) {
             ErrorHandler.handle('excluir caixa', e);
         } finally {
@@ -797,6 +940,11 @@ const CaixaModule = {
         DomUtils.setValue('filtro-caixa-fim', '');
         DomUtils.setValue('search-caixa', '');
         DataService.loadCaixa(1, 10, '');
+    },
+    // Método para acionar recálculo manual
+    recalcularManual: async () => {
+        if (!await ConfirmModal.show('Isso irá recalcular todos os saldos do caixa a partir do primeiro registro. Continuar?')) return;
+        await CaixaIntegrity.recalcularSaldos();
     }
 };
 
@@ -809,7 +957,6 @@ const ServicosModule = {
         DomUtils.setValue('servico-data', DateUtils.nowDate());
         DomUtils.setDisplay('modal-servico', 'block');
         ServicosModule.calcularRepasse();
-        // Não reseta pendingAgendaId aqui, pois pode ter vindo de um agendamento
     },
     calcularRepasse: () => {
         const valor = MoneyUtils.parse(DomUtils.getValue('servico-valor'));
@@ -840,11 +987,9 @@ const ServicosModule = {
             LoadingUtils.show(id ? 'Atualizando serviço...' : 'Criando serviço...');
             
             if (id) {
-                // Edição: apenas atualiza o registro, sem mexer no caixa
                 await DataService.saveRecord('servicos', record, id);
                 AlertUtils.show('Serviço atualizado com sucesso! (O caixa não foi alterado)', 'success');
             } else {
-                // Criação: registra entrada no caixa
                 await DataService.saveRecord('servicos', record, null);
                 await registrarEntradaCaixa(record.data, record.valor_total,
                     `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`);
@@ -855,7 +1000,6 @@ const ServicosModule = {
             await DataService.loadServicos(AppState.paginacao.servicos.pagina);
             await atualizarDashboard();
             
-            // Só conclui agendamento se realmente veio de um
             if (pendingAgendaId) {
                 await DataService.saveRecord('agenda', { status: 'Concluído' }, pendingAgendaId);
                 await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
@@ -871,12 +1015,10 @@ const ServicosModule = {
         }
     },
     editar: async (id) => {
-        // Garante que os serviços estejam carregados
         if (!AppState.servicos.length) {
             await DataService.loadServicos(1, 10);
         }
         let item = AppState.servicos.find(s => s.id == id);
-        // Fallback: busca direta no Supabase
         if (!item) {
             const { data, error } = await supabaseClient.from('servicos').select('*').eq('id', id).single();
             if (error || !data) {
@@ -1296,7 +1438,6 @@ function setupEventListeners() {
             const modalId = close.getAttribute('data-modal');
             if (modalId) {
                 DomUtils.setDisplay(modalId, 'none');
-                // Limpa pendingAgendaId se o modal de serviço for fechado
                 if (modalId === 'modal-servico') {
                     pendingAgendaId = null;
                 }
@@ -1311,9 +1452,12 @@ function setupEventListeners() {
     DomUtils.get('btn-filtrar-caixa')?.addEventListener('click', () => CaixaModule.aplicarFiltroPeriodo());
     DomUtils.get('btn-limpar-filtros-caixa')?.addEventListener('click', () => CaixaModule.limparFiltros());
     
+    // Botão de recálculo manual (adicione no HTML um botão com id="btn-recalcular-saldos")
+    DomUtils.get('btn-recalcular-saldos')?.addEventListener('click', () => CaixaModule.recalcularManual());
+    
     // --- SERVIÇOS ---
     DomUtils.get('btn-novo-servico')?.addEventListener('click', () => {
-        pendingAgendaId = null; // Garante que não está pendente ao abrir manualmente
+        pendingAgendaId = null;
         ServicosModule.abrirModal();
     });
     DomUtils.get('btn-salvar-servico')?.addEventListener('click', () => ServicosModule.salvar());
@@ -1349,7 +1493,7 @@ function setupEventListeners() {
     
     DomUtils.get('btn-sincronizar')?.addEventListener('click', () => location.reload());
     
-    // Delegação de eventos para botões de ação nas tabelas
+    // Delegação de eventos
     document.body.addEventListener('click', async (e) => {
         const btn = e.target.closest('button');
         if (!btn) return;
