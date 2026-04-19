@@ -239,12 +239,10 @@ const AppState = {
 };
 
 // ==================== FUNÇÕES AUXILIARES PARA ORDENAÇÃO DO CAIXA ====================
-// Para cálculos de saldo (ordem cronológica crescente)
 const orderCaixaCronologico = (query) => query.order('data', { ascending: true }).order('id', { ascending: true });
-// Para exibição ao usuário (mais recentes primeiro)
 const orderCaixaDesc = (query) => query.order('data', { ascending: false }).order('id', { ascending: false });
 
-// ==================== MÓDULO DE INTEGRIDADE DO CAIXA (CORRIGIDO) ====================
+// ==================== MÓDULO DE INTEGRIDADE DO CAIXA ====================
 const CaixaIntegrity = {
     async recalcularSaldos(fromDate = null) {
         try {
@@ -266,7 +264,6 @@ const CaixaIntegrity = {
 
             let saldoAtual = 0;
             if (fromDate) {
-                // Buscar o registro imediatamente anterior (mesmo dia com ID menor ou dia anterior)
                 const { data: anterior } = await supabaseClient.from('caixa')
                     .select('saldo_final, data, id')
                     .or(`data.lt.${fromDate},and(data.eq.${fromDate},id.lt.${registros[0].id})`)
@@ -419,7 +416,6 @@ const DataService = {
             if (dataInicio) query = query.gte('data', dataInicio);
             if (dataFim) query = query.lte('data', dataFim);
             
-            // Para o resumo mensal, a ordem não importa muito, mas usamos descendente por consistência de exibição
             query = orderCaixaDesc(query);
             
             const { data, error } = await query;
@@ -442,7 +438,6 @@ const DataService = {
             
             if (searchTerm) query = query.ilike('descricao', `%${searchTerm}%`);
             
-            // Ordenar do mais recente para o mais antigo (últimos registros em cima)
             query = orderCaixaDesc(query).range(offset, offset + itensPorPagina - 1);
             
             const { data, error, count } = await query;
@@ -509,20 +504,8 @@ const DataService = {
             Renderer.renderPaginacao('agenda', count, pagina, itensPorPagina, (novaPagina) => DataService.loadAgenda(novaPagina));
         } catch (e) { ErrorHandler.handle('carregar agenda', e); }
     },
-    async loadAllServicos() { 
-        try { 
-            AppState.servicos = await this.fetchAll('servicos', 'data', false); 
-        } catch (e) { 
-            ErrorHandler.handle('loadAllServicos', e); 
-        } 
-    },
-    async loadAllCaixa() { 
-        try { 
-            AppState.caixa = await this.fetchAll('caixa', 'data', false); 
-        } catch (e) { 
-            ErrorHandler.handle('loadAllCaixa', e); 
-        } 
-    },
+    async loadAllServicos() { try { AppState.servicos = await this.fetchAll('servicos', 'data', false); } catch (e) { ErrorHandler.handle('loadAllServicos', e); } },
+    async loadAllCaixa() { try { AppState.caixa = await this.fetchAll('caixa', 'data', false); } catch (e) { ErrorHandler.handle('loadAllCaixa', e); } },
     async loadPiercings() { try { const { data } = await this.fetchTable('piercings_estoque', 'nome'); Renderer.renderEstoquePiercing(data); } catch (e) { ErrorHandler.handle('loadPiercings', e); } },
     async loadVendasPiercing() { try { const { data } = await supabaseClient.from('vendas_piercing').select('*, piercing:piercings_estoque(nome)').order('data', { ascending: false }).limit(100); Renderer.renderVendasPiercing(data || []); } catch (e) { ErrorHandler.handle('loadVendasPiercing', e); } },
     async loadMateriais() { try { const { data } = await this.fetchTable('materiais_estoque', 'nome'); Renderer.renderEstoqueMaterial(data); } catch (e) { ErrorHandler.handle('loadMateriais', e); } },
@@ -651,6 +634,7 @@ const Renderer = {
         const linhas = data.map(a => {
             const statusClass = { Agendado: 'status-warning', Confirmado: 'status-info', Concluído: 'status-success', Cancelado: 'status-danger' }[a.status] || '';
             const realizarBtn = (a.status !== 'Concluído' && a.status !== 'Cancelado') ? `<button class="btn-icon" data-acao="realizar-servico" data-id="${a.id}" title="Realizar Serviço"><i class="fas fa-check-circle"></i></button>` : '';
+            const reagendarBtn = (a.status !== 'Concluído' && a.status !== 'Cancelado') ? `<button class="btn-icon" data-acao="reagendar-agenda" data-id="${a.id}" title="Reagendar"><i class="fas fa-calendar-plus"></i></button>` : '';
             const dt = new Date(a.data_hora);
             const dataStr = !isNaN(dt.getTime()) ? dt.toLocaleDateString('pt-BR') : '-';
             const horaStr = !isNaN(dt.getTime()) ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
@@ -662,7 +646,7 @@ const Renderer = {
                 <td>${escapeHtml(a.tipo_servico)}</td>
                 <td><span class="status-badge-item ${statusClass}">${escapeHtml(a.status)}</span></td>
                 <td title="${escapeHtml(a.observacoes)}">${escapeHtml(a.observacoes) || '-'}</td>
-                <td class="actions-cell">${realizarBtn}<button class="btn-icon" data-acao="editar-agenda" data-id="${a.id}" title="Editar"><i class="fas fa-edit"></i></button>
+                <td class="actions-cell">${realizarBtn}${reagendarBtn}<button class="btn-icon" data-acao="editar-agenda" data-id="${a.id}" title="Editar"><i class="fas fa-edit"></i></button>
                 <button class="btn-icon" data-acao="excluir-agenda" data-id="${a.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
              </tr>`;
         }).join('');
@@ -722,32 +706,19 @@ async function atualizarDashboard() {
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
 
-    // Saldo atual do caixa
     const saldoAtual = AppState.caixa.length > 0 ? AppState.caixa[0].saldo_final : 0;
-    
-    // Total de saídas do caixa (gastos operacionais)
     const totalSaidas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.saidas), 0);
-    
-    // Serviços realizados (contagem)
     const servicosRealizados = AppState.servicos.length;
-    
-    // NOVOS CÁLCULOS:
-    // Faturamento Bruto = soma de todos os valores dos serviços
     const faturamentoBruto = AppState.servicos.reduce((s, sv) => s + MoneyUtils.parse(sv.valor_total), 0);
-    
-    // Parte que fica no estúdio
     const parteEstudio = AppState.servicos.reduce((s, sv) => {
         const valor = MoneyUtils.parse(sv.valor_total);
         return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.3 : valor);
     }, 0);
-    
-    // Repasse devido à Thalia
     const repasseThalia = AppState.servicos.reduce((s, sv) => {
         const valor = MoneyUtils.parse(sv.valor_total);
         return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.7 : 0);
     }, 0);
     
-    // Atualiza os cards do dashboard
     DomUtils.setHtml('saldo-atual', MoneyUtils.format(saldoAtual));
     DomUtils.setHtml('faturamento-bruto', MoneyUtils.format(faturamentoBruto));
     DomUtils.setHtml('parte-estudio', MoneyUtils.format(parteEstudio));
@@ -755,15 +726,12 @@ async function atualizarDashboard() {
     DomUtils.setHtml('total-saidas', MoneyUtils.format(totalSaidas));
     DomUtils.setHtml('servicos-realizados', servicosRealizados);
     
-    // Serviços recentes
     const recentes = AppState.servicos.slice(0, 5);
     DomUtils.setHtml('servicos-recentes', recentes.length ? `<ul>${recentes.map(s => `<li>${DateUtils.formatDate(s.data)} - ${escapeHtml(s.cliente)}: ${MoneyUtils.format(s.valor_total)}</li>`).join('')}</ul>` : 'Nenhum');
     
-    // Próximos agendamentos
     const proximos = AppState.agenda.filter(a => new Date(a.data_hora) >= new Date() && a.status !== 'Cancelado').slice(0, 5);
     DomUtils.setHtml('proximos-agendamentos', proximos.length ? `<ul>${proximos.map(a => `<li>${DateUtils.formatDateTime(a.data_hora)} - ${escapeHtml(a.cliente)}</li>`).join('')}</ul>` : 'Nenhum');
 
-    // Gráficos
     const canvasFaturamento = DomUtils.get('chart-faturamento');
     if (canvasFaturamento) {
         const ctx = canvasFaturamento.getContext('2d');
@@ -787,21 +755,18 @@ async function atualizarDashboard() {
     }
 }
 
-// ==================== RELATÓRIOS COM DIAS TRABALHADOS ====================
+// ==================== RELATÓRIOS ====================
 async function carregarRelatorios() {
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
     
-    // Faturamento por tatuador
     const faturamentoPorTatuador = {};
     AppState.servicos.forEach(s => { faturamentoPorTatuador[s.tatuador_nome] = (faturamentoPorTatuador[s.tatuador_nome] || 0) + MoneyUtils.parse(s.valor_total); });
     DomUtils.setHtml('faturamento-tatuador', Object.entries(faturamentoPorTatuador).map(([nome, valor]) => `<div><strong>${escapeHtml(nome)}:</strong> ${MoneyUtils.format(valor)}</div>`).join('') || 'Sem dados');
     
-    // Repasse Thalia
     const totalRepThalia = AppState.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? MoneyUtils.parse(sv.valor_total) * 0.7 : 0), 0);
     DomUtils.setHtml('relatorio-repasse', `<strong>Total a repassar para Thalia:</strong> ${MoneyUtils.format(totalRepThalia)}`);
     
-    // Lucro líquido
     const parteEstudio = AppState.servicos.reduce((s, sv) => {
         const valor = MoneyUtils.parse(sv.valor_total);
         return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.3 : valor);
@@ -809,11 +774,10 @@ async function carregarRelatorios() {
     const totalSaidas = AppState.caixa.reduce((s, c) => s + MoneyUtils.parse(c.saidas), 0);
     DomUtils.setHtml('relatorio-lucro-liquido', `<strong>Lucro Líquido (Estúdio):</strong> ${MoneyUtils.format(parteEstudio - totalSaidas)}`);
     
-    // ========== NOVO: DIAS TRABALHADOS POR MÊS ==========
     const diasPorMes = {};
     AppState.servicos.forEach(servico => {
         if (servico.data) {
-            const mes = servico.data.substring(0, 7); // "YYYY-MM"
+            const mes = servico.data.substring(0, 7);
             if (!diasPorMes[mes]) diasPorMes[mes] = new Set();
             diasPorMes[mes].add(servico.data);
         }
@@ -830,7 +794,6 @@ async function carregarRelatorios() {
     }
     htmlDias += '</ul></div>';
     
-    // Insere ou atualiza o container de dias trabalhados
     let containerDias = DomUtils.get('dias-trabalhados-container');
     if (!containerDias) {
         const relSection = DomUtils.get('relatorios');
@@ -936,7 +899,7 @@ async function registrarSaidaCaixa(data, valor, descricao) {
     }
 }
 
-// ==================== MÓDULO CAIXA (COM BOTÃO DE RECALCULAR) ====================
+// ==================== MÓDULO CAIXA ====================
 const CaixaModule = {
     abrirModal: async () => {
         DomUtils.clearForm('form-caixa');
@@ -1102,7 +1065,7 @@ const CaixaModule = {
     }
 };
 
-// ==================== MÓDULO SERVIÇOS (COM SINCRONIZAÇÃO NO CAIXA CORRIGIDA) ====================
+// ==================== MÓDULO SERVIÇOS ====================
 let pendingAgendaId = null;
 
 async function encontrarLancamentoServico(servicoOriginal) {
@@ -1156,7 +1119,6 @@ const ServicosModule = {
             LoadingUtils.show(id ? 'Atualizando serviço...' : 'Criando serviço...');
             
             if (id) {
-                // --- EDIÇÃO DE SERVIÇO ---
                 const { data: original, error: errOriginal } = await supabaseClient
                     .from('servicos')
                     .select('*')
@@ -1191,7 +1153,6 @@ const ServicosModule = {
                     AlertUtils.show('Serviço atualizado (sem alterações financeiras).', 'success');
                 }
             } else {
-                // --- CRIAÇÃO DE SERVIÇO ---
                 const { data: novo, error: insertError } = await supabaseClient
                     .from('servicos')
                     .insert([record])
@@ -1274,48 +1235,144 @@ const ServicosModule = {
     }
 };
 
-// ==================== MÓDULO AGENDA ====================
+// ==================== MÓDULO AGENDA (COM REAGENDAMENTO) ====================
 const AgendaModule = {
-    abrirModal: () => { DomUtils.clearForm('form-agenda'); DomUtils.setValue('agenda-data', DateUtils.nowDate()); DomUtils.setDisplay('modal-agenda', 'block'); },
+    _isReagendamento: false,
+    _agendamentoOriginal: null,
+
+    abrirModal: () => {
+        DomUtils.clearForm('form-agenda');
+        DomUtils.setValue('agenda-data', DateUtils.nowDate());
+        DomUtils.setDisplay('modal-agenda', 'block');
+        AgendaModule._isReagendamento = false;
+        AgendaModule._agendamentoOriginal = null;
+    },
+
     salvar: async () => {
         const id = DomUtils.getValue('agenda-id');
-        const dataLocal = DomUtils.getValue('agenda-data'), horaLocal = DomUtils.getValue('agenda-horario');
-        if (!dataLocal || !horaLocal) return AlertUtils.show('Data e horário obrigatórios', 'error');
+        const dataLocal = DomUtils.getValue('agenda-data');
+        const horaLocal = DomUtils.getValue('agenda-horario');
+        
+        if (!dataLocal || !horaLocal) {
+            AlertUtils.show('Data e horário obrigatórios', 'error');
+            return;
+        }
+        
         const dataHoraLocal = new Date(`${dataLocal}T${horaLocal}:00`);
-        if (isNaN(dataHoraLocal.getTime())) return AlertUtils.show('Data/hora inválida', 'error');
+        if (isNaN(dataHoraLocal.getTime())) {
+            AlertUtils.show('Data/hora inválida', 'error');
+            return;
+        }
+
         const record = {
-            data_hora: dataHoraLocal.toISOString(), cliente: DomUtils.getValue('agenda-cliente'),
-            tatuador_nome: DomUtils.getValue('agenda-tatuador'), tipo_servico: DomUtils.getValue('agenda-tipo'),
-            valor_estimado: 0, forma_pagamento: null, status: DomUtils.getValue('agenda-status'),
+            data_hora: dataHoraLocal.toISOString(),
+            cliente: DomUtils.getValue('agenda-cliente'),
+            tatuador_nome: DomUtils.getValue('agenda-tatuador'),
+            tipo_servico: DomUtils.getValue('agenda-tipo'),
+            valor_estimado: 0,
+            forma_pagamento: null,
+            status: DomUtils.getValue('agenda-status'),
             observacoes: DomUtils.getValue('agenda-obs')
         };
+
         try {
             LoadingUtils.show('Salvando...');
+            
+            if (AgendaModule._isReagendamento) {
+                const notaReagendamento = `[Reagendado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}]`;
+                record.observacoes = record.observacoes 
+                    ? `${record.observacoes} ${notaReagendamento}` 
+                    : notaReagendamento;
+                record.status = 'Agendado';
+            }
+
             await DataService.saveRecord('agenda', record, id || null);
+            
             DomUtils.setDisplay('modal-agenda', 'none');
             await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
             atualizarDashboard();
-            AlertUtils.show(id ? 'Agendamento atualizado' : 'Agendamento salvo', 'success');
-            if (!id) {
-                const { data: novoAgendamento } = await supabaseClient.from('agenda').select('id').eq('cliente', record.cliente).eq('data_hora', record.data_hora).order('id', { ascending: false }).limit(1);
-                const novoId = novoAgendamento?.[0]?.id;
-                await gerarComprovanteAgendamentoPDF({ id: novoId, ...record, data_hora: dataHoraLocal });
+
+            if (id) {
+                if (AgendaModule._isReagendamento) {
+                    AlertUtils.show('✅ Agendamento reagendado com sucesso!', 'success');
+                } else {
+                    AlertUtils.show('Agendamento atualizado', 'success');
+                }
+            } else {
+                AlertUtils.show('Agendamento salvo', 'success');
             }
-        } catch (e) { ErrorHandler.handle('salvar agenda', e); } finally { LoadingUtils.hide(); }
+
+            if (AgendaModule._isReagendamento) {
+                const original = AgendaModule._agendamentoOriginal;
+                const dataOriginal = original ? new Date(original.data_hora).toISOString() : null;
+                const dataNova = dataHoraLocal.toISOString();
+                
+                if (dataOriginal !== dataNova) {
+                    await gerarComprovanteAgendamentoPDF({ 
+                        id: id, 
+                        ...record, 
+                        data_hora: dataHoraLocal,
+                        reagendado: true 
+                    });
+                }
+            } else if (!id) {
+                const { data: novoAgendamento } = await supabaseClient
+                    .from('agenda')
+                    .select('id')
+                    .eq('cliente', record.cliente)
+                    .eq('data_hora', record.data_hora)
+                    .order('id', { ascending: false })
+                    .limit(1);
+                const novoId = novoAgendamento?.[0]?.id;
+                if (novoId) {
+                    await gerarComprovanteAgendamentoPDF({ id: novoId, ...record, data_hora: dataHoraLocal });
+                }
+            }
+
+            AgendaModule._isReagendamento = false;
+            AgendaModule._agendamentoOriginal = null;
+
+        } catch (e) {
+            ErrorHandler.handle('salvar agenda', e);
+            AlertUtils.show('Erro ao salvar: ' + e.message, 'error');
+        } finally {
+            LoadingUtils.hide();
+        }
     },
+
     editar: async (id) => {
         const item = AppState.agenda.find(a => a.id == id);
+        if (!item) {
+            const { data, error } = await supabaseClient.from('agenda').select('*').eq('id', id).single();
+            if (error || !data) {
+                AlertUtils.show('Agendamento não encontrado', 'error');
+                return;
+            }
+            item = data;
+        }
         if (item) {
             const dt = new Date(item.data_hora);
             if (!isNaN(dt.getTime())) {
-                DomUtils.setValue('agenda-id', item.id); DomUtils.setValue('agenda-data', dt.toISOString().split('T')[0]);
-                DomUtils.setValue('agenda-horario', dt.toTimeString().slice(0,5)); DomUtils.setValue('agenda-cliente', item.cliente);
-                DomUtils.setValue('agenda-tatuador', item.tatuador_nome); DomUtils.setValue('agenda-tipo', item.tipo_servico);
-                DomUtils.setValue('agenda-status', item.status); DomUtils.setValue('agenda-obs', item.observacoes || '');
+                DomUtils.setValue('agenda-id', item.id);
+                DomUtils.setValue('agenda-data', dt.toISOString().split('T')[0]);
+                DomUtils.setValue('agenda-horario', dt.toTimeString().slice(0,5));
+                DomUtils.setValue('agenda-cliente', item.cliente);
+                DomUtils.setValue('agenda-tatuador', item.tatuador_nome);
+                DomUtils.setValue('agenda-tipo', item.tipo_servico);
+                DomUtils.setValue('agenda-status', item.status);
+                DomUtils.setValue('agenda-obs', item.observacoes || '');
                 DomUtils.setDisplay('modal-agenda', 'block');
+                
+                AgendaModule._agendamentoOriginal = { ...item };
             }
         }
     },
+
+    reagendar: (id) => {
+        AgendaModule._isReagendamento = true;
+        AgendaModule.editar(id);
+    },
+
     excluir: async (id) => {
         if (!await ConfirmModal.show('Excluir este agendamento?')) return;
         try {
@@ -1324,23 +1381,40 @@ const AgendaModule = {
             await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
             atualizarDashboard();
             AlertUtils.show('Agendamento excluído', 'success');
-        } catch (e) { ErrorHandler.handle('excluir agenda', e); } finally { LoadingUtils.hide(); }
+        } catch (e) {
+            ErrorHandler.handle('excluir agenda', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     },
+
     realizarServico: async (id) => {
         const item = AppState.agenda.find(a => a.id == id);
         if (item) {
             DomUtils.setValue('servico-data', new Date(item.data_hora).toISOString().split('T')[0]);
-            DomUtils.setValue('servico-cliente', item.cliente); DomUtils.setValue('servico-tatuador', item.tatuador_nome);
-            DomUtils.setValue('servico-tipo', item.tipo_servico); DomUtils.setValue('servico-descricao', item.observacoes || '');
-            DomUtils.setValue('servico-valor', item.valor_estimado || 0); DomUtils.setValue('servico-pagamento', item.forma_pagamento || 'PIX');
+            DomUtils.setValue('servico-cliente', item.cliente);
+            DomUtils.setValue('servico-tatuador', item.tatuador_nome);
+            DomUtils.setValue('servico-tipo', item.tipo_servico);
+            DomUtils.setValue('servico-descricao', item.observacoes || '');
+            DomUtils.setValue('servico-valor', item.valor_estimado || 0);
+            DomUtils.setValue('servico-pagamento', item.forma_pagamento || 'PIX');
             ServicosModule.calcularRepasse();
             pendingAgendaId = id;
             DomUtils.setDisplay('modal-servico', 'block');
         }
     },
+
     filtrar: () => DataService.loadAgenda(1),
-    filtrarHoje: () => { DomUtils.setValue('filtro-data-agenda', DateUtils.nowDate()); DataService.loadAgenda(1); },
-    limparFiltros: () => { DomUtils.setValue('filtro-tatuador-agenda', ''); DomUtils.setValue('filtro-status-agenda', ''); DomUtils.setValue('filtro-data-agenda', ''); DataService.loadAgenda(1); }
+    filtrarHoje: () => {
+        DomUtils.setValue('filtro-data-agenda', DateUtils.nowDate());
+        DataService.loadAgenda(1);
+    },
+    limparFiltros: () => {
+        DomUtils.setValue('filtro-tatuador-agenda', '');
+        DomUtils.setValue('filtro-status-agenda', '');
+        DomUtils.setValue('filtro-data-agenda', '');
+        DataService.loadAgenda(1);
+    }
 };
 
 // ==================== FUNÇÃO DE PDF ====================
@@ -1369,6 +1443,8 @@ async function gerarComprovanteAgendamentoPDF(dados) {
     const dataFormatada = dataHora.toLocaleDateString('pt-BR');
     const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const protocolo = `DARK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const reagendado = dados.reagendado || false;
+    const textoReagendamento = reagendado ? '<p style="color: #F39C12; font-weight: bold; margin-top: 10px;">⚠️ Este é um REAGENDAMENTO</p>' : '';
 
     element.innerHTML = `
       <div style="text-align: center; margin-bottom: 25px;">
@@ -1377,6 +1453,7 @@ async function gerarComprovanteAgendamentoPDF(dados) {
         ${instagram ? `<p style="color: #B0B0B0; margin: 2px 0 0; font-size: 14px;">${escapeHtml(instagram)}</p>` : ''}
         ${whatsapp ? `<p style="color: #B0B0B0; margin: 2px 0 0; font-size: 14px;">WhatsApp: ${escapeHtml(whatsapp)}</p>` : ''}
         <p style="color: #B0B0B0; margin: 15px 0 0;">Comprovante de Agendamento</p>
+        ${textoReagendamento}
       </div>
       <div style="border-top: 1px solid #3A3A3A; padding: 15px 0;">
         <p><strong>Protocolo:</strong> ${protocolo}</p>
@@ -1712,6 +1789,7 @@ function setupEventListeners() {
         else if (acao === 'editar-servico') ServicosModule.editar(id);
         else if (acao === 'excluir-servico') ServicosModule.excluir(id);
         else if (acao === 'realizar-servico') AgendaModule.realizarServico(id);
+        else if (acao === 'reagendar-agenda') AgendaModule.reagendar(id);
         else if (acao === 'editar-agenda') AgendaModule.editar(id);
         else if (acao === 'excluir-agenda') AgendaModule.excluir(id);
         else if (acao === 'editar-piercing') PiercingModule.editar(id);

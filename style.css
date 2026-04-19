@@ -228,7 +228,6 @@ td[title] { cursor: help; }
 .loading-cell { text-align: center; padding: 40px !important; color: var(--text-muted); }
 .scroll-hint { display: none; text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 8px; align-items: center; justify-content: center; }
 
-/* ⭐ NOVO: Estilos para o resumo mensal do caixa */
 #caixa-resumo-mensal {
     background: transparent;
     border-radius: var(--radius-md);
