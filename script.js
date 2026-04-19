@@ -1048,8 +1048,26 @@ const CaixaModule = {
     }
 };
 
-// ==================== MÓDULO SERVIÇOS ====================
+// ==================== MÓDULO SERVIÇOS (COM SINCRONIZAÇÃO NO CAIXA) ====================
 let pendingAgendaId = null;
+
+// Função auxiliar para encontrar lançamento do caixa correspondente a um serviço
+async function encontrarLancamentoServico(servicoOriginal) {
+    const descricaoPadrao = `Serviço: ${servicoOriginal.cliente} - ${servicoOriginal.tipo} (${servicoOriginal.tatuador_nome})`;
+    // Busca exata pela descrição, data e valor (entradas)
+    const { data, error } = await supabaseClient
+        .from('caixa')
+        .select('*')
+        .eq('data', servicoOriginal.data)
+        .eq('descricao', descricaoPadrao)
+        .eq('entradas', servicoOriginal.valor_total);
+    
+    if (error) {
+        console.warn('Erro ao buscar lançamento no caixa:', error);
+        return null;
+    }
+    return data?.[0] || null;
+}
 
 const ServicosModule = {
     abrirModal: () => {
@@ -1087,13 +1105,55 @@ const ServicosModule = {
             LoadingUtils.show(id ? 'Atualizando serviço...' : 'Criando serviço...');
             
             if (id) {
+                // --- EDIÇÃO DE SERVIÇO ---
+                // Buscar o serviço original
+                const { data: original, error: errOriginal } = await supabaseClient
+                    .from('servicos')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                if (errOriginal) throw errOriginal;
+                
+                const valorMudou = original.valor_total !== record.valor_total;
+                const dataMudou = original.data !== record.data;
+                
+                // Atualizar serviço no banco
                 await DataService.saveRecord('servicos', record, id);
-                AlertUtils.show('Serviço atualizado com sucesso! (O caixa não foi alterado)', 'success');
+                
+                // Se valor ou data mudaram, ajustar caixa
+                if (valorMudou || dataMudou) {
+                    // Tentar localizar o lançamento correspondente no caixa
+                    const lancamento = await encontrarLancamentoServico(original);
+                    if (lancamento) {
+                        // Excluir lançamento antigo
+                        await supabaseClient.from('caixa').delete().eq('id', lancamento.id);
+                        
+                        // Registrar novo lançamento com os dados atualizados
+                        await registrarEntradaCaixa(
+                            record.data,
+                            record.valor_total,
+                            `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`
+                        );
+                        
+                        // Recalcular saldos a partir da data mais antiga (entre original e nova)
+                        const dataRecalculo = original.data < record.data ? original.data : record.data;
+                        await CaixaIntegrity.recalcularSaldos(dataRecalculo);
+                        
+                        AlertUtils.show('Serviço atualizado e caixa ajustado automaticamente.', 'success');
+                    } else {
+                        AlertUtils.show('Serviço atualizado, mas o lançamento original no caixa não foi encontrado (possível inconsistência).', 'warning');
+                    }
+                } else {
+                    AlertUtils.show('Serviço atualizado (sem alterações financeiras).', 'success');
+                }
             } else {
+                // --- CRIAÇÃO DE SERVIÇO ---
                 await DataService.saveRecord('servicos', record, null);
-                // Registra o valor total do serviço no caixa (preservando histórico)
-                await registrarEntradaCaixa(record.data, record.valor_total,
-                    `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`);
+                await registrarEntradaCaixa(
+                    record.data,
+                    record.valor_total,
+                    `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`
+                );
                 AlertUtils.show('Serviço criado e registrado no caixa', 'success');
             }
             
