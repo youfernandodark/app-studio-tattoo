@@ -238,16 +238,21 @@ const AppState = {
     filtrosCaixa: { dataInicio: '', dataFim: '' }
 };
 
-// ==================== MÓDULO DE INTEGRIDADE DO CAIXA ====================
+// ==================== FUNÇÃO AUXILIAR PARA ORDENAÇÃO PADRÃO DO CAIXA ====================
+const orderCaixa = (query) => query.order('data', { ascending: true }).order('id', { ascending: true });
+
+// ==================== MÓDULO DE INTEGRIDADE DO CAIXA (CORRIGIDO) ====================
 const CaixaIntegrity = {
     async recalcularSaldos(fromDate = null) {
         try {
             LoadingUtils.show('Recalculando saldos do caixa...');
             
-            let query = supabaseClient.from('caixa').select('*').order('data', { ascending: true });
+            let query = supabaseClient.from('caixa').select('*');
             if (fromDate) {
                 query = query.gte('data', fromDate);
             }
+            query = orderCaixa(query);
+            
             const { data: registros, error } = await query;
             if (error) throw error;
             
@@ -258,10 +263,12 @@ const CaixaIntegrity = {
 
             let saldoAtual = 0;
             if (fromDate) {
+                // Buscar o registro imediatamente anterior (mesmo dia com ID menor ou dia anterior)
                 const { data: anterior } = await supabaseClient.from('caixa')
-                    .select('saldo_final')
-                    .lt('data', fromDate)
+                    .select('saldo_final, data, id')
+                    .or(`data.lt.${fromDate},and(data.eq.${fromDate},id.lt.${registros[0].id})`)
                     .order('data', { ascending: false })
+                    .order('id', { ascending: false })
                     .limit(1);
                 if (anterior && anterior.length > 0) {
                     saldoAtual = anterior[0].saldo_final;
@@ -321,7 +328,8 @@ const CaixaIntegrity = {
             const { data: registros, error } = await supabaseClient
                 .from('caixa')
                 .select('*')
-                .order('data', { ascending: true });
+                .order('data', { ascending: true })
+                .order('id', { ascending: true });
             
             if (error || !registros) return false;
             
@@ -399,7 +407,6 @@ const DataService = {
         const { error } = await supabaseClient.from(table).delete().eq('id', id);
         if (error) throw error;
     },
-    // --- NOVO: Busca todos os registros do caixa para resumo mensal (respeitando filtros) ---
     async fetchCaixaCompletoParaResumo() {
         try {
             let query = supabaseClient.from('caixa').select('data, entradas, saidas, saldo_final');
@@ -409,7 +416,7 @@ const DataService = {
             if (dataInicio) query = query.gte('data', dataInicio);
             if (dataFim) query = query.lte('data', dataFim);
             
-            query = query.order('data', { ascending: true });
+            query = orderCaixa(query);
             
             const { data, error } = await query;
             if (error) throw error;
@@ -431,7 +438,7 @@ const DataService = {
             
             if (searchTerm) query = query.ilike('descricao', `%${searchTerm}%`);
             
-            query = query.order('data', { ascending: false }).range(offset, offset + itensPorPagina - 1);
+            query = orderCaixa(query).range(offset, offset + itensPorPagina - 1);
             
             const { data, error, count } = await query;
             if (error) throw error;
@@ -445,7 +452,6 @@ const DataService = {
                 DataService.loadCaixa(novaPagina, itensPorPagina, termo);
             });
             
-            // --- NOVO: Atualiza resumo mensal ---
             this.fetchCaixaCompletoParaResumo().then(dadosCompletos => {
                 Renderer.renderCaixaResumoMensal(dadosCompletos);
             });
@@ -552,7 +558,6 @@ const Renderer = {
         }).join('');
         this._renderTable('caixa-tbody', data.length ? linhas : null);
     },
-    // --- NOVO: Renderiza resumo mensal do caixa ---
     renderCaixaResumoMensal(dados) {
         const container = DomUtils.get('caixa-resumo-mensal');
         if (!container) return;
@@ -562,7 +567,6 @@ const Renderer = {
             return;
         }
 
-        // Agrupar por mês (YYYY-MM)
         const meses = {};
         dados.forEach(item => {
             const data = item.data;
@@ -572,14 +576,19 @@ const Renderer = {
             }
             meses[mes].entradas += MoneyUtils.parse(item.entradas);
             meses[mes].saidas += MoneyUtils.parse(item.saidas);
-            meses[mes].saldoFinal = item.saldo_final; // último do mês
+            meses[mes].saldoFinal = item.saldo_final;
         });
 
         const mesesOrdenados = Object.keys(meses).sort().reverse();
 
         let html = `<div style="background: #1e1e2a; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: #A0A0A0;"><i class="fas fa-calendar-alt"></i> Resumo Mensal</h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 12px;">`;
+            <h3 style="margin-top: 0; color: #A0A0A0;"><i class="fas fa-calendar-alt"></i> Resumo Mensal`;
+        
+        if (AppState.filtrosCaixa.dataInicio || AppState.filtrosCaixa.dataFim) {
+            html += ` <span style="font-size:0.8rem; color:#FBBF24; margin-left:8px;"><i class="fas fa-filter"></i> Filtro ativo</span>`;
+        }
+        
+        html += `</h3><div style="display: flex; flex-wrap: wrap; gap: 12px;">`;
 
         mesesOrdenados.forEach(mes => {
             const [ano, mesNum] = mes.split('-');
@@ -802,6 +811,7 @@ async function obterUltimoCaixa() {
     const { data, error } = await supabaseClient.from('caixa')
         .select('data, saldo_final')
         .order('data', { ascending: false })
+        .order('id', { ascending: false })
         .limit(1);
     if (error) throw error;
     return data?.length ? data[0] : null;
@@ -1043,25 +1053,30 @@ const CaixaModule = {
         DataService.loadCaixa(1, 10, '');
     },
     recalcularManual: async () => {
-        if (!await ConfirmModal.show('Isso irá recalcular todos os saldos do caixa a partir do primeiro registro. Continuar?')) return;
-        await CaixaIntegrity.recalcularSaldos();
+        const fromDate = prompt('Informe a data inicial para recalcular (AAAA-MM-DD) ou deixe em branco para recalcular tudo:');
+        if (fromDate !== null) {
+            if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
+                AlertUtils.show('Formato de data inválido. Use AAAA-MM-DD.', 'error');
+                return;
+            }
+            if (!await ConfirmModal.show(`Recalcular saldos a partir de ${fromDate || 'todo o histórico'}?`)) return;
+            await CaixaIntegrity.recalcularSaldos(fromDate || null);
+        }
     }
 };
 
-// ==================== MÓDULO SERVIÇOS (COM SINCRONIZAÇÃO NO CAIXA) ====================
+// ==================== MÓDULO SERVIÇOS (COM SINCRONIZAÇÃO NO CAIXA CORRIGIDA) ====================
 let pendingAgendaId = null;
 
 // Função auxiliar para encontrar lançamento do caixa correspondente a um serviço
 async function encontrarLancamentoServico(servicoOriginal) {
-    const descricaoPadrao = `Serviço: ${servicoOriginal.cliente} - ${servicoOriginal.tipo} (${servicoOriginal.tatuador_nome})`;
-    // Busca exata pela descrição, data e valor (entradas)
+    const descricaoPadrao = `Serviço #${servicoOriginal.id}: ${servicoOriginal.cliente} - ${servicoOriginal.tipo} (${servicoOriginal.tatuador_nome})`;
     const { data, error } = await supabaseClient
         .from('caixa')
         .select('*')
         .eq('data', servicoOriginal.data)
         .eq('descricao', descricaoPadrao)
         .eq('entradas', servicoOriginal.valor_total);
-    
     if (error) {
         console.warn('Erro ao buscar lançamento no caixa:', error);
         return null;
@@ -1106,7 +1121,6 @@ const ServicosModule = {
             
             if (id) {
                 // --- EDIÇÃO DE SERVIÇO ---
-                // Buscar o serviço original
                 const { data: original, error: errOriginal } = await supabaseClient
                     .from('servicos')
                     .select('*')
@@ -1117,25 +1131,19 @@ const ServicosModule = {
                 const valorMudou = original.valor_total !== record.valor_total;
                 const dataMudou = original.data !== record.data;
                 
-                // Atualizar serviço no banco
                 await DataService.saveRecord('servicos', record, id);
                 
-                // Se valor ou data mudaram, ajustar caixa
                 if (valorMudou || dataMudou) {
-                    // Tentar localizar o lançamento correspondente no caixa
                     const lancamento = await encontrarLancamentoServico(original);
                     if (lancamento) {
-                        // Excluir lançamento antigo
                         await supabaseClient.from('caixa').delete().eq('id', lancamento.id);
                         
-                        // Registrar novo lançamento com os dados atualizados
                         await registrarEntradaCaixa(
                             record.data,
                             record.valor_total,
-                            `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`
+                            `Serviço #${id}: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`
                         );
                         
-                        // Recalcular saldos a partir da data mais antiga (entre original e nova)
                         const dataRecalculo = original.data < record.data ? original.data : record.data;
                         await CaixaIntegrity.recalcularSaldos(dataRecalculo);
                         
@@ -1148,11 +1156,17 @@ const ServicosModule = {
                 }
             } else {
                 // --- CRIAÇÃO DE SERVIÇO ---
-                await DataService.saveRecord('servicos', record, null);
+                const { data: novo, error: insertError } = await supabaseClient
+                    .from('servicos')
+                    .insert([record])
+                    .select('id')
+                    .single();
+                if (insertError) throw insertError;
+                
                 await registrarEntradaCaixa(
                     record.data,
                     record.valor_total,
-                    `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`
+                    `Serviço #${novo.id}: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`
                 );
                 AlertUtils.show('Serviço criado e registrado no caixa', 'success');
             }
