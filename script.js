@@ -238,14 +238,12 @@ const AppState = {
     filtrosCaixa: { dataInicio: '', dataFim: '' }
 };
 
-// ==================== NOVO: MÓDULO DE INTEGRIDADE DO CAIXA ====================
+// ==================== MÓDULO DE INTEGRIDADE DO CAIXA ====================
 const CaixaIntegrity = {
-    // Recalcula saldos a partir de uma data (ou todos, se fromDate for null)
     async recalcularSaldos(fromDate = null) {
         try {
             LoadingUtils.show('Recalculando saldos do caixa...');
             
-            // Busca todos os registros ordenados por data ASC
             let query = supabaseClient.from('caixa').select('*').order('data', { ascending: true });
             if (fromDate) {
                 query = query.gte('data', fromDate);
@@ -258,10 +256,8 @@ const CaixaIntegrity = {
                 return;
             }
 
-            // Determina o saldo inicial antes do primeiro registro a ser recalculado
             let saldoAtual = 0;
             if (fromDate) {
-                // Pega o saldo_final do registro imediatamente anterior à data de início
                 const { data: anterior } = await supabaseClient.from('caixa')
                     .select('saldo_final')
                     .lt('data', fromDate)
@@ -272,7 +268,6 @@ const CaixaIntegrity = {
                 }
             }
             
-            // Atualiza cada registro sequencialmente
             const updates = [];
             for (const reg of registros) {
                 const entradas = MoneyUtils.parse(reg.entradas);
@@ -280,7 +275,6 @@ const CaixaIntegrity = {
                 const saldoInicial = saldoAtual;
                 const saldoFinal = saldoInicial + entradas - saidas;
                 
-                // Só atualiza se houver diferença
                 if (reg.saldo_inicial !== saldoInicial || reg.saldo_final !== saldoFinal) {
                     updates.push({
                         id: reg.id,
@@ -296,7 +290,6 @@ const CaixaIntegrity = {
                 return;
             }
             
-            // Aplica as atualizações uma a uma (Supabase não suporta transações em lote)
             let sucesso = 0;
             for (const upd of updates) {
                 const { error: updateError } = await supabaseClient
@@ -312,7 +305,6 @@ const CaixaIntegrity = {
             
             AlertUtils.show(`${sucesso} registro(s) corrigido(s). Saldos recalculados com sucesso!`, 'success');
             
-            // Recarrega os dados do caixa para refletir mudanças
             await DataService.loadCaixa(AppState.paginacao.caixa.pagina, 10, DomUtils.getValue('search-caixa') || '');
             await atualizarDashboard();
             
@@ -324,10 +316,8 @@ const CaixaIntegrity = {
         }
     },
     
-    // Verifica se há inconsistência e corrige automaticamente
     async verificarECorrigir(silencioso = true) {
         try {
-            // Obtém todos os registros ordenados
             const { data: registros, error } = await supabaseClient
                 .from('caixa')
                 .select('*')
@@ -435,7 +425,6 @@ const DataService = {
                 DataService.loadCaixa(novaPagina, itensPorPagina, termo);
             });
             
-            // Verificação silenciosa de integridade após carregar
             CaixaIntegrity.verificarECorrigir(true);
             
         } catch (e) { ErrorHandler.handle('carregar caixa', e); }
@@ -634,29 +623,55 @@ const Renderer = {
 
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m]); }
 
-// ==================== DASHBOARD ====================
+// ==================== DASHBOARD (CORRIGIDO) ====================
 async function atualizarDashboard() {
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
 
+    // Saldo atual do caixa
     const saldoAtual = AppState.caixa.length > 0 ? AppState.caixa[0].saldo_final : 0;
-    const totalEntradas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.entradas), 0);
-    const totalSaidas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.saidas), 0);
-    const servicosRealizados = AppState.servicos.length;
-    const repasseThalia = AppState.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? MoneyUtils.parse(sv.valor_total) * 0.7 : 0), 0);
     
+    // Total de saídas do caixa (gastos operacionais)
+    const totalSaidas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.saidas), 0);
+    
+    // Serviços realizados (contagem)
+    const servicosRealizados = AppState.servicos.length;
+    
+    // NOVOS CÁLCULOS:
+    // Faturamento Bruto = soma de todos os valores dos serviços
+    const faturamentoBruto = AppState.servicos.reduce((s, sv) => s + MoneyUtils.parse(sv.valor_total), 0);
+    
+    // Parte que fica no estúdio
+    const parteEstudio = AppState.servicos.reduce((s, sv) => {
+        const valor = MoneyUtils.parse(sv.valor_total);
+        return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.3 : valor);
+    }, 0);
+    
+    // Repasse devido à Thalia
+    const repasseThalia = AppState.servicos.reduce((s, sv) => {
+        const valor = MoneyUtils.parse(sv.valor_total);
+        return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.7 : 0);
+    }, 0);
+    
+    // Atualiza os cards do dashboard (assumindo IDs existentes ou novos)
     DomUtils.setHtml('saldo-atual', MoneyUtils.format(saldoAtual));
-    DomUtils.setHtml('total-entradas', MoneyUtils.format(totalEntradas));
+    DomUtils.setHtml('faturamento-bruto', MoneyUtils.format(faturamentoBruto));
+    DomUtils.setHtml('parte-estudio', MoneyUtils.format(parteEstudio));
+    DomUtils.setHtml('repasse-thalia', MoneyUtils.format(repasseThalia));
     DomUtils.setHtml('total-saidas', MoneyUtils.format(totalSaidas));
     DomUtils.setHtml('servicos-realizados', servicosRealizados);
-    DomUtils.setHtml('repasse-thalia', MoneyUtils.format(repasseThalia));
-
+    
+    // (Opcional) mantém o card antigo "repasse-thalia" que já existia, agora com o valor correto
+    
+    // Serviços recentes
     const recentes = AppState.servicos.slice(0, 5);
     DomUtils.setHtml('servicos-recentes', recentes.length ? `<ul>${recentes.map(s => `<li>${DateUtils.formatDate(s.data)} - ${escapeHtml(s.cliente)}: ${MoneyUtils.format(s.valor_total)}</li>`).join('')}</ul>` : 'Nenhum');
     
+    // Próximos agendamentos
     const proximos = AppState.agenda.filter(a => new Date(a.data_hora) >= new Date() && a.status !== 'Cancelado').slice(0, 5);
     DomUtils.setHtml('proximos-agendamentos', proximos.length ? `<ul>${proximos.map(a => `<li>${DateUtils.formatDateTime(a.data_hora)} - ${escapeHtml(a.cliente)}</li>`).join('')}</ul>` : 'Nenhum');
 
+    // Gráficos (mantidos)
     const canvasFaturamento = DomUtils.get('chart-faturamento');
     if (canvasFaturamento) {
         const ctx = canvasFaturamento.getContext('2d');
@@ -667,7 +682,7 @@ async function atualizarDashboard() {
             const soma = AppState.servicos.filter(s => { const [ano, mes] = s.data.split('-'); return parseInt(mes)-1 === d.getMonth() && parseInt(ano) === d.getFullYear(); }).reduce((acc, sv) => acc + MoneyUtils.parse(sv.valor_total), 0);
             valores.push(soma);
         }
-        if (!AppState.chartFaturamento) AppState.chartFaturamento = new Chart(ctx, { type: 'bar', data: { labels: meses, datasets: [{ label: 'Faturamento', data: valores, backgroundColor: '#818CF8' }] }, options: { responsive: true } });
+        if (!AppState.chartFaturamento) AppState.chartFaturamento = new Chart(ctx, { type: 'bar', data: { labels: meses, datasets: [{ label: 'Faturamento Bruto', data: valores, backgroundColor: '#818CF8' }] }, options: { responsive: true } });
         else { AppState.chartFaturamento.data.labels = meses; AppState.chartFaturamento.data.datasets[0].data = valores; AppState.chartFaturamento.update(); }
     }
     const canvasTipos = DomUtils.get('chart-tipos');
@@ -683,14 +698,23 @@ async function atualizarDashboard() {
 async function carregarRelatorios() {
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
+    
+    // Faturamento por tatuador (valor total dos serviços realizados)
     const faturamentoPorTatuador = {};
     AppState.servicos.forEach(s => { faturamentoPorTatuador[s.tatuador_nome] = (faturamentoPorTatuador[s.tatuador_nome] || 0) + MoneyUtils.parse(s.valor_total); });
     DomUtils.setHtml('faturamento-tatuador', Object.entries(faturamentoPorTatuador).map(([nome, valor]) => `<div><strong>${escapeHtml(nome)}:</strong> ${MoneyUtils.format(valor)}</div>`).join('') || 'Sem dados');
+    
+    // Repasse Thalia (valor devido)
     const totalRepThalia = AppState.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? MoneyUtils.parse(sv.valor_total) * 0.7 : 0), 0);
     DomUtils.setHtml('relatorio-repasse', `<strong>Total a repassar para Thalia:</strong> ${MoneyUtils.format(totalRepThalia)}`);
-    const estudioThalia = AppState.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? MoneyUtils.parse(sv.valor_total) * 0.3 : 0), 0);
+    
+    // Lucro líquido do estúdio = (parte estúdio) - (saídas de caixa)
+    const parteEstudio = AppState.servicos.reduce((s, sv) => {
+        const valor = MoneyUtils.parse(sv.valor_total);
+        return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.3 : valor);
+    }, 0);
     const totalSaidas = AppState.caixa.reduce((s, c) => s + MoneyUtils.parse(c.saidas), 0);
-    DomUtils.setHtml('relatorio-lucro-liquido', `<strong>Lucro Líquido (Estúdio):</strong> ${MoneyUtils.format(estudioThalia - totalSaidas)}`);
+    DomUtils.setHtml('relatorio-lucro-liquido', `<strong>Lucro Líquido (Estúdio):</strong> ${MoneyUtils.format(parteEstudio - totalSaidas)}`);
 }
 
 // ==================== FUNÇÕES AUXILIARES DO CAIXA ====================
@@ -904,7 +928,6 @@ const CaixaModule = {
         }
     },
     excluir: async (id) => {
-        // Encontra o registro antes de excluir para saber a data
         const registro = AppState.caixa.find(c => c.id == id);
         if (!registro) return;
         
@@ -914,8 +937,6 @@ const CaixaModule = {
             const dataDoRegistro = registro.data;
             
             await DataService.deleteRecord('caixa', id);
-            
-            // Recalcula saldos a partir da data do registro excluído
             await CaixaIntegrity.recalcularSaldos(dataDoRegistro);
             
             await DataService.loadCaixa(1, 10, DomUtils.getValue('search-caixa') || '');
@@ -941,14 +962,13 @@ const CaixaModule = {
         DomUtils.setValue('search-caixa', '');
         DataService.loadCaixa(1, 10, '');
     },
-    // Método para acionar recálculo manual
     recalcularManual: async () => {
         if (!await ConfirmModal.show('Isso irá recalcular todos os saldos do caixa a partir do primeiro registro. Continuar?')) return;
         await CaixaIntegrity.recalcularSaldos();
     }
 };
 
-// ==================== MÓDULO SERVIÇOS (COM CORREÇÕES) ====================
+// ==================== MÓDULO SERVIÇOS ====================
 let pendingAgendaId = null;
 
 const ServicosModule = {
@@ -991,6 +1011,7 @@ const ServicosModule = {
                 AlertUtils.show('Serviço atualizado com sucesso! (O caixa não foi alterado)', 'success');
             } else {
                 await DataService.saveRecord('servicos', record, null);
+                // Registra o valor total do serviço no caixa (preservando histórico)
                 await registrarEntradaCaixa(record.data, record.valor_total,
                     `Serviço: ${record.cliente} - ${record.tipo} (${record.tatuador_nome})`);
                 AlertUtils.show('Serviço criado e registrado no caixa', 'success');
@@ -1452,7 +1473,7 @@ function setupEventListeners() {
     DomUtils.get('btn-filtrar-caixa')?.addEventListener('click', () => CaixaModule.aplicarFiltroPeriodo());
     DomUtils.get('btn-limpar-filtros-caixa')?.addEventListener('click', () => CaixaModule.limparFiltros());
     
-    // Botão de recálculo manual (adicione no HTML um botão com id="btn-recalcular-saldos")
+    // Botão de recálculo manual
     DomUtils.get('btn-recalcular-saldos')?.addEventListener('click', () => CaixaModule.recalcularManual());
     
     // --- SERVIÇOS ---
