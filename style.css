@@ -228,6 +228,51 @@ td[title] { cursor: help; }
 .loading-cell { text-align: center; padding: 40px !important; color: var(--text-muted); }
 .scroll-hint { display: none; text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 8px; align-items: center; justify-content: center; }
 
+/* ⭐ NOVO: Estilos para o resumo mensal do caixa */
+#caixa-resumo-mensal {
+    background: transparent;
+    border-radius: var(--radius-md);
+}
+.resumo-mensal-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.resumo-card {
+    background: #1e1e2a;
+    border-radius: 12px;
+    padding: 12px;
+    min-width: 180px;
+    flex: 1 0 auto;
+    border: 1px solid var(--border-light);
+    transition: var(--transition);
+}
+.resumo-card:hover {
+    border-color: #5A5A5A;
+    background: #252535;
+}
+.resumo-card .mes-titulo {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #C084FC;
+    font-size: 1rem;
+}
+.resumo-card .linha {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+.resumo-card .entrada { color: #34D399; }
+.resumo-card .saida { color: #F87171; }
+.resumo-card .saldo-final {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #3a3a4a;
+    font-weight: bold;
+    justify-content: space-between;
+}
+
 @media (max-width: 768px) {
     body { padding: 16px; }
     h1 { font-size: 1.8rem; }
@@ -244,6 +289,7 @@ td[title] { cursor: help; }
     .scroll-hint { display: flex; }
     .actions-cell .btn-icon { width: 32px; height: 32px; font-size: 1rem; }
     .valor { font-size: 0.8rem; }
+    #caixa-resumo-mensal .resumo-card { min-width: 100%; }
 }
 
 footer { opacity: 0.8; transition: opacity 0.2s; }

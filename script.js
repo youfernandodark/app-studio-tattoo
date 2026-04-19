@@ -399,6 +399,26 @@ const DataService = {
         const { error } = await supabaseClient.from(table).delete().eq('id', id);
         if (error) throw error;
     },
+    // --- NOVO: Busca todos os registros do caixa para resumo mensal (respeitando filtros) ---
+    async fetchCaixaCompletoParaResumo() {
+        try {
+            let query = supabaseClient.from('caixa').select('data, entradas, saidas, saldo_final');
+            
+            const dataInicio = AppState.filtrosCaixa.dataInicio;
+            const dataFim = AppState.filtrosCaixa.dataFim;
+            if (dataInicio) query = query.gte('data', dataInicio);
+            if (dataFim) query = query.lte('data', dataFim);
+            
+            query = query.order('data', { ascending: true });
+            
+            const { data, error } = await query;
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('Erro ao buscar resumo mensal:', e);
+            return [];
+        }
+    },
     async loadCaixa(pagina = 1, itensPorPagina = 10, searchTerm = '') {
         try {
             const offset = (pagina - 1) * itensPorPagina;
@@ -423,6 +443,11 @@ const DataService = {
             Renderer.renderPaginacao('caixa', count, pagina, itensPorPagina, (novaPagina) => {
                 const termo = DomUtils.getValue('search-caixa') || '';
                 DataService.loadCaixa(novaPagina, itensPorPagina, termo);
+            });
+            
+            // --- NOVO: Atualiza resumo mensal ---
+            this.fetchCaixaCompletoParaResumo().then(dadosCompletos => {
+                Renderer.renderCaixaResumoMensal(dadosCompletos);
             });
             
             CaixaIntegrity.verificarECorrigir(true);
@@ -526,6 +551,61 @@ const Renderer = {
             </tr>`;
         }).join('');
         this._renderTable('caixa-tbody', data.length ? linhas : null);
+    },
+    // --- NOVO: Renderiza resumo mensal do caixa ---
+    renderCaixaResumoMensal(dados) {
+        const container = DomUtils.get('caixa-resumo-mensal');
+        if (!container) return;
+
+        if (!dados || dados.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        // Agrupar por mês (YYYY-MM)
+        const meses = {};
+        dados.forEach(item => {
+            const data = item.data;
+            const mes = data.substring(0, 7);
+            if (!meses[mes]) {
+                meses[mes] = { entradas: 0, saidas: 0, saldoFinal: 0 };
+            }
+            meses[mes].entradas += MoneyUtils.parse(item.entradas);
+            meses[mes].saidas += MoneyUtils.parse(item.saidas);
+            meses[mes].saldoFinal = item.saldo_final; // último do mês
+        });
+
+        const mesesOrdenados = Object.keys(meses).sort().reverse();
+
+        let html = `<div style="background: #1e1e2a; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: #A0A0A0;"><i class="fas fa-calendar-alt"></i> Resumo Mensal</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">`;
+
+        mesesOrdenados.forEach(mes => {
+            const [ano, mesNum] = mes.split('-');
+            const nomeMes = new Date(ano, mesNum - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            const totais = meses[mes];
+            html += `
+                <div style="background: #2a2a3a; border-radius: 8px; padding: 12px; min-width: 180px; flex: 1 0 auto;">
+                    <div style="font-weight: bold; margin-bottom: 8px; color: #C084FC;">${nomeMes}</div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #34D399;">Entradas:</span>
+                        <span>${MoneyUtils.format(totais.entradas)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #F87171;">Saídas:</span>
+                        <span>${MoneyUtils.format(totais.saidas)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 6px; border-top: 1px solid #3a3a4a; padding-top: 6px;">
+                        <span style="font-weight: bold;">Saldo final:</span>
+                        <span style="font-weight: bold;">${MoneyUtils.format(totais.saldoFinal)}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+        container.innerHTML = html;
     },
     renderServicos(data) {
         let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
