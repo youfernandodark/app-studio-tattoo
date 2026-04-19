@@ -238,8 +238,11 @@ const AppState = {
     filtrosCaixa: { dataInicio: '', dataFim: '' }
 };
 
-// ==================== FUNÇÃO AUXILIAR PARA ORDENAÇÃO PADRÃO DO CAIXA ====================
-const orderCaixa = (query) => query.order('data', { ascending: true }).order('id', { ascending: true });
+// ==================== FUNÇÕES AUXILIARES PARA ORDENAÇÃO DO CAIXA ====================
+// Para cálculos de saldo (ordem cronológica crescente)
+const orderCaixaCronologico = (query) => query.order('data', { ascending: true }).order('id', { ascending: true });
+// Para exibição ao usuário (mais recentes primeiro)
+const orderCaixaDesc = (query) => query.order('data', { ascending: false }).order('id', { ascending: false });
 
 // ==================== MÓDULO DE INTEGRIDADE DO CAIXA (CORRIGIDO) ====================
 const CaixaIntegrity = {
@@ -251,7 +254,7 @@ const CaixaIntegrity = {
             if (fromDate) {
                 query = query.gte('data', fromDate);
             }
-            query = orderCaixa(query);
+            query = orderCaixaCronologico(query);
             
             const { data: registros, error } = await query;
             if (error) throw error;
@@ -416,7 +419,8 @@ const DataService = {
             if (dataInicio) query = query.gte('data', dataInicio);
             if (dataFim) query = query.lte('data', dataFim);
             
-            query = orderCaixa(query);
+            // Para o resumo mensal, a ordem não importa muito, mas usamos descendente por consistência de exibição
+            query = orderCaixaDesc(query);
             
             const { data, error } = await query;
             if (error) throw error;
@@ -438,7 +442,8 @@ const DataService = {
             
             if (searchTerm) query = query.ilike('descricao', `%${searchTerm}%`);
             
-            query = orderCaixa(query).range(offset, offset + itensPorPagina - 1);
+            // Ordenar do mais recente para o mais antigo (últimos registros em cima)
+            query = orderCaixaDesc(query).range(offset, offset + itensPorPagina - 1);
             
             const { data, error, count } = await query;
             if (error) throw error;
@@ -554,7 +559,7 @@ const Renderer = {
                 <td title="${escapeHtml(item.descricao)}" style="max-width:250px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(item.descricao) || '-'}</td>
                 <td class="actions-cell"><button class="btn-icon" data-acao="editar-caixa" data-id="${item.id}" title="Editar descrição"><i class="fas fa-edit"></i></button>
                 <button class="btn-icon" data-acao="excluir-caixa" data-id="${item.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
-            </tr>`;
+             </tr>`;
         }).join('');
         this._renderTable('caixa-tbody', data.length ? linhas : null);
     },
@@ -635,7 +640,7 @@ const Renderer = {
                 <td>${escapeHtml(s.forma_pagamento)}</td>
                 <td class="actions-cell"><button class="btn-icon" data-acao="editar-servico" data-id="${s.id}" title="Editar"><i class="fas fa-edit"></i></button>
                 <button class="btn-icon" data-acao="excluir-servico" data-id="${s.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
-            </tr>`;
+             </tr>`;
         }).join('');
         this._renderTable('servicos-tbody', data.length ? linhas : null);
         DomUtils.setHtml('servicos-total-valor', MoneyUtils.format(totalValor));
@@ -659,7 +664,7 @@ const Renderer = {
                 <td title="${escapeHtml(a.observacoes)}">${escapeHtml(a.observacoes) || '-'}</td>
                 <td class="actions-cell">${realizarBtn}<button class="btn-icon" data-acao="editar-agenda" data-id="${a.id}" title="Editar"><i class="fas fa-edit"></i></button>
                 <button class="btn-icon" data-acao="excluir-agenda" data-id="${a.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
-            </tr>`;
+             </tr>`;
         }).join('');
         this._renderTable('agenda-tbody', data.length ? linhas : null);
     },
@@ -673,7 +678,7 @@ const Renderer = {
             <td>${MoneyUtils.format(p.custo_unitario || 0)}</td>
             <td class="actions-cell"><button class="btn-icon" data-acao="editar-piercing" data-id="${p.id}" title="Editar"><i class="fas fa-edit"></i></button>
             <button class="btn-icon" data-acao="excluir-piercing" data-id="${p.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
-        </tr>`).join('') : '<tr><td colspan="5">Nenhum piercing</td></tr>';
+         </tr>`).join('') : '<tr><td colspan="5">Nenhum piercing</td></tr>';
         const select = DomUtils.get('venda-piercing-id');
         if (select) select.innerHTML = '<option value="">Selecione</option>' + piercings.filter(p => p.quantidade > 0).map(p => `<option value="${p.id}" data-preco="${p.preco_venda}" data-custo="${p.custo_unitario || 0}">${escapeHtml(p.nome)} - Venda: ${MoneyUtils.format(p.preco_venda)} | Estoque: ${p.quantidade}</option>`).join('');
     },
@@ -685,7 +690,7 @@ const Renderer = {
             <td>${v.quantidade}</td>
             <td>${MoneyUtils.format(v.valor_total)}</td>
             <td>${escapeHtml(v.cliente || '-')}</td>
-        </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td></tr>';
+         </tr>`).join('') : '<tr><td colspan="5">Nenhuma venda</td></tr>';
     },
     renderEstoqueMaterial(materiais) {
         const tbody = DomUtils.get('estoque-material-tbody');
@@ -695,7 +700,7 @@ const Renderer = {
             <td>${MoneyUtils.format(m.valor_unitario)}</td>
             <td class="actions-cell"><button class="btn-icon" data-acao="editar-material" data-id="${m.id}" title="Editar"><i class="fas fa-edit"></i></button>
             <button class="btn-icon" data-acao="excluir-material" data-id="${m.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
-        </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td></tr>';
+         </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td></tr>';
         const select = DomUtils.get('uso-material-id');
         if (select) select.innerHTML = '<option value="">Selecione</option>' + materiais.filter(m => m.quantidade > 0).map(m => `<option value="${m.id}" data-custo="${m.valor_unitario}">${escapeHtml(m.nome)} (${m.quantidade} un.) - Custo un: ${MoneyUtils.format(m.valor_unitario)}</option>`).join('');
     },
@@ -706,13 +711,13 @@ const Renderer = {
             <td>${escapeHtml(u.material?.nome || '?')}</td>
             <td>${u.quantidade}</td>
             <td>${escapeHtml(u.observacao || '-')}</td>
-        </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td></tr>';
+         </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td></tr>';
     }
 };
 
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m]); }
 
-// ==================== DASHBOARD (CORRIGIDO) ====================
+// ==================== DASHBOARD ====================
 async function atualizarDashboard() {
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
@@ -742,15 +747,13 @@ async function atualizarDashboard() {
         return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.7 : 0);
     }, 0);
     
-    // Atualiza os cards do dashboard (assumindo IDs existentes ou novos)
+    // Atualiza os cards do dashboard
     DomUtils.setHtml('saldo-atual', MoneyUtils.format(saldoAtual));
     DomUtils.setHtml('faturamento-bruto', MoneyUtils.format(faturamentoBruto));
     DomUtils.setHtml('parte-estudio', MoneyUtils.format(parteEstudio));
     DomUtils.setHtml('repasse-thalia', MoneyUtils.format(repasseThalia));
     DomUtils.setHtml('total-saidas', MoneyUtils.format(totalSaidas));
     DomUtils.setHtml('servicos-realizados', servicosRealizados);
-    
-    // (Opcional) mantém o card antigo "repasse-thalia" que já existia, agora com o valor correto
     
     // Serviços recentes
     const recentes = AppState.servicos.slice(0, 5);
@@ -760,7 +763,7 @@ async function atualizarDashboard() {
     const proximos = AppState.agenda.filter(a => new Date(a.data_hora) >= new Date() && a.status !== 'Cancelado').slice(0, 5);
     DomUtils.setHtml('proximos-agendamentos', proximos.length ? `<ul>${proximos.map(a => `<li>${DateUtils.formatDateTime(a.data_hora)} - ${escapeHtml(a.cliente)}</li>`).join('')}</ul>` : 'Nenhum');
 
-    // Gráficos (mantidos)
+    // Gráficos
     const canvasFaturamento = DomUtils.get('chart-faturamento');
     if (canvasFaturamento) {
         const ctx = canvasFaturamento.getContext('2d');
@@ -784,26 +787,60 @@ async function atualizarDashboard() {
     }
 }
 
+// ==================== RELATÓRIOS COM DIAS TRABALHADOS ====================
 async function carregarRelatorios() {
     await DataService.loadAllServicos();
     await DataService.loadAllCaixa();
     
-    // Faturamento por tatuador (valor total dos serviços realizados)
+    // Faturamento por tatuador
     const faturamentoPorTatuador = {};
     AppState.servicos.forEach(s => { faturamentoPorTatuador[s.tatuador_nome] = (faturamentoPorTatuador[s.tatuador_nome] || 0) + MoneyUtils.parse(s.valor_total); });
     DomUtils.setHtml('faturamento-tatuador', Object.entries(faturamentoPorTatuador).map(([nome, valor]) => `<div><strong>${escapeHtml(nome)}:</strong> ${MoneyUtils.format(valor)}</div>`).join('') || 'Sem dados');
     
-    // Repasse Thalia (valor devido)
+    // Repasse Thalia
     const totalRepThalia = AppState.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? MoneyUtils.parse(sv.valor_total) * 0.7 : 0), 0);
     DomUtils.setHtml('relatorio-repasse', `<strong>Total a repassar para Thalia:</strong> ${MoneyUtils.format(totalRepThalia)}`);
     
-    // Lucro líquido do estúdio = (parte estúdio) - (saídas de caixa)
+    // Lucro líquido
     const parteEstudio = AppState.servicos.reduce((s, sv) => {
         const valor = MoneyUtils.parse(sv.valor_total);
         return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.3 : valor);
     }, 0);
     const totalSaidas = AppState.caixa.reduce((s, c) => s + MoneyUtils.parse(c.saidas), 0);
     DomUtils.setHtml('relatorio-lucro-liquido', `<strong>Lucro Líquido (Estúdio):</strong> ${MoneyUtils.format(parteEstudio - totalSaidas)}`);
+    
+    // ========== NOVO: DIAS TRABALHADOS POR MÊS ==========
+    const diasPorMes = {};
+    AppState.servicos.forEach(servico => {
+        if (servico.data) {
+            const mes = servico.data.substring(0, 7); // "YYYY-MM"
+            if (!diasPorMes[mes]) diasPorMes[mes] = new Set();
+            diasPorMes[mes].add(servico.data);
+        }
+    });
+    
+    const mesesOrdenados = Object.keys(diasPorMes).sort().reverse();
+    let htmlDias = '<div style="background: #1e1e2a; border-radius: 12px; padding: 16px; margin-top: 20px;">';
+    htmlDias += '<h3><i class="fas fa-calendar-check"></i> Dias trabalhados por mês</h3><ul style="list-style: none; padding: 0;">';
+    for (const mes of mesesOrdenados) {
+        const [ano, mesNum] = mes.split('-');
+        const nomeMes = new Date(ano, mesNum - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        const qtdDias = diasPorMes[mes].size;
+        htmlDias += `<li style="margin-bottom: 8px;"><strong>${nomeMes}</strong>: ${qtdDias} dia(s)</li>`;
+    }
+    htmlDias += '</ul></div>';
+    
+    // Insere ou atualiza o container de dias trabalhados
+    let containerDias = DomUtils.get('dias-trabalhados-container');
+    if (!containerDias) {
+        const relSection = DomUtils.get('relatorios');
+        if (relSection) {
+            containerDias = document.createElement('div');
+            containerDias.id = 'dias-trabalhados-container';
+            relSection.appendChild(containerDias);
+        }
+    }
+    if (containerDias) containerDias.innerHTML = htmlDias;
 }
 
 // ==================== FUNÇÕES AUXILIARES DO CAIXA ====================
@@ -1068,7 +1105,6 @@ const CaixaModule = {
 // ==================== MÓDULO SERVIÇOS (COM SINCRONIZAÇÃO NO CAIXA CORRIGIDA) ====================
 let pendingAgendaId = null;
 
-// Função auxiliar para encontrar lançamento do caixa correspondente a um serviço
 async function encontrarLancamentoServico(servicoOriginal) {
     const descricaoPadrao = `Serviço #${servicoOriginal.id}: ${servicoOriginal.cliente} - ${servicoOriginal.tipo} (${servicoOriginal.tatuador_nome})`;
     const { data, error } = await supabaseClient
@@ -1626,8 +1662,6 @@ function setupEventListeners() {
     DomUtils.get('search-caixa')?.addEventListener('input', () => CaixaModule.filtrar());
     DomUtils.get('btn-filtrar-caixa')?.addEventListener('click', () => CaixaModule.aplicarFiltroPeriodo());
     DomUtils.get('btn-limpar-filtros-caixa')?.addEventListener('click', () => CaixaModule.limparFiltros());
-    
-    // Botão de recálculo manual
     DomUtils.get('btn-recalcular-saldos')?.addEventListener('click', () => CaixaModule.recalcularManual());
     
     // --- SERVIÇOS ---
