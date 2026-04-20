@@ -635,6 +635,8 @@ const Renderer = {
             const statusClass = { Agendado: 'status-warning', Confirmado: 'status-info', Concluído: 'status-success', Cancelado: 'status-danger' }[a.status] || '';
             const realizarBtn = (a.status !== 'Concluído' && a.status !== 'Cancelado') ? `<button class="btn-icon" data-acao="realizar-servico" data-id="${a.id}" title="Realizar Serviço"><i class="fas fa-check-circle"></i></button>` : '';
             const reagendarBtn = (a.status !== 'Concluído' && a.status !== 'Cancelado') ? `<button class="btn-icon" data-acao="reagendar-agenda" data-id="${a.id}" title="Reagendar"><i class="fas fa-calendar-plus"></i></button>` : '';
+            // NOVO: Botão de cancelar (apenas para status não concluído e não cancelado)
+            const cancelarBtn = (a.status !== 'Concluído' && a.status !== 'Cancelado') ? `<button class="btn-icon" data-acao="cancelar-agenda" data-id="${a.id}" title="Cancelar agendamento"><i class="fas fa-ban"></i></button>` : '';
             const dt = new Date(a.data_hora);
             const dataStr = !isNaN(dt.getTime()) ? dt.toLocaleDateString('pt-BR') : '-';
             const horaStr = !isNaN(dt.getTime()) ? dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-';
@@ -646,7 +648,7 @@ const Renderer = {
                 <td>${escapeHtml(a.tipo_servico)}</td>
                 <td><span class="status-badge-item ${statusClass}">${escapeHtml(a.status)}</span></td>
                 <td title="${escapeHtml(a.observacoes)}">${escapeHtml(a.observacoes) || '-'}</td>
-                <td class="actions-cell">${realizarBtn}${reagendarBtn}<button class="btn-icon" data-acao="editar-agenda" data-id="${a.id}" title="Editar"><i class="fas fa-edit"></i></button>
+                <td class="actions-cell">${realizarBtn}${reagendarBtn}${cancelarBtn}<button class="btn-icon" data-acao="editar-agenda" data-id="${a.id}" title="Editar"><i class="fas fa-edit"></i></button>
                 <button class="btn-icon" data-acao="excluir-agenda" data-id="${a.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
              </tr>`;
         }).join('');
@@ -1235,7 +1237,7 @@ const ServicosModule = {
     }
 };
 
-// ==================== MÓDULO AGENDA (COM REAGENDAMENTO) ====================
+// ==================== MÓDULO AGENDA (COM REAGENDAMENTO E CANCELAMENTO) ====================
 const AgendaModule = {
     _isReagendamento: false,
     _agendamentoOriginal: null,
@@ -1371,6 +1373,22 @@ const AgendaModule = {
     reagendar: (id) => {
         AgendaModule._isReagendamento = true;
         AgendaModule.editar(id);
+    },
+
+    // NOVO: Método para cancelar agendamento
+    cancelar: async (id) => {
+        if (!await ConfirmModal.show('Deseja realmente cancelar este agendamento?')) return;
+        try {
+            LoadingUtils.show('Cancelando...');
+            await DataService.saveRecord('agenda', { status: 'Cancelado' }, id);
+            await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
+            atualizarDashboard();
+            AlertUtils.show('Agendamento cancelado.', 'success');
+        } catch (e) {
+            ErrorHandler.handle('cancelar agenda', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     },
 
     excluir: async (id) => {
@@ -1790,6 +1808,7 @@ function setupEventListeners() {
         else if (acao === 'excluir-servico') ServicosModule.excluir(id);
         else if (acao === 'realizar-servico') AgendaModule.realizarServico(id);
         else if (acao === 'reagendar-agenda') AgendaModule.reagendar(id);
+        else if (acao === 'cancelar-agenda') AgendaModule.cancelar(id); // NOVO
         else if (acao === 'editar-agenda') AgendaModule.editar(id);
         else if (acao === 'excluir-agenda') AgendaModule.excluir(id);
         else if (acao === 'editar-piercing') PiercingModule.editar(id);
