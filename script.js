@@ -1700,19 +1700,43 @@ const MateriaisModule = {
         
         try {
             LoadingUtils.show('Registrando uso...');
-            const { data: material } = await supabaseClient.from('materiais_estoque').select('*').eq('id', materialId).single();
-            if (!material || material.quantidade < quantidade) throw new Error('Quantidade insuficiente');
-            const custoTotal = quantidade * material.valor_unitario;
-            await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade - quantidade }).eq('id', materialId);
-            await supabaseClient.from('usos_materiais').insert([{ material_id: materialId, quantidade, observacao, data: new Date().toISOString() }]);
-            if (custoTotal > 0) await registrarSaidaCaixa(DateUtils.nowDate(), custoTotal, `Uso de material: ${quantidade} un. de ${material.nome} - ${observacao}`);
+            const { data: material } = await supabaseClient
+                .from('materiais_estoque')
+                .select('*')
+                .eq('id', materialId)
+                .single();
+                
+            if (!material || material.quantidade < quantidade) {
+                throw new Error('Quantidade insuficiente em estoque');
+            }
+            
+            // Atualiza o estoque (baixa)
+            await supabaseClient
+                .from('materiais_estoque')
+                .update({ quantidade: material.quantidade - quantidade })
+                .eq('id', materialId);
+                
+            // Registra o uso na tabela de histórico (sem impacto financeiro)
+            await supabaseClient.from('usos_materiais').insert([{
+                material_id: materialId,
+                quantidade,
+                observacao,
+                data: new Date().toISOString()
+            }]);
+            
+            // CORREÇÃO: Não registrar saída no caixa novamente.
+            // O custo do material já foi contabilizado na compra.
+            
             await DataService.loadMateriais();
             await DataService.loadUsosMateriais(1, 10);
+            
             DomUtils.setValue('uso-qtd', 1);
             DomUtils.setValue('uso-obs', '');
-            AlertUtils.show(`Uso registrado (custo: ${MoneyUtils.format(custoTotal)})`, 'success');
+            
+            AlertUtils.show(`Uso registrado: ${quantidade} un. de ${material.nome}`, 'success');
         } catch (e) {
             ErrorHandler.handle('uso material', e);
+            AlertUtils.show('Erro ao registrar uso: ' + e.message, 'error');
         } finally {
             LoadingUtils.hide();
         }
