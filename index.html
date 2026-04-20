@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Bibliotecas para geração de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -76,7 +75,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                 <div>
                     <h1><i class="fas fa-skull"></i> DARK013TATTOO</h1>
-                    <p>Tatuagens e Body Piercings |  Studio | 2026</p>
+                    <p>Tatuagens e Body Piercings | Studio | 2026</p>
                 </div>
                 <div style="display: flex; align-items: center; gap: 16px;">
                     <span id="user-email-display" style="color: var(--text-secondary); font-size: 0.9rem;"></span>
@@ -144,11 +143,13 @@
                 <div class="table-wrapper">
                     <table>
                         <thead>
-                            <tr><th>Data</th><th>Entradas</th><th>Saídas</th><th>Saldo Inicial</th><th>Saldo Final</th><th>Descrição</th><th>Ações</th></tr>
+                            <tr>
+                                <th>Data</th><th>Entradas</th><th>Saídas</th><th>Saldo Inicial</th><th>Saldo Final</th>
+                                <th>Qtd</th><th>Un.</th><th>Descrição</th><th>Ações</th>
+                            </tr>
                         </thead>
-                        <tbody id="caixa-tbody"><tr><td colspan="7">Carregando...</td></tr>
-                    </tbody>
-                </table>
+                        <tbody id="caixa-tbody"><tr><td colspan="9">Carregando...</td></tr></tbody>
+                    </table>
                 </div>
                 <div id="caixa-paginacao" class="paginacao-container"></div>
             </div>
@@ -261,7 +262,7 @@
                 <div class="form-row">
                     <div class="form-group"><label>Material</label><select id="uso-material-id"></select></div>
                     <div class="form-group"><label>Quantidade</label><input type="number" id="uso-qtd" value="1" min="1"></div>
-                    <div class="form-group"><label>Observação</label><input type="text" id="uso-obs" placeholder="Ex: Tatuagem"></div>
+                    <div class="form-group"><label>Observação *</label><input type="text" id="uso-obs" placeholder="Ex: Tatuagem cliente X" required></div>
                 </div>
                 <button class="btn btn-warning" id="btn-usar-material">Usar Material</button>
                 <h3>Histórico de Usos</h3>
@@ -269,6 +270,7 @@
                     <table><thead><tr><th>Data</th><th>Material</th><th>Quantidade</th><th>Observação</th></tr></thead>
                     <tbody id="usos-materiais-tbody"></tbody></table>
                 </div>
+                <div id="usos-materiais-paginacao" class="paginacao-container"></div>
             </div>
         </section>
 
@@ -351,6 +353,24 @@
                 <div class="form-group"><label>Saídas</label><input type="number" id="caixa-saidas" value="0"></div>
             </div>
             <div class="form-group"><label>Descrição</label><input type="text" id="caixa-descricao"></div>
+            <!-- NOVOS CAMPOS -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" id="caixa-quantidade" step="0.001" min="0" placeholder="Ex: 2.5">
+                </div>
+                <div class="form-group">
+                    <label>Unidade</label>
+                    <select id="caixa-unidade">
+                        <option value="">Nenhuma</option>
+                        <option value="kg">Quilograma (kg)</option>
+                        <option value="g">Grama (g)</option>
+                        <option value="un">Unidade (un)</option>
+                        <option value="l">Litro (L)</option>
+                        <option value="ml">Mililitro (mL)</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <div class="modal-footer"><button class="btn btn-success" id="btn-salvar-caixa">Salvar</button></div>
     </div>

@@ -123,6 +123,13 @@ tr:last-child td { border-bottom: none; }
 tbody tr:hover td { background-color: #1A1A1A; }
 tfoot td { font-weight: 700; background: #111111; border-top: 2px solid #333; font-size: 0.9rem; }
 
+/* Novas colunas de quantidade/unidade no caixa */
+#caixa-tbody td:nth-child(6),
+#caixa-tbody td:nth-child(7) {
+    text-align: center;
+    font-weight: 500;
+}
+
 .btn {
     border: none; padding: 12px 28px; border-radius: 40px; font-weight: 600; cursor: pointer;
     transition: var(--transition); font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px;

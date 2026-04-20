@@ -232,9 +232,14 @@ const ConfirmModal = {
 
 // ==================== ESTADO GLOBAL ====================
 const AppState = {
-    servicos: [], agenda: [], caixa: [],
+    servicos: [], agenda: [], caixa: [], usosMateriais: [],
     chartFaturamento: null, chartTipos: null,
-    paginacao: { caixa: { pagina: 1, itensPorPagina: 10, total: 0 }, servicos: { pagina: 1, itensPorPagina: 10, total: 0 }, agenda: { pagina: 1, itensPorPagina: 10, total: 0 } },
+    paginacao: {
+        caixa: { pagina: 1, itensPorPagina: 10, total: 0 },
+        servicos: { pagina: 1, itensPorPagina: 10, total: 0 },
+        agenda: { pagina: 1, itensPorPagina: 10, total: 0 },
+        usosMateriais: { pagina: 1, itensPorPagina: 10, total: 0 }
+    },
     filtrosCaixa: { dataInicio: '', dataFim: '' }
 };
 
@@ -509,7 +514,26 @@ const DataService = {
     async loadPiercings() { try { const { data } = await this.fetchTable('piercings_estoque', 'nome'); Renderer.renderEstoquePiercing(data); } catch (e) { ErrorHandler.handle('loadPiercings', e); } },
     async loadVendasPiercing() { try { const { data } = await supabaseClient.from('vendas_piercing').select('*, piercing:piercings_estoque(nome)').order('data', { ascending: false }).limit(100); Renderer.renderVendasPiercing(data || []); } catch (e) { ErrorHandler.handle('loadVendasPiercing', e); } },
     async loadMateriais() { try { const { data } = await this.fetchTable('materiais_estoque', 'nome'); Renderer.renderEstoqueMaterial(data); } catch (e) { ErrorHandler.handle('loadMateriais', e); } },
-    async loadUsosMateriais() { try { const { data } = await supabaseClient.from('usos_materiais').select('*, material:materiais_estoque(nome)').order('data', { ascending: false }).limit(100); Renderer.renderUsosMateriais(data || []); } catch (e) { ErrorHandler.handle('loadUsosMateriais', e); } }
+    async loadUsosMateriais(pagina = 1, itensPorPagina = 10) {
+        try {
+            const offset = (pagina - 1) * itensPorPagina;
+            const { data, error, count } = await supabaseClient
+                .from('usos_materiais')
+                .select('*, material:materiais_estoque(nome)', { count: 'exact' })
+                .order('data', { ascending: false })
+                .range(offset, offset + itensPorPagina - 1);
+            if (error) throw error;
+            AppState.usosMateriais = data || [];
+            AppState.paginacao.usosMateriais.total = count;
+            AppState.paginacao.usosMateriais.pagina = pagina;
+            Renderer.renderUsosMateriais(AppState.usosMateriais);
+            Renderer.renderPaginacao('usos-materiais', count, pagina, itensPorPagina, (novaPagina) => {
+                DataService.loadUsosMateriais(novaPagina, itensPorPagina);
+            });
+        } catch (e) {
+            ErrorHandler.handle('loadUsosMateriais', e);
+        }
+    }
 };
 
 // ==================== RENDERIZAÇÃO ====================
@@ -533,12 +557,16 @@ const Renderer = {
         const linhas = data.map(item => {
             const ent = MoneyUtils.parse(item.entradas), sai = MoneyUtils.parse(item.saidas);
             const icon = ent > 0 ? '↑' : (sai > 0 ? '↓' : '•');
+            const qtd = item.quantidade ? item.quantidade : '-';
+            const un = item.unidade || '-';
             return `<tr>
                 <td>${DateUtils.formatDate(item.data)}</td>
                 <td style="color:#34D399; font-weight:600;">${icon} ${MoneyUtils.format(ent)}</td>
                 <td style="color:#F87171; font-weight:600;">${icon} ${MoneyUtils.format(sai)}</td>
                 <td>${MoneyUtils.format(item.saldo_inicial)}</td>
                 <td>${MoneyUtils.format(item.saldo_final)}</td>
+                <td>${qtd}</td>
+                <td>${un}</td>
                 <td title="${escapeHtml(item.descricao)}" style="max-width:250px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(item.descricao) || '-'}</td>
                 <td class="actions-cell"><button class="btn-icon" data-acao="editar-caixa" data-id="${item.id}" title="Editar descrição"><i class="fas fa-edit"></i></button>
                 <button class="btn-icon" data-acao="excluir-caixa" data-id="${item.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
@@ -635,7 +663,6 @@ const Renderer = {
             const statusClass = { Agendado: 'status-warning', Confirmado: 'status-info', Concluído: 'status-success', Cancelado: 'status-danger' }[a.status] || '';
             const realizarBtn = (a.status !== 'Concluído' && a.status !== 'Cancelado') ? `<button class="btn-icon" data-acao="realizar-servico" data-id="${a.id}" title="Realizar Serviço"><i class="fas fa-check-circle"></i></button>` : '';
             const reagendarBtn = (a.status !== 'Concluído' && a.status !== 'Cancelado') ? `<button class="btn-icon" data-acao="reagendar-agenda" data-id="${a.id}" title="Reagendar"><i class="fas fa-calendar-plus"></i></button>` : '';
-            // NOVO: Botão de cancelar (apenas para status não concluído e não cancelado)
             const cancelarBtn = (a.status !== 'Concluído' && a.status !== 'Cancelado') ? `<button class="btn-icon" data-acao="cancelar-agenda" data-id="${a.id}" title="Cancelar agendamento"><i class="fas fa-ban"></i></button>` : '';
             const dt = new Date(a.data_hora);
             const dataStr = !isNaN(dt.getTime()) ? dt.toLocaleDateString('pt-BR') : '-';
@@ -692,12 +719,17 @@ const Renderer = {
     },
     renderUsosMateriais(usos) {
         const tbody = DomUtils.get('usos-materiais-tbody');
-        if (tbody) tbody.innerHTML = usos.length ? usos.map(u => `<tr>
-            <td>${DateUtils.formatDate(u.data)}</td>
+        if (!tbody) return;
+        if (!usos || usos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4">Nenhum uso registrado</td></tr>';
+            return;
+        }
+        tbody.innerHTML = usos.map(u => `<tr>
+            <td>${DateUtils.formatDateTime(u.data)}</td>
             <td>${escapeHtml(u.material?.nome || '?')}</td>
             <td>${u.quantidade}</td>
             <td>${escapeHtml(u.observacao || '-')}</td>
-         </tr>`).join('') : '<tr><td colspan="4">Nenhum uso</td></tr>';
+        </tr>`).join('');
     }
 };
 
@@ -906,6 +938,8 @@ const CaixaModule = {
     abrirModal: async () => {
         DomUtils.clearForm('form-caixa');
         DomUtils.setValue('caixa-data', DateUtils.nowDate());
+        DomUtils.setValue('caixa-quantidade', '');
+        DomUtils.setValue('caixa-unidade', '');
         
         DomUtils.setReadOnly('caixa-data', false);
         DomUtils.setReadOnly('caixa-entradas', false);
@@ -931,6 +965,8 @@ const CaixaModule = {
         const entradas = MoneyUtils.parse(DomUtils.getValue('caixa-entradas'));
         const saidas = MoneyUtils.parse(DomUtils.getValue('caixa-saidas'));
         const descricao = DomUtils.getValue('caixa-descricao');
+        const quantidade = DomUtils.getValue('caixa-quantidade') ? parseFloat(DomUtils.getValue('caixa-quantidade')) : null;
+        const unidade = DomUtils.getValue('caixa-unidade') || null;
         
         if (!data) {
             AlertUtils.show('Data é obrigatória', 'error');
@@ -960,7 +996,9 @@ const CaixaModule = {
                     entradas: entradasOriginal,
                     saidas: saidasOriginal,
                     saldo_final: registroOriginal.saldo_final,
-                    descricao
+                    descricao,
+                    quantidade,
+                    unidade
                 }, id);
             } else {
                 const ultimo = await obterUltimoCaixa();
@@ -976,7 +1014,9 @@ const CaixaModule = {
                     entradas,
                     saidas,
                     saldo_final: saldoFinal,
-                    descricao
+                    descricao,
+                    quantidade,
+                    unidade
                 }, null);
             }
             
@@ -1000,6 +1040,8 @@ const CaixaModule = {
             DomUtils.setValue('caixa-entradas', item.entradas);
             DomUtils.setValue('caixa-saidas', item.saidas);
             DomUtils.setValue('caixa-descricao', item.descricao || '');
+            DomUtils.setValue('caixa-quantidade', item.quantidade || '');
+            DomUtils.setValue('caixa-unidade', item.unidade || '');
             
             DomUtils.setReadOnly('caixa-data', true);
             DomUtils.setReadOnly('caixa-entradas', true);
@@ -1237,7 +1279,7 @@ const ServicosModule = {
     }
 };
 
-// ==================== MÓDULO AGENDA (COM REAGENDAMENTO E CANCELAMENTO) ====================
+// ==================== MÓDULO AGENDA ====================
 const AgendaModule = {
     _isReagendamento: false,
     _agendamentoOriginal: null,
@@ -1375,7 +1417,6 @@ const AgendaModule = {
         AgendaModule.editar(id);
     },
 
-    // NOVO: Método para cancelar agendamento
     cancelar: async (id) => {
         if (!await ConfirmModal.show('Deseja realmente cancelar este agendamento?')) return;
         try {
@@ -1576,44 +1617,105 @@ const MateriaisModule = {
         } else DomUtils.setDisplay('modal-material', 'block');
     },
     salvar: async () => {
-        const id = DomUtils.getValue('material-id'), nome = DomUtils.getValue('material-nome');
+        const id = DomUtils.getValue('material-id');
+        const nome = DomUtils.getValue('material-nome');
         const quantidade = parseInt(DomUtils.getValue('material-qtd')) || 0;
         const valor_unitario = MoneyUtils.parse(DomUtils.getValue('material-preco'));
+        
         if (!nome) return AlertUtils.show('Nome obrigatório', 'error');
+        if (valor_unitario <= 0) return AlertUtils.show('Valor unitário deve ser maior que zero.', 'error');
+        
         try {
             LoadingUtils.show('Salvando...');
             let quantidadeAnterior = 0;
-            if (id) { const { data } = await supabaseClient.from('materiais_estoque').select('quantidade').eq('id', id).single(); quantidadeAnterior = data?.quantidade || 0; }
+            if (id) {
+                const { data } = await supabaseClient.from('materiais_estoque').select('quantidade').eq('id', id).single();
+                quantidadeAnterior = data?.quantidade || 0;
+            }
+            
             await DataService.saveRecord('materiais_estoque', { nome, quantidade, valor_unitario }, id || null);
             const dataHoje = DateUtils.nowDate();
-            if (!id) { if (quantidade * valor_unitario > 0) await registrarSaidaCaixa(dataHoje, quantidade * valor_unitario, `Compra: ${quantidade} un. de ${nome}`); }
-            else { const aumento = quantidade - quantidadeAnterior; if (aumento > 0 && aumento * valor_unitario > 0) await registrarSaidaCaixa(dataHoje, aumento * valor_unitario, `Adição ao estoque: +${aumento} un. de ${nome}`); }
+            
+            if (!id) {
+                if (quantidade * valor_unitario > 0) {
+                    await registrarSaidaCaixa(dataHoje, quantidade * valor_unitario, `Compra: ${quantidade} un. de ${nome}`);
+                }
+            } else {
+                const aumento = quantidade - quantidadeAnterior;
+                if (aumento > 0) {
+                    await registrarSaidaCaixa(dataHoje, aumento * valor_unitario, `Adição ao estoque: +${aumento} un. de ${nome}`);
+                } else if (aumento < 0) {
+                    const reducao = -aumento;
+                    const confirm = await ConfirmModal.show(`Redução de ${reducao} un. Deseja registrar como uso de material?`);
+                    const desc = confirm
+                        ? `Uso (ajuste de estoque): ${reducao} un. de ${nome}`
+                        : `Ajuste manual de estoque: -${reducao} un. de ${nome}`;
+                    await registrarSaidaCaixa(dataHoje, reducao * valor_unitario, desc);
+                }
+            }
+            
             DomUtils.setDisplay('modal-material', 'none');
-            await DataService.loadMateriais(); await DataService.loadUsosMateriais();
+            await DataService.loadMateriais();
+            await DataService.loadUsosMateriais(1, 10);
             AlertUtils.show('Material salvo', 'success');
-        } catch (e) { ErrorHandler.handle('salvar material', e); } finally { LoadingUtils.hide(); }
+        } catch (e) {
+            ErrorHandler.handle('salvar material', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     },
     editar: (id) => MateriaisModule.abrirModal(id),
     excluir: async (id) => {
+        // Verificar usos vinculados
+        const { count, error } = await supabaseClient
+            .from('usos_materiais')
+            .select('*', { count: 'exact', head: true })
+            .eq('material_id', id);
+        if (error) {
+            ErrorHandler.handle('verificar usos do material', error);
+            return;
+        }
+        if (count > 0) {
+            AlertUtils.show('Este material possui registros de uso e não pode ser excluído.', 'error');
+            return;
+        }
         if (!await ConfirmModal.show('Excluir este material?')) return;
-        try { await DataService.deleteRecord('materiais_estoque', id); await DataService.loadMateriais(); await DataService.loadUsosMateriais(); AlertUtils.show('Material excluído', 'success'); } catch (e) { ErrorHandler.handle('excluir material', e); }
+        try {
+            await DataService.deleteRecord('materiais_estoque', id);
+            await DataService.loadMateriais();
+            await DataService.loadUsosMateriais(1, 10);
+            AlertUtils.show('Material excluído', 'success');
+        } catch (e) {
+            ErrorHandler.handle('excluir material', e);
+        }
     },
     registrarUso: async () => {
-        const materialId = DomUtils.getValue('uso-material-id'), quantidade = parseInt(DomUtils.getValue('uso-qtd')) || 0, observacao = DomUtils.getValue('uso-obs');
+        const materialId = DomUtils.getValue('uso-material-id');
+        const quantidade = parseInt(DomUtils.getValue('uso-qtd')) || 0;
+        const observacao = DomUtils.getValue('uso-obs')?.trim();
+        
         if (!materialId) return AlertUtils.show('Selecione um material', 'error');
         if (quantidade <= 0) return AlertUtils.show('Quantidade > zero', 'error');
+        if (!observacao) return AlertUtils.show('A observação é obrigatória para registrar o uso.', 'error');
+        
         try {
             LoadingUtils.show('Registrando uso...');
             const { data: material } = await supabaseClient.from('materiais_estoque').select('*').eq('id', materialId).single();
             if (!material || material.quantidade < quantidade) throw new Error('Quantidade insuficiente');
             const custoTotal = quantidade * material.valor_unitario;
             await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade - quantidade }).eq('id', materialId);
-            await supabaseClient.from('usos_materiais').insert([{ material_id: materialId, quantidade, observacao: observacao || null, data: new Date().toISOString() }]);
-            if (custoTotal > 0) await registrarSaidaCaixa(DateUtils.nowDate(), custoTotal, `Uso de material: ${quantidade} un. de ${material.nome} - ${observacao || ''}`);
-            await DataService.loadMateriais(); await DataService.loadUsosMateriais();
-            DomUtils.setValue('uso-qtd', 1); DomUtils.setValue('uso-obs', '');
+            await supabaseClient.from('usos_materiais').insert([{ material_id: materialId, quantidade, observacao, data: new Date().toISOString() }]);
+            if (custoTotal > 0) await registrarSaidaCaixa(DateUtils.nowDate(), custoTotal, `Uso de material: ${quantidade} un. de ${material.nome} - ${observacao}`);
+            await DataService.loadMateriais();
+            await DataService.loadUsosMateriais(1, 10);
+            DomUtils.setValue('uso-qtd', 1);
+            DomUtils.setValue('uso-obs', '');
             AlertUtils.show(`Uso registrado (custo: ${MoneyUtils.format(custoTotal)})`, 'success');
-        } catch (e) { ErrorHandler.handle('uso material', e); } finally { LoadingUtils.hide(); }
+        } catch (e) {
+            ErrorHandler.handle('uso material', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     }
 };
 
@@ -1681,7 +1783,8 @@ const ExemplosModule = {
                 const { data: existente } = await supabaseClient.from('materiais_estoque').select('id').eq('nome', item.nome).maybeSingle();
                 if (!existente) await supabaseClient.from('materiais_estoque').insert([item]);
             }
-            await DataService.loadMateriais(); await DataService.loadUsosMateriais();
+            await DataService.loadMateriais();
+            await DataService.loadUsosMateriais(1, 10);
             AlertUtils.show('Exemplos adicionados!', 'success');
         } catch (e) { ErrorHandler.handle('exemplos materiais', e); } finally { LoadingUtils.hide(); }
     }
@@ -1709,7 +1812,7 @@ async function carregarDadosPrincipais() {
     await DataService.loadPiercings();
     await DataService.loadVendasPiercing();
     await DataService.loadMateriais();
-    await DataService.loadUsosMateriais();
+    await DataService.loadUsosMateriais(1, 10);
     await atualizarDashboard();
     await carregarRelatorios();
 }
@@ -1722,7 +1825,7 @@ async function carregarDadosSecao(sectionId) {
         agenda: () => DataService.loadAgenda(1, 10),
         relatorios: () => carregarRelatorios(),
         piercing: async () => { await DataService.loadPiercings(); await DataService.loadVendasPiercing(); },
-        materiais: async () => { await DataService.loadMateriais(); await DataService.loadUsosMateriais(); }
+        materiais: async () => { await DataService.loadMateriais(); await DataService.loadUsosMateriais(1, 10); }
     };
     if (map[sectionId]) await map[sectionId]();
 }
@@ -1808,7 +1911,7 @@ function setupEventListeners() {
         else if (acao === 'excluir-servico') ServicosModule.excluir(id);
         else if (acao === 'realizar-servico') AgendaModule.realizarServico(id);
         else if (acao === 'reagendar-agenda') AgendaModule.reagendar(id);
-        else if (acao === 'cancelar-agenda') AgendaModule.cancelar(id); // NOVO
+        else if (acao === 'cancelar-agenda') AgendaModule.cancelar(id);
         else if (acao === 'editar-agenda') AgendaModule.editar(id);
         else if (acao === 'excluir-agenda') AgendaModule.excluir(id);
         else if (acao === 'editar-piercing') PiercingModule.editar(id);
