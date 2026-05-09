@@ -123,7 +123,6 @@ tr:last-child td { border-bottom: none; }
 tbody tr:hover td { background-color: #1A1A1A; }
 tfoot td { font-weight: 700; background: #111111; border-top: 2px solid #333; font-size: 0.9rem; }
 
-/* Novas colunas de quantidade/unidade no caixa */
 #caixa-tbody td:nth-child(6),
 #caixa-tbody td:nth-child(7) {
     text-align: center;
@@ -238,45 +237,6 @@ td[title] { cursor: help; }
 #caixa-resumo-mensal {
     background: transparent;
     border-radius: var(--radius-md);
-}
-.resumo-mensal-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-.resumo-card {
-    background: #1e1e2a;
-    border-radius: 12px;
-    padding: 12px;
-    min-width: 180px;
-    flex: 1 0 auto;
-    border: 1px solid var(--border-light);
-    transition: var(--transition);
-}
-.resumo-card:hover {
-    border-color: #5A5A5A;
-    background: #252535;
-}
-.resumo-card .mes-titulo {
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: #C084FC;
-    font-size: 1rem;
-}
-.resumo-card .linha {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    margin-bottom: 4px;
-}
-.resumo-card .entrada { color: #34D399; }
-.resumo-card .saida { color: #F87171; }
-.resumo-card .saldo-final {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #3a3a4a;
-    font-weight: bold;
-    justify-content: space-between;
 }
 
 @media (max-width: 768px) {
@@ -407,4 +367,9 @@ footer i { margin-right: 6px; color: var(--accent-purple); }
 }
 #user-email-display i {
     margin-right: 6px;
+}
+
+/* Pequeno ajuste para o novo botão no header */
+#btn-config-repasse {
+    white-space: nowrap;
 }
