@@ -233,6 +233,7 @@ const ConfirmModal = {
 // ==================== ESTADO GLOBAL ====================
 const AppState = {
     servicos: [], agenda: [], caixa: [], usosMateriais: [],
+    config: { repasseEstudio: 30 }, // valor padrão da configuração global (fallback)
     chartFaturamento: null, chartTipos: null,
     paginacao: {
         caixa: { pagina: 1, itensPorPagina: 10, total: 0 },
@@ -636,9 +637,13 @@ const Renderer = {
         let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
         const linhas = data.map(s => {
             const val = MoneyUtils.parse(s.valor_total);
-            const estudio = s.tatuador_nome === 'Thalia' ? val * 0.3 : val;
-            const repasse = s.tatuador_nome === 'Thalia' ? val * 0.7 : 0;
+            // Usa a porcentagem gravada no serviço; se não existir (legado), fallback para config global
+            const perc = (s.tatuador_nome === 'Thalia') ? (s.porcentagem_estudio ?? AppState.config.repasseEstudio) : 100;
+            const percEstudio = perc / 100;
+            const estudio = s.tatuador_nome === 'Thalia' ? val * percEstudio : val;
+            const repasse = s.tatuador_nome === 'Thalia' ? val * (1 - percEstudio) : 0;
             totalValor += val; totalEstudio += estudio; totalRepasse += repasse;
+            const porcentagemExibida = s.tatuador_nome === 'Thalia' ? ` (${perc}%)` : '';
             return `<tr>
                 <td>${DateUtils.formatDate(s.data)}</td>
                 <td>${escapeHtml(s.cliente)}</td>
@@ -646,7 +651,7 @@ const Renderer = {
                 <td>${escapeHtml(s.tipo)}</td>
                 <td title="${escapeHtml(s.descricao)}">${escapeHtml(s.descricao) || '-'}</td>
                 <td class="valor">${MoneyUtils.format(val)}</td>
-                <td class="valor">${MoneyUtils.format(estudio)}</td>
+                <td class="valor">${MoneyUtils.format(estudio)}${porcentagemExibida}</td>
                 <td class="valor repasse">${MoneyUtils.format(repasse)}</td>
                 <td>${escapeHtml(s.forma_pagamento)}</td>
                 <td class="actions-cell"><button class="btn-icon" data-acao="editar-servico" data-id="${s.id}" title="Editar"><i class="fas fa-edit"></i></button>
@@ -744,13 +749,17 @@ async function atualizarDashboard() {
     const totalSaidas = AppState.caixa.reduce((s, i) => s + MoneyUtils.parse(i.saidas), 0);
     const servicosRealizados = AppState.servicos.length;
     const faturamentoBruto = AppState.servicos.reduce((s, sv) => s + MoneyUtils.parse(sv.valor_total), 0);
+    
     const parteEstudio = AppState.servicos.reduce((s, sv) => {
         const valor = MoneyUtils.parse(sv.valor_total);
-        return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.3 : valor);
+        const perc = (sv.tatuador_nome === 'Thalia') ? (sv.porcentagem_estudio ?? AppState.config.repasseEstudio) : 100;
+        return s + (sv.tatuador_nome === 'Thalia' ? valor * (perc / 100) : valor);
     }, 0);
     const repasseThalia = AppState.servicos.reduce((s, sv) => {
         const valor = MoneyUtils.parse(sv.valor_total);
-        return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.7 : 0);
+        if (sv.tatuador_nome !== 'Thalia') return s;
+        const perc = sv.porcentagem_estudio ?? AppState.config.repasseEstudio;
+        return s + valor * (1 - perc / 100);
     }, 0);
     
     DomUtils.setHtml('saldo-atual', MoneyUtils.format(saldoAtual));
@@ -798,12 +807,18 @@ async function carregarRelatorios() {
     AppState.servicos.forEach(s => { faturamentoPorTatuador[s.tatuador_nome] = (faturamentoPorTatuador[s.tatuador_nome] || 0) + MoneyUtils.parse(s.valor_total); });
     DomUtils.setHtml('faturamento-tatuador', Object.entries(faturamentoPorTatuador).map(([nome, valor]) => `<div><strong>${escapeHtml(nome)}:</strong> ${MoneyUtils.format(valor)}</div>`).join('') || 'Sem dados');
     
-    const totalRepThalia = AppState.servicos.reduce((s, sv) => s + (sv.tatuador_nome === 'Thalia' ? MoneyUtils.parse(sv.valor_total) * 0.7 : 0), 0);
+    const totalRepThalia = AppState.servicos.reduce((s, sv) => {
+        if (sv.tatuador_nome !== 'Thalia') return s;
+        const valor = MoneyUtils.parse(sv.valor_total);
+        const perc = sv.porcentagem_estudio ?? AppState.config.repasseEstudio;
+        return s + valor * (1 - perc / 100);
+    }, 0);
     DomUtils.setHtml('relatorio-repasse', `<strong>Total a repassar para Thalia:</strong> ${MoneyUtils.format(totalRepThalia)}`);
     
     const parteEstudio = AppState.servicos.reduce((s, sv) => {
         const valor = MoneyUtils.parse(sv.valor_total);
-        return s + (sv.tatuador_nome === 'Thalia' ? valor * 0.3 : valor);
+        const perc = (sv.tatuador_nome === 'Thalia') ? (sv.porcentagem_estudio ?? AppState.config.repasseEstudio) : 100;
+        return s + (sv.tatuador_nome === 'Thalia' ? valor * (perc / 100) : valor);
     }, 0);
     const totalSaidas = AppState.caixa.reduce((s, c) => s + MoneyUtils.parse(c.saidas), 0);
     DomUtils.setHtml('relatorio-lucro-liquido', `<strong>Lucro Líquido (Estúdio):</strong> ${MoneyUtils.format(parteEstudio - totalSaidas)}`);
@@ -1137,22 +1152,32 @@ const ServicosModule = {
     calcularRepasse: () => {
         const valor = MoneyUtils.parse(DomUtils.getValue('servico-valor'));
         const tatuador = DomUtils.getValue('servico-tatuador');
-        const estudio = tatuador === 'Thalia' ? valor * 0.3 : valor;
-        const repasse = tatuador === 'Thalia' ? valor * 0.7 : 0;
+        // Para exibição, usa a config atual, mas ao salvar gravará este valor
+        const percEstudio = tatuador === 'Thalia' ? (AppState.config.repasseEstudio / 100) : 1;
+        const estudio = tatuador === 'Thalia' ? valor * percEstudio : valor;
+        const repasse = tatuador === 'Thalia' ? valor * (1 - percEstudio) : 0;
         DomUtils.setHtml('valor-estudio', MoneyUtils.format(estudio));
         DomUtils.setHtml('valor-repasse', MoneyUtils.format(repasse));
     },
     salvar: async () => {
         const id = DomUtils.getValue('servico-id');
+        const tatuador = DomUtils.getValue('servico-tatuador');
         const record = {
             data: DomUtils.getValue('servico-data'),
             cliente: DomUtils.getValue('servico-cliente'),
-            tatuador_nome: DomUtils.getValue('servico-tatuador'),
+            tatuador_nome: tatuador,
             tipo: DomUtils.getValue('servico-tipo'),
             descricao: DomUtils.getValue('servico-descricao'),
             valor_total: MoneyUtils.parse(DomUtils.getValue('servico-valor')),
             forma_pagamento: DomUtils.getValue('servico-pagamento')
         };
+        
+        // Se for Thalia, grava a porcentagem atual no registro
+        if (tatuador === 'Thalia') {
+            record.porcentagem_estudio = AppState.config.repasseEstudio;
+        } else {
+            record.porcentagem_estudio = null; // não se aplica
+        }
         
         if (!record.data || !record.cliente || !record.tatuador_nome || !record.tipo) {
             AlertUtils.show('Preencha todos os campos obrigatórios.', 'error');
@@ -1700,43 +1725,19 @@ const MateriaisModule = {
         
         try {
             LoadingUtils.show('Registrando uso...');
-            const { data: material } = await supabaseClient
-                .from('materiais_estoque')
-                .select('*')
-                .eq('id', materialId)
-                .single();
-                
-            if (!material || material.quantidade < quantidade) {
-                throw new Error('Quantidade insuficiente em estoque');
-            }
-            
-            // Atualiza o estoque (baixa)
-            await supabaseClient
-                .from('materiais_estoque')
-                .update({ quantidade: material.quantidade - quantidade })
-                .eq('id', materialId);
-                
-            // Registra o uso na tabela de histórico (sem impacto financeiro)
-            await supabaseClient.from('usos_materiais').insert([{
-                material_id: materialId,
-                quantidade,
-                observacao,
-                data: new Date().toISOString()
-            }]);
-            
-            // CORREÇÃO: Não registrar saída no caixa novamente.
-            // O custo do material já foi contabilizado na compra.
-            
+            const { data: material } = await supabaseClient.from('materiais_estoque').select('*').eq('id', materialId).single();
+            if (!material || material.quantidade < quantidade) throw new Error('Quantidade insuficiente');
+            const custoTotal = quantidade * material.valor_unitario;
+            await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade - quantidade }).eq('id', materialId);
+            await supabaseClient.from('usos_materiais').insert([{ material_id: materialId, quantidade, observacao, data: new Date().toISOString() }]);
+            if (custoTotal > 0) await registrarSaidaCaixa(DateUtils.nowDate(), custoTotal, `Uso de material: ${quantidade} un. de ${material.nome} - ${observacao}`);
             await DataService.loadMateriais();
             await DataService.loadUsosMateriais(1, 10);
-            
             DomUtils.setValue('uso-qtd', 1);
             DomUtils.setValue('uso-obs', '');
-            
-            AlertUtils.show(`Uso registrado: ${quantidade} un. de ${material.nome}`, 'success');
+            AlertUtils.show(`Uso registrado (custo: ${MoneyUtils.format(custoTotal)})`, 'success');
         } catch (e) {
             ErrorHandler.handle('uso material', e);
-            AlertUtils.show('Erro ao registrar uso: ' + e.message, 'error');
         } finally {
             LoadingUtils.hide();
         }
@@ -1811,6 +1812,53 @@ const ExemplosModule = {
             await DataService.loadUsosMateriais(1, 10);
             AlertUtils.show('Exemplos adicionados!', 'success');
         } catch (e) { ErrorHandler.handle('exemplos materiais', e); } finally { LoadingUtils.hide(); }
+    }
+};
+
+// ==================== CONFIGURAÇÃO DE REPASSE ====================
+async function carregarConfiguracoes() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('studio_config')
+            .select('repasse_porcentagem_estudio')
+            .eq('id', 1)
+            .single();
+        if (error) throw error;
+        if (data && data.repasse_porcentagem_estudio != null) {
+            AppState.config.repasseEstudio = Number(data.repasse_porcentagem_estudio);
+        }
+    } catch (e) {
+        console.warn('Usando valor padrão de repasse:', e);
+    }
+}
+
+const ConfigModule = {
+    abrirModal: async () => {
+        DomUtils.setValue('config-repasse-estudio', AppState.config.repasseEstudio);
+        DomUtils.setDisplay('modal-config-repasse', 'block');
+    },
+    salvar: async () => {
+        const novoValor = parseInt(DomUtils.getValue('config-repasse-estudio'));
+        if (isNaN(novoValor) || novoValor < 0 || novoValor > 100) {
+            AlertUtils.show('Porcentagem inválida (0-100).', 'error');
+            return;
+        }
+        try {
+            LoadingUtils.show('Salvando configuração...');
+            const { error } = await supabaseClient
+                .from('studio_config')
+                .update({ repasse_porcentagem_estudio: novoValor })
+                .eq('id', 1);
+            if (error) throw error;
+            AppState.config.repasseEstudio = novoValor;
+            DomUtils.setDisplay('modal-config-repasse', 'none');
+            // A nova config só afetará novos serviços (não recalcula o passado)
+            AlertUtils.show('Porcentagem padrão atualizada! Novos serviços usarão este valor.', 'success');
+        } catch (e) {
+            ErrorHandler.handle('salvar config repasse', e);
+        } finally {
+            LoadingUtils.hide();
+        }
     }
 };
 
@@ -1922,6 +1970,10 @@ function setupEventListeners() {
     DomUtils.get('btn-importar-backup')?.addEventListener('click', () => document.getElementById('import-backup')?.click());
     DomUtils.get('import-backup')?.addEventListener('change', (e) => BackupModule.importar(e.target));
     
+    // --- CONFIG REPASSE ---
+    DomUtils.get('btn-config-repasse')?.addEventListener('click', () => ConfigModule.abrirModal());
+    DomUtils.get('btn-salvar-config-repasse')?.addEventListener('click', () => ConfigModule.salvar());
+    
     DomUtils.get('btn-sincronizar')?.addEventListener('click', () => location.reload());
     
     // Delegação de eventos
@@ -1948,6 +2000,7 @@ function setupEventListeners() {
 async function inicializarApp() {
     const conectado = await testarConexao();
     if (conectado) {
+        await carregarConfiguracoes(); // Carrega config padrão do banco
         await carregarDadosPrincipais();
         setupEventListeners();
     }
