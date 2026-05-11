@@ -500,7 +500,8 @@ const DataService = {
             if (tatuador) query = query.eq('tatuador_nome', tatuador);
             if (status) query = query.eq('status', status);
             if (data) query = query.eq('data_hora', `${data}T00:00:00`);
-            query = query.order('data_hora', { ascending: true }).range(offset, offset + itensPorPagina - 1);
+            // 🔁 ALTERAÇÃO: ordem decrescente (mais recentes primeiro)
+            query = query.order('data_hora', { ascending: false }).range(offset, offset + itensPorPagina - 1);
             const { data: agenda, error, count } = await query;
             if (error) throw error;
             AppState.agenda = agenda || [];
