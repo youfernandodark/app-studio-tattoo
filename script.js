@@ -1152,12 +1152,16 @@ const ServicosModule = {
     calcularRepasse: () => {
         const valor = MoneyUtils.parse(DomUtils.getValue('servico-valor'));
         const tatuador = DomUtils.getValue('servico-tatuador');
-        // Para exibição, usa a config atual, mas ao salvar gravará este valor
         const percEstudio = tatuador === 'Thalia' ? (AppState.config.repasseEstudio / 100) : 1;
         const estudio = tatuador === 'Thalia' ? valor * percEstudio : valor;
         const repasse = tatuador === 'Thalia' ? valor * (1 - percEstudio) : 0;
         DomUtils.setHtml('valor-estudio', MoneyUtils.format(estudio));
         DomUtils.setHtml('valor-repasse', MoneyUtils.format(repasse));
+        // Atualiza o label da porcentagem
+        const percentLabel = DomUtils.get('repasse-percent-label');
+        if (percentLabel) {
+            percentLabel.textContent = tatuador === 'Thalia' ? AppState.config.repasseEstudio : '100';
+        }
     },
     salvar: async () => {
         const id = DomUtils.getValue('servico-id');
@@ -1852,7 +1856,6 @@ const ConfigModule = {
             if (error) throw error;
             AppState.config.repasseEstudio = novoValor;
             DomUtils.setDisplay('modal-config-repasse', 'none');
-            // A nova config só afetará novos serviços (não recalcula o passado)
             AlertUtils.show('Porcentagem padrão atualizada! Novos serviços usarão este valor.', 'success');
         } catch (e) {
             ErrorHandler.handle('salvar config repasse', e);
@@ -2000,7 +2003,7 @@ function setupEventListeners() {
 async function inicializarApp() {
     const conectado = await testarConexao();
     if (conectado) {
-        await carregarConfiguracoes(); // Carrega config padrão do banco
+        await carregarConfiguracoes();
         await carregarDadosPrincipais();
         setupEventListeners();
     }
