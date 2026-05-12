@@ -136,15 +136,29 @@ const DomUtils = {
     setDisabled: (id, disabled) => { const el = DomUtils.get(id); if (el) el.disabled = disabled; }
 };
 
+// 🔧 Função auxiliar para obter a data local (YYYY-MM-DD)
+function getLocalDateString() {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
 const DateUtils = {
-    formatDate: (date) => date ? new Date(date + 'T00:00:00').toLocaleDateString('pt-BR') : '-',
+    formatDate: (date) => {
+        if (!date) return '-';
+        const dt = new Date(date);
+        if (isNaN(dt.getTime())) return '-';
+        return dt.toLocaleDateString('pt-BR');
+    },
     formatDateTime: (date) => {
         if (!date) return '-';
         const dt = new Date(date);
         if (isNaN(dt.getTime())) return '-';
         return `${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     },
-    nowDate: () => new Date().toISOString().split('T')[0]
+    nowDate: () => getLocalDateString() // 🔧 Agora sempre data local
 };
 
 const MoneyUtils = {
@@ -1726,8 +1740,14 @@ const PiercingModule = {
             if (!piercing || piercing.quantidade < quantidade) throw new Error('Estoque insuficiente');
             const valorTotal = quantidade * piercing.preco_venda;
             await supabaseClient.from('piercings_estoque').update({ quantidade: piercing.quantidade - quantidade }).eq('id', piercingId);
-            await supabaseClient.from('vendas_piercing').insert([{ piercing_id: piercingId, quantidade, valor_total: valorTotal, cliente: cliente || null, data: new Date().toISOString() }]);
-            // Apenas entrada, sem saída duplicada
+            // 🔧 Usar data local para a venda
+            await supabaseClient.from('vendas_piercing').insert([{
+                piercing_id: piercingId,
+                quantidade,
+                valor_total: valorTotal,
+                cliente: cliente || null,
+                data: getLocalDateString()
+            }]);
             if (valorTotal > 0) await registrarEntradaCaixa(DateUtils.nowDate(), valorTotal, `Venda: ${quantidade} un. de ${piercing.nome}${cliente ? ' - ' + cliente : ''}`);
             await DataService.loadPiercings(); await DataService.loadVendasPiercing(); await carregarAnalisePiercing();
             DomUtils.setValue('venda-qtd', 1); DomUtils.setValue('venda-cliente', '');
@@ -1832,7 +1852,13 @@ const MateriaisModule = {
             if (!material || material.quantidade < quantidade) throw new Error('Quantidade insuficiente');
             const custoTotal = quantidade * material.valor_unitario;
             await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade - quantidade }).eq('id', materialId);
-            await supabaseClient.from('usos_materiais').insert([{ material_id: materialId, quantidade, observacao, data: new Date().toISOString() }]);
+            // 🔧 Usar data local para o uso de material
+            await supabaseClient.from('usos_materiais').insert([{
+                material_id: materialId,
+                quantidade,
+                observacao,
+                data: getLocalDateString()
+            }]);
             if (custoTotal > 0) await registrarSaidaCaixa(DateUtils.nowDate(), custoTotal, `Uso de material: ${quantidade} un. de ${material.nome} - ${observacao}`);
             await DataService.loadMateriais();
             await DataService.loadUsosMateriais(1, 10);
