@@ -284,12 +284,15 @@ const CaixaIntegrity = {
 
             let saldoAtual = 0;
             if (fromDate) {
-                const { data: anterior } = await supabaseClient.from('caixa')
-                    .select('saldo_final, data, id')
-                    .or(`data.lt.${fromDate},and(data.eq.${fromDate},id.lt.${registros[0].id})`)
-                    .order('data', { ascending: false })
+                // CORREÇÃO: Busca o último registro com data estritamente anterior à data de corte
+                const { data: anterior } = await supabaseClient
+                    .from('caixa')
+                    .select('saldo_final')
+                    .lt('data', fromDate) // Mudado de or() para lt() simples e direto
+                    .order('data', { ascending: false }) // Mais recente primeiro
                     .order('id', { ascending: false })
                     .limit(1);
+                    
                 if (anterior && anterior.length > 0) {
                     saldoAtual = anterior[0].saldo_final;
                 }
