@@ -233,8 +233,8 @@ const ConfirmModal = {
 // ==================== ESTADO GLOBAL ====================
 const AppState = {
     servicos: [], agenda: [], caixa: [], usosMateriais: [],
-    config: { repasseEstudio: 30 }, // valor padrão da configuração global (fallback)
-    chartFaturamento: null, chartTipos: null,
+    config: { repasseEstudio: 30 },
+    chartFaturamento: null, chartTipos: null, piercingChart: null,
     paginacao: {
         caixa: { pagina: 1, itensPorPagina: 10, total: 0 },
         servicos: { pagina: 1, itensPorPagina: 10, total: 0 },
@@ -500,7 +500,6 @@ const DataService = {
             if (tatuador) query = query.eq('tatuador_nome', tatuador);
             if (status) query = query.eq('status', status);
             if (data) query = query.eq('data_hora', `${data}T00:00:00`);
-            // 🔁 ALTERAÇÃO: ordem decrescente (mais recentes primeiro)
             query = query.order('data_hora', { ascending: false }).range(offset, offset + itensPorPagina - 1);
             const { data: agenda, error, count } = await query;
             if (error) throw error;
@@ -638,7 +637,6 @@ const Renderer = {
         let totalValor = 0, totalEstudio = 0, totalRepasse = 0;
         const linhas = data.map(s => {
             const val = MoneyUtils.parse(s.valor_total);
-            // Usa a porcentagem gravada no serviço; se não existir (legado), fallback para config global
             const perc = (s.tatuador_nome === 'Thalia') ? (s.porcentagem_estudio ?? AppState.config.repasseEstudio) : 100;
             const percEstudio = perc / 100;
             const estudio = s.tatuador_nome === 'Thalia' ? val * percEstudio : val;
@@ -1158,7 +1156,6 @@ const ServicosModule = {
         const repasse = tatuador === 'Thalia' ? valor * (1 - percEstudio) : 0;
         DomUtils.setHtml('valor-estudio', MoneyUtils.format(estudio));
         DomUtils.setHtml('valor-repasse', MoneyUtils.format(repasse));
-        // Atualiza o label da porcentagem
         const percentLabel = DomUtils.get('repasse-percent-label');
         if (percentLabel) {
             percentLabel.textContent = tatuador === 'Thalia' ? AppState.config.repasseEstudio : '100';
@@ -1177,11 +1174,10 @@ const ServicosModule = {
             forma_pagamento: DomUtils.getValue('servico-pagamento')
         };
         
-        // Se for Thalia, grava a porcentagem atual no registro
         if (tatuador === 'Thalia') {
             record.porcentagem_estudio = AppState.config.repasseEstudio;
         } else {
-            record.porcentagem_estudio = null; // não se aplica
+            record.porcentagem_estudio = null;
         }
         
         if (!record.data || !record.cliente || !record.tatuador_nome || !record.tipo) {
@@ -1582,6 +1578,109 @@ async function gerarComprovanteAgendamentoPDF(dados) {
   }
 }
 
+// ==================== ANÁLISE DE PIERCING ====================
+async function carregarAnalisePiercing() {
+    try {
+        const { data: vendas, error } = await supabaseClient
+            .from('vendas_piercing')
+            .select('data, quantidade, valor_total, piercing_id, piercing:piercings_estoque(nome, custo_unitario)')
+            .order('data', { ascending: false })
+            .limit(1000);
+
+        if (error) throw error;
+        if (!vendas || vendas.length === 0) {
+            DomUtils.setHtml('piercing-resumo', '<p style="color:#A0A0A0;">Nenhuma venda registrada.</p>');
+            const chartCanvas = DomUtils.get('chart-piercing-vendas');
+            if (chartCanvas) {
+                const ctx = chartCanvas.getContext('2d');
+                if (AppState.piercingChart) AppState.piercingChart.destroy();
+                ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+            }
+            return;
+        }
+
+        // Resumo financeiro
+        const totalVendas = vendas.reduce((sum, v) => sum + MoneyUtils.parse(v.valor_total), 0);
+        const totalCusto = vendas.reduce((sum, v) => {
+            const custoUnit = v.piercing?.custo_unitario || 0;
+            return sum + (custoUnit * v.quantidade);
+        }, 0);
+        const lucro = totalVendas - totalCusto;
+        const margem = totalVendas > 0 ? ((lucro / totalVendas) * 100).toFixed(1) : 0;
+
+        // Mais vendido
+        const vendasPorPiercing = {};
+        vendas.forEach(v => {
+            const nome = v.piercing?.nome || 'Desconhecido';
+            vendasPorPiercing[nome] = (vendasPorPiercing[nome] || 0) + v.quantidade;
+        });
+        const maisVendido = Object.entries(vendasPorPiercing).sort((a, b) => b[1] - a[1])[0];
+
+        DomUtils.setHtml('piercing-resumo', `
+            <div style="background:#2a2a3a; border-radius:8px; padding:12px; flex:1; text-align:center;">
+                <div style="color:#A0A0A0;">Vendas Totais</div>
+                <div style="font-size:1.5rem; font-weight:bold;">${MoneyUtils.format(totalVendas)}</div>
+            </div>
+            <div style="background:#2a2a3a; border-radius:8px; padding:12px; flex:1; text-align:center;">
+                <div style="color:#A0A0A0;">Custo Total</div>
+                <div style="font-size:1.5rem; font-weight:bold; color:#F87171;">${MoneyUtils.format(totalCusto)}</div>
+            </div>
+            <div style="background:#2a2a3a; border-radius:8px; padding:12px; flex:1; text-align:center;">
+                <div style="color:#A0A0A0;">Lucro</div>
+                <div style="font-size:1.5rem; font-weight:bold; color:#34D399;">${MoneyUtils.format(lucro)}</div>
+                <div style="font-size:0.8rem; color:#A0A0A0;">Margem ${margem}%</div>
+            </div>
+            <div style="background:#2a2a3a; border-radius:8px; padding:12px; flex:1; text-align:center;">
+                <div style="color:#A0A0A0;">Mais Vendido</div>
+                <div style="font-size:1.2rem; font-weight:bold;">${escapeHtml(maisVendido ? maisVendido[0] : '-')}</div>
+                <div style="font-size:0.9rem;">${maisVendido ? maisVendido[1] + ' un.' : ''}</div>
+            </div>
+        `);
+
+        // Gráfico de vendas mensais
+        const mesesLabels = [];
+        const valoresMensais = [];
+        const hoje = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const data = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+            const anoMes = data.toISOString().slice(0, 7);
+            mesesLabels.push(data.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
+            const totalMes = vendas
+                .filter(v => v.data && v.data.startsWith(anoMes))
+                .reduce((sum, v) => sum + MoneyUtils.parse(v.valor_total), 0);
+            valoresMensais.push(totalMes);
+        }
+
+        const canvas = DomUtils.get('chart-piercing-vendas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (AppState.piercingChart) AppState.piercingChart.destroy();
+        AppState.piercingChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: mesesLabels,
+                datasets: [{
+                    label: 'Vendas (R$)',
+                    data: valoresMensais,
+                    backgroundColor: '#C084FC',
+                    borderRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#A0A0A0' } },
+                    x: { ticks: { color: '#A0A0A0' } }
+                }
+            }
+        });
+
+    } catch (e) {
+        console.error('Erro ao carregar análise de piercing:', e);
+    }
+}
+
 // ==================== DEMAIS MÓDULOS ====================
 const PiercingModule = {
     abrirModal: (id = null) => {
@@ -1608,14 +1707,14 @@ const PiercingModule = {
             if (!id) { if (quantidade * custo_unitario > 0) await registrarSaidaCaixa(dataHoje, quantidade * custo_unitario, `Compra: ${quantidade} un. de ${nome}`); }
             else { const aumento = quantidade - quantidadeAnterior; if (aumento > 0 && aumento * custo_unitario > 0) await registrarSaidaCaixa(dataHoje, aumento * custo_unitario, `Adição ao estoque: +${aumento} un. de ${nome}`); }
             DomUtils.setDisplay('modal-piercing', 'none');
-            await DataService.loadPiercings(); await DataService.loadVendasPiercing();
+            await DataService.loadPiercings(); await DataService.loadVendasPiercing(); await carregarAnalisePiercing();
             AlertUtils.show('Piercing salvo', 'success');
         } catch (e) { ErrorHandler.handle('salvar piercing', e); } finally { LoadingUtils.hide(); }
     },
     editar: (id) => PiercingModule.abrirModal(id),
     excluir: async (id) => {
         if (!await ConfirmModal.show('Excluir este piercing?')) return;
-        try { await DataService.deleteRecord('piercings_estoque', id); await DataService.loadPiercings(); await DataService.loadVendasPiercing(); AlertUtils.show('Piercing excluído', 'success'); } catch (e) { ErrorHandler.handle('excluir piercing', e); }
+        try { await DataService.deleteRecord('piercings_estoque', id); await DataService.loadPiercings(); await DataService.loadVendasPiercing(); await carregarAnalisePiercing(); AlertUtils.show('Piercing excluído', 'success'); } catch (e) { ErrorHandler.handle('excluir piercing', e); }
     },
     registrarVenda: async () => {
         const piercingId = DomUtils.getValue('venda-piercing-id'), quantidade = parseInt(DomUtils.getValue('venda-qtd')) || 0, cliente = DomUtils.getValue('venda-cliente');
@@ -1625,14 +1724,14 @@ const PiercingModule = {
             LoadingUtils.show('Registrando venda...');
             const { data: piercing } = await supabaseClient.from('piercings_estoque').select('*').eq('id', piercingId).single();
             if (!piercing || piercing.quantidade < quantidade) throw new Error('Estoque insuficiente');
-            const valorTotal = quantidade * piercing.preco_venda, custoTotal = quantidade * (piercing.custo_unitario || 0);
+            const valorTotal = quantidade * piercing.preco_venda;
             await supabaseClient.from('piercings_estoque').update({ quantidade: piercing.quantidade - quantidade }).eq('id', piercingId);
             await supabaseClient.from('vendas_piercing').insert([{ piercing_id: piercingId, quantidade, valor_total: valorTotal, cliente: cliente || null, data: new Date().toISOString() }]);
+            // Apenas entrada, sem saída duplicada
             if (valorTotal > 0) await registrarEntradaCaixa(DateUtils.nowDate(), valorTotal, `Venda: ${quantidade} un. de ${piercing.nome}${cliente ? ' - ' + cliente : ''}`);
-            if (custoTotal > 0) await registrarSaidaCaixa(DateUtils.nowDate(), custoTotal, `Custo de venda: ${quantidade} un. de ${piercing.nome}`);
-            await DataService.loadPiercings(); await DataService.loadVendasPiercing();
+            await DataService.loadPiercings(); await DataService.loadVendasPiercing(); await carregarAnalisePiercing();
             DomUtils.setValue('venda-qtd', 1); DomUtils.setValue('venda-cliente', '');
-            AlertUtils.show(`Venda registrada: ${MoneyUtils.format(valorTotal)} (custo: ${MoneyUtils.format(custoTotal)})`, 'success');
+            AlertUtils.show(`Venda registrada: ${MoneyUtils.format(valorTotal)}`, 'success');
         } catch (e) { ErrorHandler.handle('venda piercing', e); } finally { LoadingUtils.hide(); }
     }
 };
@@ -1696,7 +1795,6 @@ const MateriaisModule = {
     },
     editar: (id) => MateriaisModule.abrirModal(id),
     excluir: async (id) => {
-        // Verificar usos vinculados
         const { count, error } = await supabaseClient
             .from('usos_materiais')
             .select('*', { count: 'exact', head: true })
@@ -1796,7 +1894,7 @@ const ExemplosModule = {
                 const { data: existente } = await supabaseClient.from('piercings_estoque').select('id').eq('nome', item.nome).maybeSingle();
                 if (!existente) await supabaseClient.from('piercings_estoque').insert([item]);
             }
-            await DataService.loadPiercings(); await DataService.loadVendasPiercing();
+            await DataService.loadPiercings(); await DataService.loadVendasPiercing(); await carregarAnalisePiercing();
             AlertUtils.show('Exemplos adicionados!', 'success');
         } catch (e) { ErrorHandler.handle('exemplos piercings', e); } finally { LoadingUtils.hide(); }
     },
@@ -1887,6 +1985,7 @@ async function carregarDadosPrincipais() {
     await DataService.loadAgenda(1, 10);
     await DataService.loadPiercings();
     await DataService.loadVendasPiercing();
+    await carregarAnalisePiercing();
     await DataService.loadMateriais();
     await DataService.loadUsosMateriais(1, 10);
     await atualizarDashboard();
@@ -1900,7 +1999,7 @@ async function carregarDadosSecao(sectionId) {
         servicos: () => DataService.loadServicos(1, 10),
         agenda: () => DataService.loadAgenda(1, 10),
         relatorios: () => carregarRelatorios(),
-        piercing: async () => { await DataService.loadPiercings(); await DataService.loadVendasPiercing(); },
+        piercing: async () => { await DataService.loadPiercings(); await DataService.loadVendasPiercing(); await carregarAnalisePiercing(); },
         materiais: async () => { await DataService.loadMateriais(); await DataService.loadUsosMateriais(1, 10); }
     };
     if (map[sectionId]) await map[sectionId]();
