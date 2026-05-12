@@ -1082,8 +1082,8 @@ const CaixaModule = {
                 aviso.id = 'caixa-edicao-aviso';
                 aviso.style.cssText = 'background:#FEF3C7; color:#92400E; padding:8px 12px; border-radius:8px; margin-bottom:15px; font-size:14px;';
                 aviso.innerHTML = '<i class="fas fa-info-circle"></i> Apenas a <strong>descrição</strong> pode ser editada. Para corrigir valores, faça um lançamento de ajuste.';
-                const form = DomUtils.get('form-caixa');
-                form.insertBefore(aviso, form.firstChild);
+                const form = document.getElementById('form-caixa');
+                if (form) form.insertBefore(aviso, form.firstChild);
             }
             
             DomUtils.setDisplay('modal-caixa', 'block');
@@ -1459,12 +1459,46 @@ const AgendaModule = {
 
     cancelar: async (id) => {
         if (!await ConfirmModal.show('Deseja realmente cancelar este agendamento?')) return;
+        
+        // Pergunta o motivo do cancelamento
+        const motivo = prompt('Informe o motivo do cancelamento (obrigatório):');
+        if (!motivo || motivo.trim() === '') {
+            AlertUtils.show('É necessário informar o motivo do cancelamento.', 'error');
+            return;
+        }
+        
         try {
             LoadingUtils.show('Cancelando...');
-            await DataService.saveRecord('agenda', { status: 'Cancelado' }, id);
+            
+            // Recupera o agendamento atual para preservar observações anteriores
+            let item = AppState.agenda.find(a => a.id == id);
+            if (!item) {
+                const { data, error } = await supabaseClient
+                    .from('agenda')
+                    .select('observacoes')
+                    .eq('id', id)
+                    .single();
+                if (error) throw error;
+                item = data;
+            }
+            
+            const obsAtual = item?.observacoes || '';
+            const dataCancelamento = new Date().toLocaleDateString('pt-BR');
+            const horaCancelamento = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const notaCancelamento = `[Cancelado em ${dataCancelamento} às ${horaCancelamento} - Motivo: ${motivo}]`;
+            
+            // Concatena a nota ao final das observações existentes
+            const novaObs = obsAtual ? `${obsAtual} ${notaCancelamento}` : notaCancelamento;
+            
+            // Atualiza status e observações
+            await DataService.saveRecord('agenda', { 
+                status: 'Cancelado', 
+                observacoes: novaObs 
+            }, id);
+            
             await DataService.loadAgenda(AppState.paginacao.agenda.pagina);
             atualizarDashboard();
-            AlertUtils.show('Agendamento cancelado.', 'success');
+            AlertUtils.show('Agendamento cancelado com sucesso. Motivo registrado: ' + motivo, 'success');
         } catch (e) {
             ErrorHandler.handle('cancelar agenda', e);
         } finally {
