@@ -144,17 +144,24 @@ function getLocalDateString() {
 }
 
 const DateUtils = {
-  formatDate: (date) => {
-    if (!date) return '-';
-    const dt = new Date(date);
-    return isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('pt-BR');
-  },
-  formatDateTime: (date) => {
-    if (!date) return '-';
-    const dt = new Date(date);
-    return isNaN(dt.getTime()) ? '-' : `${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-  },
-  nowDate: () => getLocalDateString()
+    formatDate: (date) => {
+        if (!date) return '-';
+        // Se for string YYYY-MM-DD, formata manualmente para evitar o shift de fuso horário
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            const [ano, mes, dia] = date.split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+        // Fallback para objetos Date ou ISO strings completas
+        const dt = new Date(date);
+        return isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('pt-BR');
+    },
+    formatDateTime: (date) => {
+        if (!date) return '-';
+        const dt = new Date(date);
+        // Ajuste para garantir que a data/hora respeite o fuso local
+        return isNaN(dt.getTime()) ? '-' : `${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    },
+    nowDate: () => getLocalDateString()
 };
 
 const MoneyUtils = {
