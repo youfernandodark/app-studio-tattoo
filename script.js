@@ -146,19 +146,16 @@ function getLocalDateString() {
 const DateUtils = {
     formatDate: (date) => {
         if (!date) return '-';
-        // Se for string YYYY-MM-DD, formata manualmente para evitar o shift de fuso horário
         if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
             const [ano, mes, dia] = date.split('-');
             return `${dia}/${mes}/${ano}`;
         }
-        // Fallback para objetos Date ou ISO strings completas
         const dt = new Date(date);
         return isNaN(dt.getTime()) ? '-' : dt.toLocaleDateString('pt-BR');
     },
     formatDateTime: (date) => {
         if (!date) return '-';
         const dt = new Date(date);
-        // Ajuste para garantir que a data/hora respeite o fuso local
         return isNaN(dt.getTime()) ? '-' : `${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     },
     nowDate: () => getLocalDateString()
@@ -255,7 +252,8 @@ const AppState = {
     agenda: { pagina: 1, itensPorPagina: 10, total: 0 },
     usosMateriais: { pagina: 1, itensPorPagina: 10, total: 0 }
   },
-  filtrosCaixa: { dataInicio: '', dataFim: '' }
+  filtrosCaixa: { dataInicio: '', dataFim: '' },
+  filtrosUsosMateriais: { materialId: '', dataInicio: '', dataFim: '' }
 };
 
 // ==================== MÓDULO DE DADOS ====================
@@ -386,7 +384,18 @@ const DataService = {
   async loadUsosMateriais(pagina = 1, itensPorPagina = 10) {
     try {
       const offset = (pagina - 1) * itensPorPagina;
-      const { data, error, count } = await supabaseClient.from('usos_materiais').select('*, material:materiais_estoque(nome)', { count: 'exact' }).order('data', { ascending: false }).range(offset, offset + itensPorPagina - 1);
+      let query = supabaseClient.from('usos_materiais').select('*, material:materiais_estoque(nome, valor_unitario)', { count: 'exact' });
+      if (AppState.filtrosUsosMateriais.materialId) {
+        query = query.eq('material_id', AppState.filtrosUsosMateriais.materialId);
+      }
+      if (AppState.filtrosUsosMateriais.dataInicio) {
+        query = query.gte('data', AppState.filtrosUsosMateriais.dataInicio);
+      }
+      if (AppState.filtrosUsosMateriais.dataFim) {
+        query = query.lte('data', AppState.filtrosUsosMateriais.dataFim);
+      }
+      query = query.order('data', { ascending: false }).order('id', { ascending: false }).range(offset, offset + itensPorPagina - 1);
+      const { data, error, count } = await query;
       if (error) throw error;
       AppState.usosMateriais = data || [];
       AppState.paginacao.usosMateriais.total = count;
@@ -517,7 +526,7 @@ const Renderer = {
         <td class="actions-cell">${realizarBtn}${reagendarBtn}${cancelarBtn}
           <button class="btn-icon" data-acao="editar-agenda" data-id="${a.id}" title="Editar"><i class="fas fa-edit"></i></button>
           <button class="btn-icon" data-acao="excluir-agenda" data-id="${a.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button>
-        </td>
+         </td>
       </tr>`;
     }).join('');
     this._renderTable('agenda-tbody', data.length ? linhas : null);
@@ -530,7 +539,7 @@ const Renderer = {
       <td class="actions-cell">
         <button class="btn-icon" data-acao="editar-piercing" data-id="${p.id}" title="Editar"><i class="fas fa-edit"></i></button>
         <button class="btn-icon" data-acao="excluir-piercing" data-id="${p.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button>
-      </td>
+       </td>
     </tr>`).join('') : '<tr><td colspan="5">Nenhum piercing</td></tr>';
     const select = DomUtils.get('venda-piercing-id');
     if (select) select.innerHTML = '<option value="">Selecione</option>' + piercings.filter(p => p.quantidade > 0).map(p => `<option value="${p.id}" data-preco="${p.preco_venda}" data-custo="${p.custo_unitario || 0}">${escapeHtml(p.nome)} - Venda: ${MoneyUtils.format(p.preco_venda)} | Estoque: ${p.quantidade}</option>`).join('');
@@ -549,7 +558,7 @@ const Renderer = {
       <td class="actions-cell">
         <button class="btn-icon" data-acao="editar-material" data-id="${m.id}" title="Editar"><i class="fas fa-edit"></i></button>
         <button class="btn-icon" data-acao="excluir-material" data-id="${m.id}" title="Excluir"><i class="fas fa-trash-alt"></i></button>
-      </td>
+       </td>
     </tr>`).join('') : '<tr><td colspan="4">Nenhum material</td></tr>';
     const select = DomUtils.get('uso-material-id');
     if (select) select.innerHTML = '<option value="">Selecione</option>' + materiais.filter(m => m.quantidade > 0).map(m => `<option value="${m.id}" data-custo="${m.valor_unitario}">${escapeHtml(m.nome)} (${m.quantidade} un.) - Custo un: ${MoneyUtils.format(m.valor_unitario)}</option>`).join('');
@@ -557,10 +566,21 @@ const Renderer = {
   renderUsosMateriais(usos) {
     const tbody = DomUtils.get('usos-materiais-tbody');
     if (!tbody) return;
-    if (!usos || usos.length === 0) { tbody.innerHTML = '<tr><td colspan="4">Nenhum uso registrado</td></tr>'; return; }
-    tbody.innerHTML = usos.map(u => `<tr>
-      <td>${DateUtils.formatDateTime(u.data)}</td><td>${escapeHtml(u.material?.nome || '?')}</td><td>${u.quantidade}</td><td>${escapeHtml(u.observacao || '-')}</td>
-    </tr>`).join('');
+    if (!usos || usos.length === 0) { tbody.innerHTML = '<tr><td colspan="5">Nenhum uso registrado</td></tr>'; return; }
+    tbody.innerHTML = usos.map(u => {
+      const custoTotal = (u.material?.valor_unitario || 0) * u.quantidade;
+      return `<tr>
+        <td>${DateUtils.formatDateTime(u.data)}</td>
+        <td>${escapeHtml(u.material?.nome || '?')}</td>
+        <td>${u.quantidade}</td>
+        <td>${MoneyUtils.format(custoTotal)}</td>
+        <td title="${escapeHtml(u.observacao)}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(u.observacao) || '-'}</td>
+        <td class="actions-cell">
+          <button class="btn-icon" data-acao="editar-uso-material" data-id="${u.id}" title="Editar uso"><i class="fas fa-edit"></i></button>
+          <button class="btn-icon" data-acao="excluir-uso-material" data-id="${u.id}" title="Excluir uso"><i class="fas fa-trash-alt"></i></button>
+         </td>
+      </tr>`;
+    }).join('');
   }
 };
 
@@ -1055,7 +1075,300 @@ async function carregarAnalisePiercing() {
   } catch (e) { console.error('Erro ao carregar análise de piercing:', e); }
 }
 
-// ==================== DEMAIS MÓDULOS ====================
+// ==================== MÓDULO MATERIAIS (CORRIGIDO) ====================
+const MateriaisModule = {
+  // Abrir modal de cadastro/edição de material
+  abrirModal: (id = null) => {
+    DomUtils.clearForm('form-material');
+    if (id) {
+      supabaseClient.from('materiais_estoque').select('*').eq('id', id).single().then(({ data }) => {
+        if (data) {
+          DomUtils.setValue('material-id', data.id);
+          DomUtils.setValue('material-nome', data.nome);
+          DomUtils.setValue('material-qtd', data.quantidade);
+          DomUtils.setValue('material-preco', data.valor_unitario);
+          DomUtils.setDisplay('modal-material', 'block');
+        }
+      }).catch(e => ErrorHandler.handle('carregar material', e));
+    } else {
+      DomUtils.setDisplay('modal-material', 'block');
+    }
+  },
+
+  // Salvar material (compra ou ajuste de estoque) – SEMPRE gera saída no caixa
+  salvar: async () => {
+    const id = DomUtils.getValue('material-id');
+    const nome = DomUtils.getValue('material-nome');
+    let quantidade = parseInt(DomUtils.getValue('material-qtd')) || 0;
+    const valor_unitario = MoneyUtils.parse(DomUtils.getValue('material-preco'));
+    
+    if (!nome) return AlertUtils.show('Nome obrigatório', 'error');
+    if (valor_unitario <= 0) return AlertUtils.show('Valor unitário deve ser maior que zero.', 'error');
+    if (quantidade < 0) return AlertUtils.show('Quantidade não pode ser negativa.', 'error');
+    
+    try {
+      LoadingUtils.show('Salvando...');
+      let quantidadeAnterior = 0;
+      if (id) {
+        const { data } = await supabaseClient.from('materiais_estoque').select('quantidade').eq('id', id).single();
+        quantidadeAnterior = data?.quantidade || 0;
+      }
+      
+      await DataService.saveRecord('materiais_estoque', { nome, quantidade, valor_unitario }, id || null);
+      const dataHoje = DateUtils.nowDate();
+      
+      if (!id) {
+        // Novo material: lança saída pelo custo total (compra)
+        if (quantidade * valor_unitario > 0) {
+          await registrarSaidaCaixa(dataHoje, quantidade * valor_unitario, `Compra inicial: ${quantidade} un. de ${nome}`);
+        }
+      } else {
+        const diferenca = quantidade - quantidadeAnterior;
+        if (diferenca > 0) {
+          // Aumento de estoque (compra adicional)
+          await registrarSaidaCaixa(dataHoje, diferenca * valor_unitario, `Adição ao estoque: +${diferenca} un. de ${nome}`);
+        } else if (diferenca < 0) {
+          // Redução manual de estoque (perda/descarte) – NÃO gera saída financeira
+          const reducao = -diferenca;
+          AlertUtils.show(`Estoque reduzido em ${reducao} un. sem lançamento financeiro.`, 'info');
+        }
+      }
+      
+      DomUtils.setDisplay('modal-material', 'none');
+      await DataService.loadMateriais();
+      await DataService.loadUsosMateriais(1, 10);
+      AlertUtils.show('Material salvo', 'success');
+    } catch (e) {
+      ErrorHandler.handle('salvar material', e);
+    } finally {
+      LoadingUtils.hide();
+    }
+  },
+
+  editar: (id) => MateriaisModule.abrirModal(id),
+
+  excluir: async (id) => {
+    const { count, error } = await supabaseClient.from('usos_materiais').select('*', { count: 'exact', head: true }).eq('material_id', id);
+    if (error) { ErrorHandler.handle('verificar usos do material', error); return; }
+    if (count > 0) { AlertUtils.show('Este material possui registros de uso e não pode ser excluído.', 'error'); return; }
+    if (!await ConfirmModal.show('Excluir este material?')) return;
+    try {
+      await DataService.deleteRecord('materiais_estoque', id);
+      await DataService.loadMateriais();
+      await DataService.loadUsosMateriais(1, 10);
+      AlertUtils.show('Material excluído', 'success');
+    } catch (e) {
+      ErrorHandler.handle('excluir material', e);
+    }
+  },
+
+  // ------------------------------------------------------------------
+  // NOVA FUNÇÃO: Registrar uso de material (sem impacto no caixa)
+  // Usa função RPC "consumir_material" para garantir atomicidade.
+  // ------------------------------------------------------------------
+  registrarUso: async () => {
+    const materialId = DomUtils.getValue('uso-material-id');
+    const quantidade = parseInt(DomUtils.getValue('uso-qtd')) || 0;
+    const observacao = DomUtils.getValue('uso-obs')?.trim() || null;
+    
+    if (!materialId) return AlertUtils.show('Selecione um material', 'error');
+    if (quantidade <= 0) return AlertUtils.show('Quantidade deve ser maior que zero', 'error');
+    
+    try {
+      LoadingUtils.show('Registrando uso...');
+      
+      // Chamar a função RPC (transação atômica)
+      const { data, error } = await supabaseClient.rpc('consumir_material', {
+        p_material_id: parseInt(materialId),
+        p_quantidade: quantidade,
+        p_observacao: observacao
+      });
+      
+      if (error) {
+        // Se o erro for de estoque insuficiente, o RPC lança exceção com mensagem
+        if (error.message.includes('Estoque insuficiente')) {
+          AlertUtils.show('Estoque insuficiente para este material.', 'error');
+        } else {
+          throw error;
+        }
+        return;
+      }
+      
+      // Sucesso: recarregar listas
+      await DataService.loadMateriais();
+      await DataService.loadUsosMateriais(AppState.paginacao.usosMateriais.pagina, 10);
+      DomUtils.setValue('uso-qtd', 1);
+      DomUtils.setValue('uso-obs', '');
+      AlertUtils.show(`Uso registrado com sucesso.`, 'success');
+    } catch (e) {
+      ErrorHandler.handle('uso material', e);
+      AlertUtils.show(e.message || 'Erro ao registrar uso.', 'error');
+    } finally {
+      LoadingUtils.hide();
+    }
+  },
+
+  // ------------------------------------------------------------------
+  // Editar uso (com modal personalizado)
+  // ------------------------------------------------------------------
+  editarUso: async (id) => {
+    const uso = AppState.usosMateriais.find(u => u.id == id);
+    if (!uso) {
+      AlertUtils.show('Uso não encontrado', 'error');
+      return;
+    }
+    
+    // Criar modal dinâmico para edição
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.display = 'block';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width:450px;">
+        <span class="close" data-modal="modal-editar-uso">&times;</span>
+        <h3><i class="fas fa-edit"></i> Editar Uso de Material</h3>
+        <form id="form-editar-uso">
+          <div class="form-group">
+            <label>Quantidade</label>
+            <input type="number" id="edit-uso-qtd" value="${uso.quantidade}" step="1" min="1" required>
+          </div>
+          <div class="form-group">
+            <label>Observação</label>
+            <textarea id="edit-uso-obs" rows="2">${escapeHtml(uso.observacao || '')}</textarea>
+          </div>
+          <div class="modal-actions" style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
+            <button type="button" class="btn btn-secondary" id="cancel-edit-uso">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    const closeModal = () => modal.remove();
+    modal.querySelector('.close').addEventListener('click', closeModal);
+    modal.querySelector('#cancel-edit-uso').addEventListener('click', closeModal);
+    window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    
+    const form = modal.querySelector('#form-editar-uso');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const novaQuantidade = parseInt(modal.querySelector('#edit-uso-qtd').value);
+      const novaObs = modal.querySelector('#edit-uso-obs').value.trim() || null;
+      
+      if (isNaN(novaQuantidade) || novaQuantidade <= 0) {
+        AlertUtils.show('Quantidade inválida', 'error');
+        return;
+      }
+      
+      try {
+        LoadingUtils.show('Atualizando uso...');
+        
+        // Buscar material associado
+        const { data: material } = await supabaseClient.from('materiais_estoque').select('*').eq('id', uso.material_id).single();
+        if (!material) throw new Error('Material não encontrado');
+        
+        const diferenca = novaQuantidade - uso.quantidade;
+        const novaQuantidadeEstoque = material.quantidade - diferenca;
+        if (novaQuantidadeEstoque < 0) throw new Error('Estoque ficaria negativo após ajuste');
+        
+        // Atualizar uso
+        const { error: updateUso } = await supabaseClient.from('usos_materiais').update({
+          quantidade: novaQuantidade,
+          observacao: novaObs
+        }).eq('id', id);
+        if (updateUso) throw updateUso;
+        
+        // Atualizar estoque
+        const { error: updateEstoque } = await supabaseClient.from('materiais_estoque')
+          .update({ quantidade: novaQuantidadeEstoque })
+          .eq('id', uso.material_id);
+        if (updateEstoque) throw updateEstoque;
+        
+        // NENHUM lançamento no caixa (o custo já foi contabilizado na compra)
+        
+        await DataService.loadMateriais();
+        await DataService.loadUsosMateriais(AppState.paginacao.usosMateriais.pagina, 10);
+        AlertUtils.show('Uso atualizado com sucesso', 'success');
+        closeModal();
+      } catch (e) {
+        ErrorHandler.handle('editar uso material', e);
+        AlertUtils.show(e.message, 'error');
+      } finally {
+        LoadingUtils.hide();
+      }
+    });
+  },
+  
+  // ------------------------------------------------------------------
+  // Excluir uso (devolve ao estoque, sem mexer no caixa)
+  // ------------------------------------------------------------------
+  excluirUso: async (id) => {
+    if (!await ConfirmModal.show('Excluir este registro de uso? O material será devolvido ao estoque (sem alteração financeira).')) return;
+    const uso = AppState.usosMateriais.find(u => u.id == id);
+    if (!uso) {
+      AlertUtils.show('Uso não encontrado', 'error');
+      return;
+    }
+    try {
+      LoadingUtils.show('Excluindo uso...');
+      
+      // Buscar material
+      const { data: material } = await supabaseClient.from('materiais_estoque').select('*').eq('id', uso.material_id).single();
+      if (!material) throw new Error('Material não encontrado');
+      
+      // Devolver quantidade ao estoque
+      const novaQuantidade = material.quantidade + uso.quantidade;
+      const { error: updateEstoque } = await supabaseClient.from('materiais_estoque')
+        .update({ quantidade: novaQuantidade })
+        .eq('id', uso.material_id);
+      if (updateEstoque) throw updateEstoque;
+      
+      // Remover o uso
+      const { error: deleteUso } = await supabaseClient.from('usos_materiais').delete().eq('id', id);
+      if (deleteUso) throw deleteUso;
+      
+      // NENHUM ajuste no caixa (não há reversão de despesa)
+      
+      await DataService.loadMateriais();
+      await DataService.loadUsosMateriais(AppState.paginacao.usosMateriais.pagina, 10);
+      AlertUtils.show('Uso excluído e estoque ajustado', 'success');
+    } catch (e) {
+      ErrorHandler.handle('excluir uso material', e);
+    } finally {
+      LoadingUtils.hide();
+    }
+  },
+  
+  // Filtros
+  aplicarFiltroUsos: () => {
+    AppState.filtrosUsosMateriais.materialId = DomUtils.getValue('filtro-uso-material') || '';
+    AppState.filtrosUsosMateriais.dataInicio = DomUtils.getValue('filtro-uso-data-inicio') || '';
+    AppState.filtrosUsosMateriais.dataFim = DomUtils.getValue('filtro-uso-data-fim') || '';
+    DataService.loadUsosMateriais(1, 10);
+  },
+  limparFiltrosUsos: () => {
+    AppState.filtrosUsosMateriais = { materialId: '', dataInicio: '', dataFim: '' };
+    DomUtils.setValue('filtro-uso-material', '');
+    DomUtils.setValue('filtro-uso-data-inicio', '');
+    DomUtils.setValue('filtro-uso-data-fim', '');
+    DataService.loadUsosMateriais(1, 10);
+  },
+  
+  // Atualizar exibição de custo (apenas informativo)
+  atualizarCustoUso: () => {
+    const select = DomUtils.get('uso-material-id');
+    const selectedOption = select?.options[select.selectedIndex];
+    if (selectedOption && selectedOption.dataset.custo) {
+      const custoUnitario = MoneyUtils.parse(selectedOption.dataset.custo);
+      const quantidade = parseInt(DomUtils.getValue('uso-qtd')) || 0;
+      const total = custoUnitario * quantidade;
+      const spanCusto = DomUtils.get('uso-custo-total');
+      if (spanCusto) spanCusto.innerText = MoneyUtils.format(total);
+    }
+  }
+};
+
+// ==================== DEMAIS MÓDULOS (Piercing, Backup, Config, Exemplos) ====================
 const PiercingModule = {
   abrirModal: (id = null) => { DomUtils.clearForm('form-piercing'); if (id) { supabaseClient.from('piercings_estoque').select('*').eq('id', id).single().then(({ data }) => { if (data) { DomUtils.setValue('piercing-id', data.id); DomUtils.setValue('piercing-nome', data.nome); DomUtils.setValue('piercing-qtd', data.quantidade); DomUtils.setValue('piercing-preco', data.preco_venda); DomUtils.setValue('piercing-custo', data.custo_unitario || 0); DomUtils.setDisplay('modal-piercing', 'block'); } }).catch(e => ErrorHandler.handle('carregar piercing', e)); } else DomUtils.setDisplay('modal-piercing', 'block'); },
   salvar: async () => {
@@ -1086,42 +1399,6 @@ const PiercingModule = {
       await DataService.loadPiercings(); await DataService.loadVendasPiercing(); await carregarAnalisePiercing();
       DomUtils.setValue('venda-qtd', 1); DomUtils.setValue('venda-cliente', ''); AlertUtils.show(`Venda registrada: ${MoneyUtils.format(valorTotal)}`, 'success');
     } catch (e) { ErrorHandler.handle('venda piercing', e); } finally { LoadingUtils.hide(); }
-  }
-};
-
-const MateriaisModule = {
-  abrirModal: (id = null) => { DomUtils.clearForm('form-material'); if (id) { supabaseClient.from('materiais_estoque').select('*').eq('id', id).single().then(({ data }) => { if (data) { DomUtils.setValue('material-id', data.id); DomUtils.setValue('material-nome', data.nome); DomUtils.setValue('material-qtd', data.quantidade); DomUtils.setValue('material-preco', data.valor_unitario); DomUtils.setDisplay('modal-material', 'block'); } }).catch(e => ErrorHandler.handle('carregar material', e)); } else DomUtils.setDisplay('modal-material', 'block'); },
-  salvar: async () => {
-    const id = DomUtils.getValue('material-id'); const nome = DomUtils.getValue('material-nome'); const quantidade = parseInt(DomUtils.getValue('material-qtd')) || 0; const valor_unitario = MoneyUtils.parse(DomUtils.getValue('material-preco'));
-    if (!nome) return AlertUtils.show('Nome obrigatório', 'error'); if (valor_unitario <= 0) return AlertUtils.show('Valor unitário deve ser maior que zero.', 'error');
-    try {
-      LoadingUtils.show('Salvando...'); let quantidadeAnterior = 0; if (id) { const { data } = await supabaseClient.from('materiais_estoque').select('quantidade').eq('id', id).single(); quantidadeAnterior = data?.quantidade || 0; }
-      await DataService.saveRecord('materiais_estoque', { nome, quantidade, valor_unitario }, id || null); const dataHoje = DateUtils.nowDate();
-      if (!id) { if (quantidade * valor_unitario > 0) await registrarSaidaCaixa(dataHoje, quantidade * valor_unitario, `Compra: ${quantidade} un. de ${nome}`); }
-      else { const aumento = quantidade - quantidadeAnterior; if (aumento > 0) await registrarSaidaCaixa(dataHoje, aumento * valor_unitario, `Adição ao estoque: +${aumento} un. de ${nome}`); else if (aumento < 0) { const reducao = -aumento; await registrarSaidaCaixa(dataHoje, reducao * valor_unitario, `Ajuste manual de estoque: -${reducao} un. de ${nome}`); } }
-      DomUtils.setDisplay('modal-material', 'none'); await DataService.loadMateriais(); await DataService.loadUsosMateriais(1, 10); AlertUtils.show('Material salvo', 'success');
-    } catch (e) { ErrorHandler.handle('salvar material', e); } finally { LoadingUtils.hide(); }
-  },
-  editar: (id) => MateriaisModule.abrirModal(id),
-  excluir: async (id) => {
-    const { count, error } = await supabaseClient.from('usos_materiais').select('*', { count: 'exact', head: true }).eq('material_id', id);
-    if (error) { ErrorHandler.handle('verificar usos do material', error); return; }
-    if (count > 0) { AlertUtils.show('Este material possui registros de uso e não pode ser excluído.', 'error'); return; }
-    if (!await ConfirmModal.show('Excluir este material?')) return;
-    try { await DataService.deleteRecord('materiais_estoque', id); await DataService.loadMateriais(); await DataService.loadUsosMateriais(1, 10); AlertUtils.show('Material excluído', 'success'); } catch (e) { ErrorHandler.handle('excluir material', e); }
-  },
-  registrarUso: async () => {
-    const materialId = DomUtils.getValue('uso-material-id'); const quantidade = parseInt(DomUtils.getValue('uso-qtd')) || 0; const observacao = DomUtils.getValue('uso-obs')?.trim();
-    if (!materialId) return AlertUtils.show('Selecione um material', 'error'); if (quantidade <= 0) return AlertUtils.show('Quantidade > zero', 'error'); if (!observacao) return AlertUtils.show('A observação é obrigatória.', 'error');
-    try {
-      LoadingUtils.show('Registrando uso...'); const { data: material } = await supabaseClient.from('materiais_estoque').select('*').eq('id', materialId).single();
-      if (!material || material.quantidade < quantidade) throw new Error('Quantidade insuficiente');
-      const custoTotal = quantidade * material.valor_unitario;
-      await supabaseClient.from('materiais_estoque').update({ quantidade: material.quantidade - quantidade }).eq('id', materialId);
-      await supabaseClient.from('usos_materiais').insert([{ material_id: materialId, quantidade, observacao, data: getLocalDateString() }]);
-      if (custoTotal > 0) await registrarSaidaCaixa(DateUtils.nowDate(), custoTotal, `Uso de material: ${quantidade} un. de ${material.nome} - ${observacao}`);
-      await DataService.loadMateriais(); await DataService.loadUsosMateriais(1, 10); DomUtils.setValue('uso-qtd', 1); DomUtils.setValue('uso-obs', ''); AlertUtils.show(`Uso registrado (custo: ${MoneyUtils.format(custoTotal)})`, 'success');
-    } catch (e) { ErrorHandler.handle('uso material', e); } finally { LoadingUtils.hide(); }
   }
 };
 
@@ -1210,6 +1487,11 @@ function setupEventListeners() {
   DomUtils.get('btn-salvar-material')?.addEventListener('click', () => MateriaisModule.salvar());
   DomUtils.get('btn-usar-material')?.addEventListener('click', () => MateriaisModule.registrarUso());
   DomUtils.get('btn-popular-materiais')?.addEventListener('click', () => ExemplosModule.popularMateriais());
+  
+  DomUtils.get('btn-filtrar-usos')?.addEventListener('click', () => MateriaisModule.aplicarFiltroUsos());
+  DomUtils.get('btn-limpar-filtros-usos')?.addEventListener('click', () => MateriaisModule.limparFiltrosUsos());
+  DomUtils.get('uso-material-id')?.addEventListener('change', () => MateriaisModule.atualizarCustoUso());
+  DomUtils.get('uso-qtd')?.addEventListener('input', () => MateriaisModule.atualizarCustoUso());
 
   DomUtils.get('btn-exportar-backup')?.addEventListener('click', () => BackupModule.exportar());
   DomUtils.get('btn-importar-backup')?.addEventListener('click', () => document.getElementById('import-backup')?.click());
@@ -1235,6 +1517,8 @@ function setupEventListeners() {
     else if (acao === 'excluir-piercing') PiercingModule.excluir(id);
     else if (acao === 'editar-material') MateriaisModule.editar(id);
     else if (acao === 'excluir-material') MateriaisModule.excluir(id);
+    else if (acao === 'editar-uso-material') MateriaisModule.editarUso(id);
+    else if (acao === 'excluir-uso-material') MateriaisModule.excluirUso(id);
   });
 }
 
