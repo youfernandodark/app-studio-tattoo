@@ -1163,43 +1163,66 @@ const MateriaisModule = {
   },
 
   // ------------------------------------------------------------------
-  // NOVA FUNÇÃO: Registrar uso de material (sem impacto no caixa)
-  // Usa função RPC "consumir_material" para garantir atomicidade.
+  // FUNÇÃO CORRIGIDA: Registrar uso de material (sem impacto no caixa)
+  // Agora faz a baixa diretamente no cliente, sem chamar RPC.
   // ------------------------------------------------------------------
   registrarUso: async () => {
     const materialId = DomUtils.getValue('uso-material-id');
     const quantidade = parseInt(DomUtils.getValue('uso-qtd')) || 0;
     const observacao = DomUtils.getValue('uso-obs')?.trim() || null;
-    
+
     if (!materialId) return AlertUtils.show('Selecione um material', 'error');
     if (quantidade <= 0) return AlertUtils.show('Quantidade deve ser maior que zero', 'error');
-    
+
     try {
       LoadingUtils.show('Registrando uso...');
-      
-      // Chamar a função RPC (transação atômica)
-      const { data, error } = await supabaseClient.rpc('consumir_material', {
-        p_material_id: parseInt(materialId),
-        p_quantidade: quantidade,
-        p_observacao: observacao
-      });
-      
-      if (error) {
-        // Se o erro for de estoque insuficiente, o RPC lança exceção com mensagem
-        if (error.message.includes('Estoque insuficiente')) {
-          AlertUtils.show('Estoque insuficiente para este material.', 'error');
-        } else {
-          throw error;
-        }
-        return;
+
+      // 1. Buscar o material atual
+      const { data: material, error: fetchError } = await supabaseClient
+        .from('materiais_estoque')
+        .select('*')
+        .eq('id', materialId)
+        .single();
+
+      if (fetchError || !material) throw new Error('Material não encontrado');
+
+      // 2. Validar estoque
+      if (material.quantidade < quantidade) {
+        throw new Error(`Estoque insuficiente. Disponível: ${material.quantidade}`);
       }
-      
-      // Sucesso: recarregar listas
+
+      // 3. Calcular nova quantidade
+      const novaQuantidade = material.quantidade - quantidade;
+
+      // 4. Atualizar estoque (decrementar)
+      const { error: updateError } = await supabaseClient
+        .from('materiais_estoque')
+        .update({ quantidade: novaQuantidade })
+        .eq('id', materialId);
+
+      if (updateError) throw updateError;
+
+      // 5. Inserir registro de uso (sem nenhum valor financeiro)
+      const { error: insertError } = await supabaseClient
+        .from('usos_materiais')
+        .insert([{
+          material_id: materialId,
+          quantidade: quantidade,
+          observacao: observacao,
+          data: new Date().toISOString()
+        }]);
+
+      if (insertError) throw insertError;
+
+      // 6. Recarregar as listas
       await DataService.loadMateriais();
       await DataService.loadUsosMateriais(AppState.paginacao.usosMateriais.pagina, 10);
-      DomUtils.setValue('uso-qtd', 1);
+
+      // 7. Limpar campos do formulário de uso
+      DomUtils.setValue('uso-qtd', '1');
       DomUtils.setValue('uso-obs', '');
-      AlertUtils.show(`Uso registrado com sucesso.`, 'success');
+      AlertUtils.show(`Uso de ${quantidade} unidade(s) registrado com sucesso.`, 'success');
+
     } catch (e) {
       ErrorHandler.handle('uso material', e);
       AlertUtils.show(e.message || 'Erro ao registrar uso.', 'error');
@@ -1209,7 +1232,7 @@ const MateriaisModule = {
   },
 
   // ------------------------------------------------------------------
-  // Editar uso (com modal personalizado)
+  // Editar uso (com modal personalizado) – sem mexer no caixa
   // ------------------------------------------------------------------
   editarUso: async (id) => {
     const uso = AppState.usosMateriais.find(u => u.id == id);
