@@ -964,7 +964,7 @@ const AgendaModule = {
 
 // ==================== GERAÇÃO DE PDF CORRIGIDA E ESTÁVEL ====================
 async function gerarComprovanteAgendamentoPDF(dados) {
-    if (!dados) return; // Evita falha se chamado sem argumentos
+    if (!dados) return;
     let element = null;
     try {
         LoadingUtils.show('Gerando comprovante PDF...');
@@ -972,36 +972,37 @@ async function gerarComprovanteAgendamentoPDF(dados) {
         if (typeof window.jspdf === 'undefined') throw new Error('Biblioteca jsPDF não carregada.');
 
         const { data: studio, error } = await supabaseClient
-  .from('studio_config')
-  .select('nome, endereco, instagram, whatsapp')
-  .eq('id', 1)
-  .maybeSingle();
+            .from('studio_config')
+            .select('nome, endereco, instagram, whatsapp')
+            .eq('id', 1)
+            .maybeSingle();
 
         const nomeStudio = studio?.nome || 'DARK013TATTOO';
         const endereco = studio?.endereco || '';
         const instagram = studio?.instagram || '';
         const whatsapp = studio?.whatsapp || '';
 
+        // Cria o elemento com fundo branco e texto preto
         element = document.createElement('div');
-        element.style.cssText = 'background-color:#0C0C0C;color:#F0F0F0;font-family:Inter,sans-serif;padding:30px;border-radius:20px;max-width:600px;margin:0 auto;border:1px solid #3A3A3A;position:absolute;left:-9999px;top:0;';
+        element.style.cssText = 'background-color:#FFFFFF;color:#000000;font-family:Inter,sans-serif;padding:30px;border-radius:20px;max-width:600px;margin:0 auto;border:1px solid #CCCCCC;position:absolute;left:-9999px;top:0;';
 
         const dataHora = dados.data_hora instanceof Date ? dados.data_hora : new Date(dados.data_hora);
         const dataFormatada = isNaN(dataHora.getTime()) ? '-' : dataHora.toLocaleDateString('pt-BR');
         const horaFormatada = isNaN(dataHora.getTime()) ? '-' : dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const protocolo = `DARK-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         const clienteNome = dados.cliente || 'Cliente';
-        const textoReagendamento = dados.reagendado ? '<p style="color:#F39C12;font-weight:bold;margin-top:10px;">⚠️ Este é um REAGENDAMENTO</p>' : '';
+        const textoReagendamento = dados.reagendado ? '<p style="color:#D35400;font-weight:bold;margin-top:10px;">⚠️ Este é um REAGENDAMENTO</p>' : '';
 
         element.innerHTML = `
             <div style="text-align:center;margin-bottom:25px;">
-                <h1 style="color:#A0A0A0;margin:0;">${escapeHtml(nomeStudio)}</h1>
-                ${endereco ? `<p style="color:#B0B0B0;margin:5px 0 0;font-size:14px;">${escapeHtml(endereco)}</p>` : ''}
-                ${instagram ? `<p style="color:#B0B0B0;margin:2px 0 0;font-size:14px;">${escapeHtml(instagram)}</p>` : ''}
-                ${whatsapp ? `<p style="color:#B0B0B0;margin:2px 0 0;font-size:14px;">WhatsApp: ${escapeHtml(whatsapp)}</p>` : ''}
-                <p style="color:#B0B0B0;margin:15px 0 0;">Comprovante de Agendamento</p>
+                <h1 style="color:#000000;margin:0;font-size:28px;">${escapeHtml(nomeStudio)}</h1>
+                ${endereco ? `<p style="color:#333333;margin:5px 0 0;font-size:14px;">${escapeHtml(endereco)}</p>` : ''}
+                ${instagram ? `<p style="color:#333333;margin:2px 0 0;font-size:14px;">${escapeHtml(instagram)}</p>` : ''}
+                ${whatsapp ? `<p style="color:#333333;margin:2px 0 0;font-size:14px;">WhatsApp: ${escapeHtml(whatsapp)}</p>` : ''}
+                <p style="color:#555555;margin:15px 0 0;font-size:16px;">Comprovante de Agendamento</p>
                 ${textoReagendamento}
             </div>
-            <div style="border-top:1px solid #3A3A3A;padding:15px 0;">
+            <div style="border-top:1px solid #CCCCCC;padding:15px 0;">
                 <p><strong>Protocolo:</strong> ${protocolo}</p>
                 <p><strong>Data:</strong> ${dataFormatada} às ${horaFormatada}</p>
                 <p><strong>Cliente:</strong> ${escapeHtml(clienteNome)}</p>
@@ -1010,7 +1011,7 @@ async function gerarComprovanteAgendamentoPDF(dados) {
                 <p><strong>Status:</strong> ${escapeHtml(dados.status || 'N/A')}</p>
                 ${dados.observacoes ? `<p><strong>Obs:</strong> ${escapeHtml(dados.observacoes)}</p>` : ''}
             </div>
-            <div style="border-top:1px solid #3A3A3A;margin-top:15px;padding-top:15px;text-align:center;font-size:12px;color:#808080;">
+            <div style="border-top:1px solid #CCCCCC;margin-top:15px;padding-top:15px;text-align:center;font-size:12px;color:#666666;">
                 <p>Em caso de cancelamento ou reagendar, avisar com 24h de antecedência.</p>
                 <p>${escapeHtml(nomeStudio)} - Gestão Profissional</p>
             </div>`;
@@ -1018,7 +1019,12 @@ async function gerarComprovanteAgendamentoPDF(dados) {
         document.body.appendChild(element);
         await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 50)));
 
-        const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#0C0C0C', logging: false, useCORS: true });
+        const canvas = await html2canvas(element, { 
+            scale: 2, 
+            backgroundColor: '#FFFFFF',  // fundo branco
+            logging: false, 
+            useCORS: true 
+        });
         document.body.removeChild(element);
         element = null;
 
